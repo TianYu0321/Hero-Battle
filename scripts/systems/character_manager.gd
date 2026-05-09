@@ -68,11 +68,7 @@ func initialize_partners(partner_config_ids: Array[int]) -> Array[RuntimePartner
 		p.current_level = 1
 		p.is_active = true
 		# Phase 1 伙伴基础属性占位（简化）
-		p.current_vit = 10
-		p.current_str = 10
-		p.current_agi = 10
-		p.current_tec = 10
-		p.current_mnd = 10
+		# Phase 1: 伙伴不再拥有五维属性
 		_partners.append(p)
 	return _partners
 

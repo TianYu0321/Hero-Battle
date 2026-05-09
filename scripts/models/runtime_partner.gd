@@ -14,11 +14,7 @@ var position: int = 1
 var recruit_turn: int = 0
 var current_level: int = 1
 var current_hp: int = 0
-var current_vit: int = 0
-var current_str: int = 0
-var current_agi: int = 0
-var current_tec: int = 0
-var current_mnd: int = 0
+var favored_attr: int = 0
 var aid_trigger_count: int = 0
 var chain_trigger_count: int = 0
 var buff_list: Array = []
@@ -36,11 +32,7 @@ func to_dict() -> Dictionary:
 		"recruit_turn": recruit_turn,
 		"current_level": current_level,
 		"current_hp": current_hp,
-		"current_vit": current_vit,
-		"current_str": current_str,
-		"current_agi": current_agi,
-		"current_tec": current_tec,
-		"current_mnd": current_mnd,
+		"favored_attr": favored_attr,
 		"aid_trigger_count": aid_trigger_count,
 		"chain_trigger_count": chain_trigger_count,
 		"buff_list": buff_list.duplicate(),
@@ -59,12 +51,8 @@ static func from_dict(data: Dictionary) -> RuntimePartner:
 	partner.recruit_turn = data.get("recruit_turn", 0)
 	partner.current_level = data.get("current_level", 1)
 	partner.current_hp = data.get("current_hp", 0)
-	partner.current_vit = data.get("current_vit", 0)
-	partner.current_str = data.get("current_str", 0)
-	partner.current_agi = data.get("current_agi", 0)
-	partner.current_tec = data.get("current_tec", 0)
-	partner.current_mnd = data.get("current_mnd", 0)
-	partner.aid_trigger_count = data.get("aid_trigger_count", 0)
+	partner.favored_attr = data.get("favored_attr", 0)
+						partner.aid_trigger_count = data.get("aid_trigger_count", 0)
 	partner.chain_trigger_count = data.get("chain_trigger_count", 0)
 	partner.buff_list = data.get("buff_list", []).duplicate()
 	partner.is_active = data.get("is_active", true)

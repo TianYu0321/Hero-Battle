@@ -15,10 +15,12 @@ signal game_paused(reason: String)
 signal game_resumed
 
 signal round_changed(current_round: int, max_round: int, phase: String)
+signal floor_changed(current_floor: int, max_floor: int, floor_type: String)
 signal node_options_presented(node_options: Array[Dictionary])
 signal node_entered(node_type: String, node_config: Dictionary)
 signal node_resolved(node_type: String, result_data: Dictionary)
 signal turn_advanced(new_turn: int, phase: String, is_fixed_node: bool)
+signal floor_advanced(new_floor: int, floor_type: String, is_special: bool)
 signal node_selected(node_index: int)
 
 signal training_completed(attr_code: int, attr_name: String, gain_value: int, new_total: int, proficiency_stage: String, bonus_applied: int)

@@ -25,6 +25,7 @@ static func _default_formula() -> Dictionary:
 		"def_from_vit": 1.0,
 		"hp_from_vit": 10.0,
 		"speed_from_agi": 1.0,
+		"speed_base": 10.0,
 		"crit_rate_base": 0.05,
 		"crit_dmg_multiplier": 1.5,
 		"dmg_rand_min": 0.9,

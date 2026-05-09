@@ -1,141 +1,127 @@
-## res://scripts/systems/node_resolver.gd
-## 模块: NodeResolver
-## 职责: 节点分发：根据node_type分发到子系统，执行完毕后返回NodeResult
-## 依赖: TrainingSystem, ShopSystem, RescueSystem, EliteBattleSystem, PvpDirector, CharacterManager, EventBus
-## class_name: NodeResolver
-
 class_name NodeResolver
 extends Node
 
-var _training_system: TrainingSystem = null
-var _shop_system: ShopSystem = null
-var _rescue_system: RescueSystem = null
-var _elite_battle_system: EliteBattleSystem = null
-var _pvp_director: PvpDirector = null
-var _character_manager: CharacterManager = null
+## NodeResolver — 节点解析器
+## v2.0: 从随机解析改为直接处理4种选项类型
 
+signal node_resolved(node_type: int, result_data: Dictionary)
 
-func initialize(ts: TrainingSystem, ss: ShopSystem, rs: RescueSystem, ebs: EliteBattleSystem, pd: PvpDirector = null, cm: CharacterManager = null) -> void:
-	_training_system = ts
-	_shop_system = ss
-	_rescue_system = rs
-	_elite_battle_system = ebs
-	_pvp_director = pd
-	_character_manager = cm
+const _OUTING_EVENTS: Array[Dictionary] = [
+	{"event": "rest", "weight": 30, "desc": "休息恢复"},
+	{"event": "shop", "weight": 20, "desc": "发现商店"},
+	{"event": "trap", "weight": 15, "desc": "遭遇陷阱"},
+	{"event": "heal", "weight": 15, "desc": "发现回复泉"},
+	{"event": "special", "weight": 15, "desc": "特殊事件"},
+	{"event": "elite", "weight": 5, "desc": "精英战"},
+]
 
-
-func resolve_node(node_type: int, node_config: Dictionary, run: RuntimeRun, hero: RuntimeHero) -> Dictionary:
-	EventBus.emit_signal("node_entered", _node_type_name(node_type), node_config)
-
-	var result := {
-		"success": true,
-		"rewards": [],
-		"combat_result": null,
-		"logs": [],
-	}
+func resolve(node_option: Dictionary, run_controller: RunController) -> Dictionary:
+	var node_type: int = node_option.get("node_type", 0)
+	var result: Dictionary = {"success": true, "rewards": {}}
 
 	match node_type:
-		1:  # TRAINING
-			var attr_type: int = node_config.get("attr_type", 1)
-			var train_result: Dictionary = _training_system.execute_training(attr_type, run.current_turn)
-			result["rewards"].append({"type": "attr_up", "data": train_result})
-			result["logs"].append("第%d回合：锻炼%s，+%d" % [run.current_turn, train_result.get("attr_name", ""), train_result.get("gain_value", 0)])
-
-		2, 3:  # BATTLE / ELITE
-			if node_type == 3:
-				var enemy_id: int = node_config.get("enemy_config_id", 2001)
-				var battle_result: Dictionary = _elite_battle_system.execute_elite_battle(run, hero, enemy_id)
-				result["combat_result"] = battle_result
-				result["success"] = battle_result.get("success", false)
-				if battle_result.get("success", false):
-					result["rewards"].append({"type": "gold", "amount": battle_result.get("reward_gold", 0)})
-					result["rewards"].append({"type": "elite_reward_choice", "options": _elite_battle_system.generate_elite_rewards(1)})
-					result["logs"].append("第%d回合：精英战胜利" % run.current_turn)
-				else:
-					result["logs"].append("第%d回合：精英战失败，本局结束" % run.current_turn)
-			else:
-				# 普通战斗简化处理
-				var gold_reward: int = 10 + run.current_turn
-				result["rewards"].append({"type": "gold", "amount": gold_reward})
-				result["logs"].append("第%d回合：普通战斗胜利，获得%d金币" % [run.current_turn, gold_reward])
-
-		4:  # SHOP
-			# 商店节点返回商店信息，实际购买由UI层触发shop_purchase_requested后再调用process_purchase
-			var inventory: Array[Dictionary] = _shop_system.generate_shop_inventory(run.current_turn, run.gold_owned)
-			result["rewards"].append({"type": "shop_inventory", "inventory": inventory})
-			result["logs"].append("第%d回合：进入商店" % run.current_turn)
-
-		5:  # RESCUE
-			# 优先使用RunController已生成的候选（避免二次生成导致不一致）
-			var candidates: Array[Dictionary] = node_config.get("candidates", [])
-			if candidates.is_empty():
-				candidates = _rescue_system.generate_candidates()
-			result["rewards"].append({"type": "rescue_candidates", "candidates": candidates})
-			result["logs"].append("第%d回合：触发救援事件" % run.current_turn)
-
-		6:  # PVP_CHECK
-			if _pvp_director != null and _character_manager != null:
-				var team: Dictionary = _character_manager.get_battle_ready_team()
-				var pvp_config: Dictionary = {
-					"turn_number": run.current_turn,
-					"player_hero": team.hero,
-					"player_partners": team.partners,
-					"player_gold": run.gold_owned,
-					"player_hp": hero.current_hp,
-					"player_max_hp": hero.max_hp,
-					"run_seed": run.seed,
-				}
-				var pvp_result: Dictionary = _pvp_director.execute_pvp(pvp_config)
-				result["rewards"].append({"type": "pvp_result", "data": pvp_result})
-				result["success"] = true
-				if pvp_result.won:
-					result["logs"].append("第%d回合：PVP检定胜利" % run.current_turn)
-				else:
-					result["logs"].append("第%d回合：PVP检定失败，受到%s惩罚" % [run.current_turn, pvp_result.penalty_tier])
-			else:
-				# 降级为占位逻辑
-				result["rewards"].append({"type": "pvp_result", "won": true, "opponent_name": "AI_OPPONENT", "rating_change": 0, "penalty_tier": "none"})
-				result["logs"].append("第%d回合：PVP检定通过（占位）" % run.current_turn)
-
-		7:  # FINAL
-			result["logs"].append("第%d回合：进入终局战" % run.current_turn)
-
+		NodePoolSystem.NodeType.TRAINING:
+			result = _resolve_training(run_controller)
+		NodePoolSystem.NodeType.BATTLE:
+			result = _resolve_battle(run_controller)
+		NodePoolSystem.NodeType.REST:
+			result = _resolve_rest(run_controller)
+		NodePoolSystem.NodeType.OUTING:
+			result = _resolve_outing(run_controller)
+		NodePoolSystem.NodeType.RESCUE:
+			result = _resolve_rescue(run_controller)
+		NodePoolSystem.NodeType.SHOP:
+			result = _resolve_shop(run_controller)
+		NodePoolSystem.NodeType.PVP_CHECK:
+			result = _resolve_pvp(run_controller)
+		NodePoolSystem.NodeType.FINAL_BOSS:
+			result = _resolve_final_boss(run_controller)
 		_:
-			push_warning("[NodeResolver] Unknown node type: %d" % node_type)
-			result["success"] = false
-			result["logs"].append("第%d回合：未知节点类型" % run.current_turn)
+			result = {"success": true, "rewards": {}}
 
-	EventBus.emit_signal("node_resolved", _node_type_name(node_type), result)
+	node_resolved.emit(node_type, result)
 	return result
 
+func _resolve_training(run_controller: RunController) -> Dictionary:
+	## 训练节点 — 返回需要UI选择属性的标记
+	return {
+		"success": true,
+		"requires_ui_selection": true,
+		"node_type": NodePoolSystem.NodeType.TRAINING,
+		"rewards": {},
+	}
 
-func process_shop_purchase(item_data: Dictionary, run: RuntimeRun) -> Dictionary:
-	var purchase_result: Dictionary = _shop_system.process_purchase(item_data, run.gold_owned)
-	if purchase_result.get("success", false):
-		run.gold_owned = purchase_result.get("new_gold", run.gold_owned)
-		run.gold_spent += item_data.get("price", 0)
-		EventBus.emit_signal("gold_changed", run.gold_owned, -item_data.get("price", 0), "shop_purchase")
-		EventBus.emit_signal("shop_item_purchased", item_data.get("item_id", ""), item_data.get("item_type", ""), item_data.get("target_id", ""), item_data.get("price", 0), run.gold_owned, 0)
-	return purchase_result
+func _resolve_battle(run_controller: RunController) -> Dictionary:
+	## 普通战斗 — 产出金币
+	var gold_reward: int = randi() % 20 + 10
+	return {
+		"success": true,
+		"node_type": NodePoolSystem.NodeType.BATTLE,
+		"rewards": {"gold": gold_reward},
+	}
 
+func _resolve_rest(run_controller: RunController) -> Dictionary:
+	## 休息 — 恢复15%最大生命
+	var hero = run_controller.get_hero()
+	var max_hp = hero.get("max_hp", 100)
+	var heal = int(max_hp * 0.15)
+	return {
+		"success": true,
+		"node_type": NodePoolSystem.NodeType.REST,
+		"rewards": {"hp_heal": heal},
+	}
 
-func process_rescue_selection(partner_config_id: int, turn: int, run: RuntimeRun) -> RuntimePartner:
-	var partner: RuntimePartner = _rescue_system.rescue_partner(partner_config_id, turn)
-	if partner != null:
-		run.rescue_success_count += 1
-		EventBus.emit_signal("rescue_encountered", [], turn)
-	return partner
+func _resolve_outing(run_controller: RunController) -> Dictionary:
+	## 外出 — 触发随机事件池
+	var total_weight: int = 0
+	for evt in _OUTING_EVENTS:
+		total_weight += evt.get("weight", 0)
+	var roll: int = randi() % total_weight
+	var cumulative: int = 0
+	var selected_event: String = "rest"
+	for evt in _OUTING_EVENTS:
+		cumulative += evt.get("weight", 0)
+		if roll < cumulative:
+			selected_event = evt.get("event", "rest")
+			break
 
+	return {
+		"success": true,
+		"node_type": NodePoolSystem.NodeType.OUTING,
+		"event": selected_event,
+		"rewards": {},
+	}
 
-# --- 私有方法 ---
+func _resolve_rescue(run_controller: RunController) -> Dictionary:
+	## 救援 — 生成候选伙伴
+	return {
+		"success": true,
+		"node_type": NodePoolSystem.NodeType.RESCUE,
+		"requires_ui_selection": true,
+		"rewards": {},
+	}
 
-func _node_type_name(node_type: int) -> String:
-	match node_type:
-		1: return "TRAIN"
-		2: return "BATTLE"
-		3: return "ELITE"
-		4: return "SHOP"
-		5: return "RESCUE"
-		6: return "PVP"
-		7: return "FINAL"
-		_: return "UNKNOWN"
+func _resolve_shop(run_controller: RunController) -> Dictionary:
+	## 商店 — 生成商品列表
+	return {
+		"success": true,
+		"node_type": NodePoolSystem.NodeType.SHOP,
+		"requires_ui_selection": true,
+		"rewards": {},
+	}
+
+func _resolve_pvp(run_controller: RunController) -> Dictionary:
+	## PVP检定 — 调用PvpDirector
+	return {
+		"success": true,
+		"node_type": NodePoolSystem.NodeType.PVP_CHECK,
+		"rewards": {},
+	}
+
+func _resolve_final_boss(run_controller: RunController) -> Dictionary:
+	## 终局Boss战
+	return {
+		"success": true,
+		"node_type": NodePoolSystem.NodeType.FINAL_BOSS,
+		"rewards": {},
+	}

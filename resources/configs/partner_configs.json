@@ -17,12 +17,7 @@
       "linked_hero_id": 1,
       "is_default_unlock": true,
       "unlock_condition_text": "",
-      "sort_order": 1,
-      "base_physique": 8,
-      "base_strength": 12,
-      "base_agility": 8,
-      "base_technique": 8,
-      "base_spirit": 8
+      "sort_order": 1
     },
     "partner_scout": {
       "id": 1002,
@@ -36,12 +31,7 @@
       "linked_hero_id": 2,
       "is_default_unlock": true,
       "unlock_condition_text": "",
-      "sort_order": 2,
-      "base_physique": 8,
-      "base_strength": 8,
-      "base_agility": 12,
-      "base_technique": 8,
-      "base_spirit": 8
+      "sort_order": 2
     },
     "partner_shieldguard": {
       "id": 1003,
@@ -55,12 +45,7 @@
       "linked_hero_id": 3,
       "is_default_unlock": true,
       "unlock_condition_text": "",
-      "sort_order": 3,
-      "base_physique": 12,
-      "base_strength": 8,
-      "base_agility": 8,
-      "base_technique": 8,
-      "base_spirit": 8
+      "sort_order": 3
     },
     "partner_pharmacist": {
       "id": 1004,
@@ -74,12 +59,7 @@
       "linked_hero_id": 0,
       "is_default_unlock": true,
       "unlock_condition_text": "",
-      "sort_order": 4,
-      "base_physique": 8,
-      "base_strength": 8,
-      "base_agility": 8,
-      "base_technique": 8,
-      "base_spirit": 12
+      "sort_order": 4
     },
     "partner_sorcerer": {
       "id": 1005,
@@ -93,12 +73,7 @@
       "linked_hero_id": 0,
       "is_default_unlock": true,
       "unlock_condition_text": "",
-      "sort_order": 5,
-      "base_physique": 8,
-      "base_strength": 8,
-      "base_agility": 8,
-      "base_technique": 12,
-      "base_spirit": 8
+      "sort_order": 5
     },
     "partner_hunter": {
       "id": 1006,
@@ -112,12 +87,7 @@
       "linked_hero_id": 1,
       "is_default_unlock": true,
       "unlock_condition_text": "",
-      "sort_order": 6,
-      "base_physique": 8,
-      "base_strength": 8,
-      "base_agility": 12,
-      "base_technique": 10,
-      "base_spirit": 8
+      "sort_order": 6
     }
   }
 }

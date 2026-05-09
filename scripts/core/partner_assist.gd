@@ -27,9 +27,7 @@ func execute_assist(context: Dictionary) -> Array[Dictionary]:
 	for partner in partners:
 		if not partner.get("is_alive", true):
 			continue
-		var used: int = partner.get("assist_count", 0)
-		if used >= 2:
-			continue
+		## v2.0: 不限制伙伴援助触发次数
 
 		var assist_cfg: Dictionary = _get_assist_config(partner)
 		if assist_cfg.is_empty():
@@ -41,7 +39,6 @@ func execute_assist(context: Dictionary) -> Array[Dictionary]:
 				result.partner_id = partner.get("partner_id", "")
 				result.partner_name = partner.get("partner_name", "")
 				results.append(result)
-				partner.assist_count = used + 1
 	return results
 
 func _get_assist_config(partner: Dictionary) -> Dictionary:

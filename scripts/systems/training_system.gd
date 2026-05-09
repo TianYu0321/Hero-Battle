@@ -1,16 +1,34 @@
 ## res://scripts/systems/training_system.gd
 ## 模块: TrainingSystem
-## 职责: 锻炼系统：单次锻炼属性增加计算、熟练度晋升、边际递减、副属性共享
+## 职责: 训练系统：属性等级制，每次训练给主属性+固定副属性配比
 ## 依赖: CharacterManager, EventBus
 ## class_name: TrainingSystem
 
 class_name TrainingSystem
 extends Node
 
-const _BASE_GAIN: int = 5
-const _MARGIN_THRESHOLD: float = 0.6
-const _MARGIN_DECREASE: float = 0.2
-const _SECONDARY_SHARE: float = 0.5
+## 每属性训练5次升1级
+const _LEVEL_UP_COUNT: int = 5
+## 训练等级上限
+const _MAX_TRAINING_LEVEL: int = 5
+
+## 基础主属性加成 (LV1)
+const _BASE_MAIN_GAIN: int = 5
+## 每级主属性额外加成 (+2 per level)
+const _MAIN_GAIN_INCREMENT: int = 2
+## 基础副属性加成 (LV1)
+const _BASE_SUB_GAIN: int = 1
+## 每级副属性额外加成 (+1 per level)
+const _SUB_GAIN_INCREMENT: int = 1
+
+## 属性对应关系：主属性 -> [副属性1, 副属性2]
+const _ATTR_SECONDARY: Dictionary = {
+	1: [2, 5],  # 体魄 -> 力量, 精神
+	2: [3, 4],  # 力量 -> 敏捷, 技巧
+	3: [4, 1],  # 敏捷 -> 技巧, 体魄
+	4: [5, 2],  # 技巧 -> 精神, 力量
+	5: [1, 3],  # 精神 -> 体魄, 敏捷
+}
 
 var _character_manager: CharacterManager = null
 
@@ -19,90 +37,101 @@ func initialize(cm: CharacterManager) -> void:
 	_character_manager = cm
 
 
-func execute_training(attr_type: int, turn: int) -> Dictionary:
+## 执行训练
+## attr_type: 1=体魄, 2=力量, 3=敏捷, 4=技巧, 5=精神
+## floor: 当前层数
+## partner_bonus: 伙伴支援加成（固定值，不影响副属性）
+func execute_training(attr_type: int, floor: int, partner_bonus: int = 0) -> Dictionary:
 	if _character_manager == null:
 		push_error("[TrainingSystem] CharacterManager not initialized")
 		return {}
 
 	var hero: RuntimeHero = _character_manager.get_hero()
-	var mastery: RuntimeMastery = _character_manager.get_mastery_by_attr(attr_type)
-	if mastery == null:
-		push_error("[TrainingSystem] Mastery not found for attr: %d" % attr_type)
-		return {}
-
-	# 步骤1-2: 获取熟练度阶段与加成
-	var stage: int = mastery.stage
-	var bonus: int = mastery.training_bonus
-
-	# 步骤3: 基础增长值
-	var base_gain: float = float(_BASE_GAIN)
-
-	# 步骤4: 检查边际递减
-	var total_train: int = _get_total_training_count()
-	var is_marginal: bool = false
-	if total_train > 0:
-		var ratio: float = float(mastery.training_count) / float(total_train)
-		if ratio > _MARGIN_THRESHOLD:
-			base_gain *= (1.0 - _MARGIN_DECREASE)
-			is_marginal = true
-
-	# 步骤5: 计算最终增长值
-	var final_gain: int = int(base_gain) + bonus
-
-	# 步骤6: 更新属性值
-	var old_attr: int = _get_attr_value(hero, attr_type)
-	_character_manager.modify_hero_stats({attr_type: final_gain})
-	var new_attr: int = _get_attr_value(hero, attr_type)
-	final_gain = new_attr - old_attr  # 以实际变化为准
-
-	# 步骤7: 更新锻炼计数
-	mastery.training_count += 1
-	_character_manager.update_mastery_stage(attr_type)
-
-	# 步骤8: 副属性共享
-	var secondary_attr: int = _character_manager.get_secondary_attr(attr_type)
-	if secondary_attr > 0:
-		var sec_mastery: RuntimeMastery = _character_manager.get_mastery_by_attr(secondary_attr)
-		if sec_mastery != null:
-			# 共享50%熟练度计数（累计到整数时生效）
-			# 简化处理：每2次主属性锻炼，副属性+1计数
-			# 这里用training_count的奇偶来模拟
-			if mastery.training_count % 2 == 0:
-				sec_mastery.training_count += 1
-				_character_manager.update_mastery_stage(secondary_attr)
-
-	# 更新主角总锻炼次数
+	
+	# 获取该属性的训练等级
+	var training_level: int = _get_training_level(hero, attr_type)
+	
+	# 计算主属性加成
+	var main_gain: int = _BASE_MAIN_GAIN + (training_level - 1) * _MAIN_GAIN_INCREMENT + partner_bonus
+	
+	# 计算副属性加成
+	var sub_gain: int = _BASE_SUB_GAIN + (training_level - 1) * _SUB_GAIN_INCREMENT
+	
+	# 获取副属性列表
+	var secondary_attrs: Array = _ATTR_SECONDARY.get(attr_type, [])
+	
+	# 应用主属性加成
+	var old_main: int = _get_attr_value(hero, attr_type)
+	_character_manager.modify_hero_stats({attr_type: main_gain})
+	var new_main: int = _get_attr_value(hero, attr_type)
+	var actual_main_gain: int = new_main - old_main
+	
+	# 应用副属性加成
+	var sub_gains: Dictionary = {}
+	for sub_attr in secondary_attrs:
+		var old_sub: int = _get_attr_value(hero, sub_attr)
+		_character_manager.modify_hero_stats({sub_attr: sub_gain})
+		var new_sub: int = _get_attr_value(hero, sub_attr)
+		sub_gains[sub_attr] = new_sub - old_sub
+	
+	# 更新该属性的训练计数
+	var attr_key: String = _get_attr_key(attr_type)
+	var current_count: int = hero.get("_training_count_" + attr_key, 0)
+	hero.set("_training_count_" + attr_key, current_count + 1)
+	
+	# 检查是否升级
+	var new_level: int = _get_training_level(hero, attr_type)
+	var level_up: bool = new_level > training_level
+	
+	# 更新总训练次数
 	hero.total_training_count += 1
-
-	# 步骤9: 记录日志
+	
+	# 记录日志
 	var log := RuntimeTrainingLog.new()
-	log.turn = turn
+	log.turn = floor
 	log.attr_type = attr_type
-	log.base_gain = int(base_gain)
-	log.mastery_bonus = bonus
-	log.partner_bonus = 0
-	log.marginal_decrease_applied = is_marginal
-	log.final_gain = final_gain
+	log.base_gain = main_gain
+	log.mastery_bonus = partner_bonus
+	log.partner_bonus = partner_bonus
+	log.marginal_decrease_applied = false
+	log.final_gain = actual_main_gain
 
-	EventBus.emit_signal("training_completed", attr_type, _attr_name(attr_type), final_gain, new_attr, _stage_name(stage), bonus)
+	EventBus.emit_signal("training_completed", attr_type, _attr_name(attr_type), actual_main_gain, new_main, "LV%d" % new_level, partner_bonus)
 
 	return {
 		"attr_type": attr_type,
 		"attr_name": _attr_name(attr_type),
-		"gain_value": final_gain,
-		"new_total": new_attr,
-		"proficiency_stage": _stage_name(stage),
-		"bonus_applied": bonus,
-		"marginal_applied": is_marginal,
+		"gain_value": actual_main_gain,
+		"new_total": new_main,
+		"training_level": training_level,
+		"new_level": new_level,
+		"level_up": level_up,
+		"sub_gains": sub_gains,
+		"partner_bonus": partner_bonus,
 		"log": log,
 	}
 
 
-func _get_total_training_count() -> int:
-	var hero: RuntimeHero = _character_manager.get_hero()
-	return hero.total_training_count
+## 获取某属性的训练等级
+func _get_training_level(hero: RuntimeHero, attr_type: int) -> int:
+	var attr_key: String = _get_attr_key(attr_type)
+	var count: int = hero.get("_training_count_" + attr_key, 0)
+	var level: int = (count / _LEVEL_UP_COUNT) + 1
+	return mini(level, _MAX_TRAINING_LEVEL)
 
 
+## 获取属性字段名
+func _get_attr_key(attr_type: int) -> String:
+	match attr_type:
+		1: return "vit"
+		2: return "str"
+		3: return "agi"
+		4: return "tec"
+		5: return "mnd"
+		_: return ""
+
+
+## 获取属性当前值
 func _get_attr_value(hero: RuntimeHero, attr_type: int) -> int:
 	match attr_type:
 		1: return hero.current_vit
@@ -113,6 +142,7 @@ func _get_attr_value(hero: RuntimeHero, attr_type: int) -> int:
 		_: return 0
 
 
+## 获取属性名称
 func _attr_name(attr_type: int) -> String:
 	match attr_type:
 		1: return "体魄"
@@ -123,10 +153,19 @@ func _attr_name(attr_type: int) -> String:
 		_: return "未知"
 
 
-func _stage_name(stage: int) -> String:
-	match stage:
-		1: return "NOVICE"
-		2: return "FAMILIAR"
-		3: return "PROFICIENT"
-		4: return "EXPERT"
-		_: return "UNKNOWN"
+## 计算训练面板显示的加成值（预览用）
+func get_training_preview(attr_type: int, hero: RuntimeHero, partner_bonus: int = 0) -> Dictionary:
+	var level: int = _get_training_level(hero, attr_type)
+	var main_gain: int = _BASE_MAIN_GAIN + (level - 1) * _MAIN_GAIN_INCREMENT + partner_bonus
+	var sub_gain: int = _BASE_SUB_GAIN + (level - 1) * _SUB_GAIN_INCREMENT
+	var secondary: Array = _ATTR_SECONDARY.get(attr_type, [])
+	return {
+		"attr_type": attr_type,
+		"attr_name": _attr_name(attr_type),
+		"training_level": level,
+		"main_gain": main_gain,
+		"sub_gain": sub_gain,
+		"sub_attr_1": _attr_name(secondary[0]) if secondary.size() > 0 else "",
+		"sub_attr_2": _attr_name(secondary[1]) if secondary.size() > 1 else "",
+		"partner_bonus": partner_bonus,
+	}

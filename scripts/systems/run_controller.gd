@@ -445,3 +445,17 @@ func _get_partner_dicts() -> Array:
 	for p in _character_manager.get_partners():
 		result.append(p.to_dict())
 	return result
+
+func select_training_attr(attr_type: int) -> void:
+	## 玩家从训练面板选择了具体属性
+	if _state == STATE.NODE_SELECT:
+		var gain: int = 5 + randi() % 3
+		_run_hero.current_vit += gain if attr_type == 1 else 0
+		_run_hero.current_str += gain if attr_type == 2 else 0
+		_run_hero.current_agi += gain if attr_type == 3 else 0
+		_run_hero.current_tec += gain if attr_type == 4 else 0
+		_run_hero.current_mnd += gain if attr_type == 5 else 0
+		EventBus.emit_signal("stats_changed", "hero", {
+			str(attr_type): {"new": _run_hero.get_attr_value(attr_type), "delta": gain}
+		})
+		_advance_floor()

@@ -1,7 +1,7 @@
 class_name RunMain
 extends Control
 
-@onready var round_label: Label = $HudContainer/RoundLabel
+@onready var floor_label: Label = $HudContainer/FloorLabel
 @onready var gold_label: Label = $HudContainer/GoldLabel
 @onready var hp_label: Label = $HudContainer/HpLabel
 
@@ -13,10 +13,11 @@ extends Control
 	$HudContainer/AttrBar5,
 ]
 
-@onready var node_buttons: Array[Button] = [
-	$NodeSelectContainer/NodeButton1,
-	$NodeSelectContainer/NodeButton2,
-	$NodeSelectContainer/NodeButton3,
+@onready var option_buttons: Array[Button] = [
+	$OptionContainer/TrainButton,
+	$OptionContainer/BattleButton,
+	$OptionContainer/RestButton,
+	$OptionContainer/OutingButton,
 ]
 
 @onready var partner_slots: Array[ColorRect] = [
@@ -39,10 +40,10 @@ func _ready() -> void:
 	EventBus.gold_changed.connect(_on_gold_changed)
 	EventBus.stats_changed.connect(_on_stats_changed)
 	EventBus.pvp_result.connect(_on_pvp_result)
-	EventBus.round_changed.connect(_on_round_changed)
+	EventBus.floor_changed.connect(_on_floor_changed)
 	EventBus.node_options_presented.connect(_on_node_options_presented)
 	EventBus.run_started.connect(_on_run_started)
-	EventBus.turn_advanced.connect(_on_turn_advanced)
+	EventBus.floor_advanced.connect(_on_floor_advanced)
 
 	# --- 实例化并启动 RunController ---
 	_run_controller = RunController.new()
@@ -69,7 +70,7 @@ func _update_hud() -> void:
 	var current_hp: int = hero_data.get("current_hp", 100)
 	var max_hp: int = hero_data.get("max_hp", 100)
 
-	round_label.text = "回合: %d/30" % current_turn
+	floor_label.text = "层数: %d/30" % current_turn
 	gold_label.text = "金币: %d" % gold
 	hp_label.text = "生命: %d/%d" % [current_hp, max_hp]
 

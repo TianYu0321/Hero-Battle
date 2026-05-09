@@ -1,0 +1,45 @@
+{
+  "metadata": {
+    "version": 1,
+    "description": "训练等级配置：每属性训练5次升1级，上限LV5"
+  },
+  "levels": {
+    "LV1": {
+      "level": 1,
+      "main_gain": 5,
+      "sub_gain": 1,
+      "description": "初始训练等级"
+    },
+    "LV2": {
+      "level": 2,
+      "main_gain": 7,
+      "sub_gain": 2,
+      "description": "训练5次后升级"
+    },
+    "LV3": {
+      "level": 3,
+      "main_gain": 9,
+      "sub_gain": 3,
+      "description": "训练10次后升级，技能产生额外效果"
+    },
+    "LV4": {
+      "level": 4,
+      "main_gain": 11,
+      "sub_gain": 4,
+      "description": "训练15次后升级"
+    },
+    "LV5": {
+      "level": 5,
+      "main_gain": 13,
+      "sub_gain": 5,
+      "description": "训练20次后升级，技能额外效果数值提升"
+    }
+  },
+  "attr_secondary_map": {
+    "1": [2, 5],
+    "2": [3, 4],
+    "3": [4, 1],
+    "4": [5, 2],
+    "5": [1, 3]
+  }
+}

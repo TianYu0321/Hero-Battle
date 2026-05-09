@@ -12,6 +12,7 @@ var run_status: int = 1
 var player_account_id: String = ""
 var hero_config_id: int = 0
 var current_turn: int = 1
+var current_floor: int = 1
 var max_turn: int = 30
 var current_node_type: int = 0
 var node_history: Array = []
@@ -51,6 +52,7 @@ func to_dict() -> Dictionary:
 		"player_account_id": player_account_id,
 		"hero_config_id": hero_config_id,
 		"current_turn": current_turn,
+		"current_floor": current_floor,
 		"max_turn": max_turn,
 		"current_node_type": current_node_type,
 		"node_history": node_history.duplicate(),
@@ -91,6 +93,7 @@ static func from_dict(data: Dictionary) -> RuntimeRun:
 	run.player_account_id = data.get("player_account_id", "")
 	run.hero_config_id = data.get("hero_config_id", 0)
 	run.current_turn = data.get("current_turn", 1)
+	run.current_floor = data.get("current_floor", 1)
 	run.max_turn = data.get("max_turn", 30)
 	run.current_node_type = data.get("current_node_type", 0)
 	run.node_history = data.get("node_history", []).duplicate()

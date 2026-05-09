@@ -277,7 +277,7 @@ func _process_partner_assist(ctx: Dictionary) -> void:
 		_result.add_log(a.log)
 
 func _process_chain_check() -> void:
-	while _turn_chain_count < 4:
+	while true:
 		var chain_result: Dictionary = _chain_trigger.try_trigger_chain(_hero, _enemies, _partners, _turn_chain_count)
 		if not chain_result.triggered:
 			break

@@ -1,6 +1,6 @@
 ## res://scripts/core/chain_trigger.gd
 ## 模块: ChainTrigger
-## 职责: 连锁系统：段数上限4，同伙伴单场上限2次
+## 职责: 连锁系统：不限制段数，满足条件即可触发
 ## 依赖: DamageCalculator
 ## 被依赖: BattleEngine
 ## class_name: ChainTrigger
@@ -18,13 +18,12 @@ func _init(dc: DamageCalculator, rng: RandomNumberGenerator):
 ## 尝试触发连锁
 ## 返回 {triggered: bool, packet: Dictionary, partner_id: String, partner_name: String}
 func try_trigger_chain(hero: Dictionary, enemies: Array, partners: Array, turn_chain_count: int) -> Dictionary:
-	if turn_chain_count >= 4:
-		return {"triggered": false}
-
-	# 找一个未达连锁上限的伙伴
+	## v2.0: 不限制段数，不限制伙伴触发次数
+	
+	# 找所有存活的伙伴
 	var valid_partners: Array = []
 	for p in partners:
-		if p.get("is_alive", true) and p.get("chain_count", 0) < 2:
+		if p.get("is_alive", true):
 			valid_partners.append(p)
 
 	if valid_partners.is_empty():
@@ -36,9 +35,12 @@ func try_trigger_chain(hero: Dictionary, enemies: Array, partners: Array, turn_c
 	if target == null:
 		return {"triggered": false}
 
-	var scale: float = 0.4 + turn_chain_count * 0.1  # 连锁伤害递增
+	## 连锁伤害递增
+	var scale: float = 0.4 + turn_chain_count * 0.1
 	var pkt: Dictionary = _dc.compute_damage(partner, target, scale, "CHAIN")
 	_dc.apply_damage_packet(target, pkt)
+	
+	## v2.0: 不增加chain_count限制
 	partner.chain_count = partner.get("chain_count", 0) + 1
 
 	return {

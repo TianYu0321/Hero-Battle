@@ -83,7 +83,7 @@ func generate_candidates() -> Array[Dictionary]:
 		result.append({
 			"partner_id": str(pid),
 			"name": config.get("name", "未知伙伴"),
-			"role": config.get("title", ""),
+			"role": config.get("role", ""),
 			"attr_focus": _attr_name(config.get("favored_attr", 1)),
 			"assist_type": _trigger_name(config.get("aid_trigger_type", 1)),
 		})

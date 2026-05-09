@@ -125,11 +125,6 @@ const _FALLBACK_HERO_CONFIGS: Dictionary = {
 		"hero_id": "hero_warrior",
 		"hero_name": "勇者",
 		"class_desc": "力量型·一击必杀",
-		"base_physique": 12,
-		"base_strength": 16,
-		"base_agility": 10,
-		"base_technique": 12,
-		"base_spirit": 8,
 		"favored_attr": 2,
 		"passive_skill_id": 8001,
 		"ultimate_skill_id": 8002,
@@ -141,11 +136,6 @@ const _FALLBACK_HERO_CONFIGS: Dictionary = {
 		"hero_id": "hero_shadow_dancer",
 		"hero_name": "影舞者",
 		"class_desc": "敏捷型·多段连击",
-		"base_physique": 10,
-		"base_strength": 10,
-		"base_agility": 16,
-		"base_technique": 10,
-		"base_spirit": 12,
 		"favored_attr": 3,
 		"passive_skill_id": 8003,
 		"ultimate_skill_id": 8004,
@@ -157,11 +147,6 @@ const _FALLBACK_HERO_CONFIGS: Dictionary = {
 		"hero_id": "hero_iron_guard",
 		"hero_name": "铁卫",
 		"class_desc": "体魄型·防守反击",
-		"base_physique": 16,
-		"base_strength": 8,
-		"base_agility": 10,
-		"base_technique": 10,
-		"base_spirit": 14,
 		"favored_attr": 1,
 		"passive_skill_id": 8005,
 		"ultimate_skill_id": 8006,
@@ -177,66 +162,36 @@ const _FALLBACK_PARTNER_CONFIGS: Dictionary = {
 		"partner_name": "剑士",
 		"role": "输出型·力量",
 		"portrait_color": "#E74C3C",
-		"base_physique": 10,
-		"base_strength": 14,
-		"base_agility": 10,
-		"base_technique": 10,
-		"base_spirit": 8,
 	},
 	"partner_scout": {
 		"partner_id": "partner_scout",
 		"partner_name": "斥候",
 		"role": "输出型·敏捷",
 		"portrait_color": "#2ECC71",
-		"base_physique": 8,
-		"base_strength": 10,
-		"base_agility": 14,
-		"base_technique": 12,
-		"base_spirit": 8,
 	},
 	"partner_shieldguard": {
 		"partner_id": "partner_shieldguard",
 		"partner_name": "盾卫",
 		"role": "防御型·体魄",
 		"portrait_color": "#3498DB",
-		"base_physique": 14,
-		"base_strength": 10,
-		"base_agility": 8,
-		"base_technique": 8,
-		"base_spirit": 10,
 	},
 	"partner_pharmacist": {
 		"partner_id": "partner_pharmacist",
 		"partner_name": "药师",
 		"role": "辅助型·精神",
 		"portrait_color": "#F1C40F",
-		"base_physique": 8,
-		"base_strength": 8,
-		"base_agility": 10,
-		"base_technique": 10,
-		"base_spirit": 14,
 	},
 	"partner_sorcerer": {
 		"partner_id": "partner_sorcerer",
 		"partner_name": "术士",
 		"role": "控场型·技巧",
 		"portrait_color": "#9B59B6",
-		"base_physique": 8,
-		"base_strength": 10,
-		"base_agility": 10,
-		"base_technique": 14,
-		"base_spirit": 10,
 	},
 	"partner_hunter": {
 		"partner_id": "partner_hunter",
 		"partner_name": "猎人",
 		"role": "斩杀型·技巧",
 		"portrait_color": "#E67E22",
-		"base_physique": 10,
-		"base_strength": 12,
-		"base_agility": 12,
-		"base_technique": 12,
-		"base_spirit": 8,
 	},
 }
 
@@ -393,7 +348,7 @@ func get_all_partner_config_ids() -> Array[int]:
 	var result: Array[int] = []
 	for partner_id in _partner_configs:
 		var cfg: Dictionary = _partner_configs[partner_id]
-		var pid: int = cfg.get("id", 0)
+		var pid: int = cfg.get("hero_id", 0)
 		if pid > 0:
 			result.append(pid)
 	return result
@@ -402,6 +357,6 @@ func get_all_partner_config_ids() -> Array[int]:
 func get_hero_id_by_config_id(config_id: int) -> String:
 	for hero_id in _hero_configs:
 		var cfg: Dictionary = _hero_configs[hero_id]
-		if cfg.get("id", 0) == config_id:
+		if cfg.get("hero_id", 0) == config_id:
 			return hero_id
 	return ""

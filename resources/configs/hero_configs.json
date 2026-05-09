@@ -6,9 +6,6 @@
   },
   "entries": {
     "hero_warrior": {
-      "id": 1,
-      "name": "勇者",
-      "title": "均衡型剑士",
       "rarity": 4,
       "description": "出身平凡的少年，以均衡的剑术踏上冒险之路。",
       "icon_path": "",
@@ -23,12 +20,12 @@
       "ultimate_skill_id": 8002,
       "is_default_unlock": true,
       "unlock_condition_text": "",
-      "sort_order": 1
+      "sort_order": 1,
+      "hero_id": 1,
+      "hero_name": "勇者",
+      "class_desc": "均衡型剑士"
     },
     "hero_shadow_dancer": {
-      "id": 2,
-      "name": "影舞者",
-      "title": "极速暗杀者",
       "rarity": 4,
       "description": "行踪飘忽的暗杀者，以极速连击著称。",
       "icon_path": "",
@@ -43,12 +40,12 @@
       "ultimate_skill_id": 8004,
       "is_default_unlock": false,
       "unlock_condition_text": "勇者通关1次",
-      "sort_order": 2
+      "sort_order": 2,
+      "hero_id": 2,
+      "hero_name": "影舞者",
+      "class_desc": "极速暗杀者"
     },
     "hero_iron_guard": {
-      "id": 3,
-      "name": "铁卫",
-      "title": "不屈守护者",
       "rarity": 4,
       "description": "身披重甲的守护者，以坚韧和反击守护同伴。",
       "icon_path": "",
@@ -63,7 +60,10 @@
       "ultimate_skill_id": 8006,
       "is_default_unlock": false,
       "unlock_condition_text": "影舞者通关1次",
-      "sort_order": 3
+      "sort_order": 3,
+      "hero_id": 3,
+      "hero_name": "铁卫",
+      "class_desc": "不屈守护者"
     }
   }
 }
