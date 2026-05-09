@@ -15,6 +15,7 @@ const _REQUIRED_SAVE_FIELDS: Array[String] = [
 	"party",
 	"inventory",
 	"gold",
+	"mocheng_coin",
 	"hero_stats",
 	"timestamp",
 ]
@@ -168,3 +169,36 @@ func _generate_archive_id() -> String:
 	var timestamp: int = Time.get_unix_time_from_system()
 	var random_part: int = randi() % 10000
 	return "ARC_%d_%04d" % [timestamp, random_part]
+
+## 魔城币相关
+func get_mocheng_coin() -> int:
+	var data: Dictionary = _load_player_data()
+	return data.get("mocheng_coin", 0)
+
+func add_mocheng_coin(amount: int) -> void:
+	var data: Dictionary = _load_player_data()
+	data["mocheng_coin"] = data.get("mocheng_coin", 0) + amount
+	_save_player_data(data)
+
+func spend_mocheng_coin(amount: int) -> bool:
+	var data: Dictionary = _load_player_data()
+	var current: int = data.get("mocheng_coin", 0)
+	if current < amount:
+		return false
+	data["mocheng_coin"] = current - amount
+	_save_player_data(data)
+	return true
+
+func _load_player_data() -> Dictionary:
+	var file_path: String = ConfigManager.SAVE_DIR + "player_data.json"
+	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
+	if data.is_empty():
+		data = {"mocheng_coin": 0, "unlocked_partners": [], "net_wins": 0}
+	return data
+
+func _save_player_data(data: Dictionary) -> void:
+	var file_path: String = ConfigManager.SAVE_DIR + "player_data.json"
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(data, "\t"))
+		file.close()

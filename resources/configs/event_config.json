@@ -1,0 +1,38 @@
+{
+  "metadata": {
+    "version": 1,
+    "description": "外出事件池权重配置"
+  },
+  "events": [
+    {
+      "type": "rest",
+      "weight": 30,
+      "desc": "休息恢复15%生命"
+    },
+    {
+      "type": "shop",
+      "weight": 20,
+      "desc": "发现商店"
+    },
+    {
+      "type": "trap",
+      "weight": 15,
+      "desc": "遭遇陷阱"
+    },
+    {
+      "type": "heal",
+      "weight": 15,
+      "desc": "发现回复泉"
+    },
+    {
+      "type": "special",
+      "weight": 15,
+      "desc": "特殊事件"
+    },
+    {
+      "type": "elite",
+      "weight": 5,
+      "desc": "精英战"
+    }
+  ]
+}

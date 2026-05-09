@@ -8,11 +8,11 @@ class_name SettlementSystem
 extends Node
 
 # 权重从配置表读取，硬编码仅作为fallback
-var _weight_final: float = 0.30
-var _weight_training: float = 0.25
-var _weight_pvp: float = 0.20
-var _weight_purity: float = 0.15
-var _weight_chain: float = 0.10
+var _weight_final: float = 0.40
+var _weight_attr: float = 0.25
+var _weight_level: float = 0.20
+var _weight_gold: float = 0.15
+## var _weight_chain: float = 0.10  ## v2.0已删除
 
 var _grade_s: int = 85
 var _grade_a: int = 70
