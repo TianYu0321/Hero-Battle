@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "version": 1,
+    "last_modified": "2026-05-09",
+    "description": "伙伴锻炼支援配置表"
+  },
+  "entries": {
+    "7001": {
+      "id": 7001,
+      "partner_id": "partner_swordsman",
+      "supported_attr": 2,
+      "bonus_lv1": 2,
+      "bonus_lv3": 4,
+      "bonus_lv5": 6,
+      "extra_effect": "",
+      "cost_hp_on_training": 0
+    },
+    "7002": {
+      "id": 7002,
+      "partner_id": "partner_scout",
+      "supported_attr": 3,
+      "bonus_lv1": 2,
+      "bonus_lv3": 4,
+      "bonus_lv5": 6,
+      "extra_effect": "",
+      "cost_hp_on_training": 0
+    },
+    "7003": {
+      "id": 7003,
+      "partner_id": "partner_shieldguard",
+      "supported_attr": 1,
+      "bonus_lv1": 2,
+      "bonus_lv3": 4,
+      "bonus_lv5": 6,
+      "extra_effect": "",
+      "cost_hp_on_training": 0
+    },
+    "7004": {
+      "id": 7004,
+      "partner_id": "partner_pharmacist",
+      "supported_attr": 5,
+      "bonus_lv1": 2,
+      "bonus_lv3": 4,
+      "bonus_lv5": 6,
+      "extra_effect": "锻炼精神时额外回复1点HP",
+      "cost_hp_on_training": 0
+    },
+    "7005": {
+      "id": 7005,
+      "partner_id": "partner_sorcerer",
+      "supported_attr": 4,
+      "bonus_lv1": 2,
+      "bonus_lv3": 4,
+      "bonus_lv5": 6,
+      "extra_effect": "",
+      "cost_hp_on_training": 0
+    },
+    "7006": {
+      "id": 7006,
+      "partner_id": "partner_hunter",
+      "supported_attr": 4,
+      "bonus_lv1": 2,
+      "bonus_lv3": 4,
+      "bonus_lv5": 6,
+      "extra_effect": "锻炼技巧时额外+1金币",
+      "cost_hp_on_training": 0
+    }
+  }
+}

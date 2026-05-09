@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "version": 1,
+    "last_modified": "2026-05-09",
+    "description": "节点类型定义表"
+  },
+  "entries": {
+    "4001": {
+      "id": 4001,
+      "node_type": 1,
+      "node_name": "锻炼",
+      "description": "选择一项属性进行锻炼，提升主角能力。",
+      "icon_path": "",
+      "can_skip": false,
+      "is_fixed_turn": false,
+      "fixed_turn": 0,
+      "sort_order": 1
+    },
+    "4002": {
+      "id": 4002,
+      "node_type": 2,
+      "node_name": "普通战斗",
+      "description": "遭遇普通敌人，胜利获得金币。",
+      "icon_path": "",
+      "can_skip": false,
+      "is_fixed_turn": false,
+      "fixed_turn": 0,
+      "sort_order": 2
+    },
+    "4003": {
+      "id": 4003,
+      "node_type": 3,
+      "node_name": "精英战",
+      "description": "遭遇精英敌人，胜利获得稀有奖励，失败则本局结束。",
+      "icon_path": "",
+      "can_skip": true,
+      "is_fixed_turn": false,
+      "fixed_turn": 0,
+      "sort_order": 3
+    },
+    "4004": {
+      "id": 4004,
+      "node_type": 4,
+      "node_name": "商店",
+      "description": "购买主角升级或伙伴升级。",
+      "icon_path": "",
+      "can_skip": true,
+      "is_fixed_turn": false,
+      "fixed_turn": 0,
+      "sort_order": 4
+    },
+    "4005": {
+      "id": 4005,
+      "node_type": 5,
+      "node_name": "救援",
+      "description": "遇到需要救援的伙伴，选择一位加入队伍。",
+      "icon_path": "",
+      "can_skip": false,
+      "is_fixed_turn": true,
+      "fixed_turn": 0,
+      "sort_order": 5
+    },
+    "4006": {
+      "id": 4006,
+      "node_type": 6,
+      "node_name": "PVP检定",
+      "description": "与其他斗士进行PVP检定。",
+      "icon_path": "",
+      "can_skip": false,
+      "is_fixed_turn": true,
+      "fixed_turn": 0,
+      "sort_order": 6
+    },
+    "4007": {
+      "id": 4007,
+      "node_type": 7,
+      "node_name": "终局战",
+      "description": "第30回合的终局之战，决定本局胜负。",
+      "icon_path": "",
+      "can_skip": false,
+      "is_fixed_turn": true,
+      "fixed_turn": 30,
+      "sort_order": 7
+    }
+  }
+}

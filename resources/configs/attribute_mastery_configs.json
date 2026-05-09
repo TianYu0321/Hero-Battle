@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "version": 1,
+    "last_modified": "2026-05-09",
+    "description": "属性熟练度阶段配置表"
+  },
+  "entries": {
+    "5001": { "id": 5001, "attr_type": 1, "stage": 1, "stage_name": "生疏", "training_count_min": 0, "training_count_max": 0, "training_bonus": 0, "display_color": "#999999" },
+    "5002": { "id": 5002, "attr_type": 1, "stage": 2, "stage_name": "熟悉", "training_count_min": 1, "training_count_max": 3, "training_bonus": 2, "display_color": "#66CC66" },
+    "5003": { "id": 5003, "attr_type": 1, "stage": 3, "stage_name": "精通", "training_count_min": 4, "training_count_max": 6, "training_bonus": 4, "display_color": "#6699FF" },
+    "5004": { "id": 5004, "attr_type": 1, "stage": 4, "stage_name": "专精", "training_count_min": 7, "training_count_max": -1, "training_bonus": 5, "display_color": "#CC66FF" },
+    "5005": { "id": 5005, "attr_type": 2, "stage": 1, "stage_name": "生疏", "training_count_min": 0, "training_count_max": 0, "training_bonus": 0, "display_color": "#999999" },
+    "5006": { "id": 5006, "attr_type": 2, "stage": 2, "stage_name": "熟悉", "training_count_min": 1, "training_count_max": 3, "training_bonus": 2, "display_color": "#66CC66" },
+    "5007": { "id": 5007, "attr_type": 2, "stage": 3, "stage_name": "精通", "training_count_min": 4, "training_count_max": 6, "training_bonus": 4, "display_color": "#6699FF" },
+    "5008": { "id": 5008, "attr_type": 2, "stage": 4, "stage_name": "专精", "training_count_min": 7, "training_count_max": -1, "training_bonus": 5, "display_color": "#CC66FF" },
+    "5009": { "id": 5009, "attr_type": 3, "stage": 1, "stage_name": "生疏", "training_count_min": 0, "training_count_max": 0, "training_bonus": 0, "display_color": "#999999" },
+    "5010": { "id": 5010, "attr_type": 3, "stage": 2, "stage_name": "熟悉", "training_count_min": 1, "training_count_max": 3, "training_bonus": 2, "display_color": "#66CC66" },
+    "5011": { "id": 5011, "attr_type": 3, "stage": 3, "stage_name": "精通", "training_count_min": 4, "training_count_max": 6, "training_bonus": 4, "display_color": "#6699FF" },
+    "5012": { "id": 5012, "attr_type": 3, "stage": 4, "stage_name": "专精", "training_count_min": 7, "training_count_max": -1, "training_bonus": 5, "display_color": "#CC66FF" },
+    "5013": { "id": 5013, "attr_type": 4, "stage": 1, "stage_name": "生疏", "training_count_min": 0, "training_count_max": 0, "training_bonus": 0, "display_color": "#999999" },
+    "5014": { "id": 5014, "attr_type": 4, "stage": 2, "stage_name": "熟悉", "training_count_min": 1, "training_count_max": 3, "training_bonus": 2, "display_color": "#66CC66" },
+    "5015": { "id": 5015, "attr_type": 4, "stage": 3, "stage_name": "精通", "training_count_min": 4, "training_count_max": 6, "training_bonus": 4, "display_color": "#6699FF" },
+    "5016": { "id": 5016, "attr_type": 4, "stage": 4, "stage_name": "专精", "training_count_min": 7, "training_count_max": -1, "training_bonus": 5, "display_color": "#CC66FF" },
+    "5017": { "id": 5017, "attr_type": 5, "stage": 1, "stage_name": "生疏", "training_count_min": 0, "training_count_max": 0, "training_bonus": 0, "display_color": "#999999" },
+    "5018": { "id": 5018, "attr_type": 5, "stage": 2, "stage_name": "熟悉", "training_count_min": 1, "training_count_max": 3, "training_bonus": 2, "display_color": "#66CC66" },
+    "5019": { "id": 5019, "attr_type": 5, "stage": 3, "stage_name": "精通", "training_count_min": 4, "training_count_max": 6, "training_bonus": 4, "display_color": "#6699FF" },
+    "5020": { "id": 5020, "attr_type": 5, "stage": 4, "stage_name": "专精", "training_count_min": 7, "training_count_max": -1, "training_bonus": 5, "display_color": "#CC66FF" }
+  }
+}

@@ -1,0 +1,79 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/archive_view/archive_view.gd" id="1_view"]
+[ext_resource type="PackedScene" path="res://scenes/archive_view/archive_detail.tscn" id="2_detail"]
+[ext_resource type="PackedScene" path="res://scenes/archive_view/leaderboard_panel.tscn" id="3_leaderboard"]
+
+[node name="ArchiveView" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_view")
+
+[node name="BgPanel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.15, 0.18, 1)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="VBox/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 28
+text = "斗士档案"
+
+[node name="BackButton" type="Button" parent="VBox/Header"]
+layout_mode = 2
+text = "返回"
+
+[node name="TabButtons" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BtnArchives" type="Button" parent="VBox/TabButtons"]
+layout_mode = 2
+text = "档案列表"
+
+[node name="BtnLeaderboard" type="Button" parent="VBox/TabButtons"]
+layout_mode = 2
+text = "排行榜"
+
+[node name="Scroll" type="ScrollContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+[node name="ListContainer" type="VBoxContainer" parent="VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = Control.SIZE_EXPAND_FILL
+size_flags_vertical = Control.SIZE_EXPAND_FILL
+theme_override_constants/separation = 10
+
+[node name="ArchiveDetail" parent="VBox" instance=ExtResource("2_detail")]
+visible = false
+layout_mode = 2
+
+[node name="LeaderboardPanel" parent="VBox" instance=ExtResource("3_leaderboard")]
+visible = false
+layout_mode = 2

@@ -1,0 +1,261 @@
+[gd_scene load_steps=2 format=3 uid="uid://h5s6e7f8g9i0j"]
+
+[ext_resource type="Script" path="res://scenes/hero_select/hero_select.gd" id="1_heroselect"]
+
+[node name="HeroSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_heroselect")
+
+[node name="BgPanel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.101961, 0.101961, 0.180392, 1)
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 60.0
+offset_right = 150.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 28
+text = "选择你的主角"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeroCards" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -340.0
+offset_top = -175.0
+offset_right = 340.0
+offset_bottom = 175.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 40
+
+[node name="HeroCard1" type="VBoxContainer" parent="HeroCards"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="HeroCards/HeroCard1"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.752941, 0.223529, 0.168627, 1)
+
+[node name="NameLabel" type="Label" parent="HeroCards/HeroCard1"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "勇者"
+horizontal_alignment = 1
+
+[node name="ClassDesc" type="Label" parent="HeroCards/HeroCard1"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "力量型·一击必杀"
+horizontal_alignment = 1
+
+[node name="StatsPreview" type="VBoxContainer" parent="HeroCards/HeroCard1"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="StatPhysique" type="Label" parent="HeroCards/HeroCard1/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "体魄: 12"
+
+[node name="StatStrength" type="Label" parent="HeroCards/HeroCard1/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "力量: 16 ★"
+
+[node name="StatAgility" type="Label" parent="HeroCards/HeroCard1/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "敏捷: 10"
+
+[node name="StatTechnique" type="Label" parent="HeroCards/HeroCard1/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "技巧: 12"
+
+[node name="StatSpirit" type="Label" parent="HeroCards/HeroCard1/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "精神: 8"
+
+[node name="SelectBtn" type="Button" parent="HeroCards/HeroCard1"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 40)
+size_flags_horizontal = 4
+text = "选择"
+
+[node name="HeroCard2" type="VBoxContainer" parent="HeroCards"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="HeroCards/HeroCard2"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.556863, 0.266667, 0.678431, 1)
+
+[node name="NameLabel" type="Label" parent="HeroCards/HeroCard2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "影舞者"
+horizontal_alignment = 1
+
+[node name="ClassDesc" type="Label" parent="HeroCards/HeroCard2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "敏捷型·多段连击"
+horizontal_alignment = 1
+
+[node name="StatsPreview" type="VBoxContainer" parent="HeroCards/HeroCard2"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="StatPhysique" type="Label" parent="HeroCards/HeroCard2/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "体魄: 10"
+
+[node name="StatStrength" type="Label" parent="HeroCards/HeroCard2/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "力量: 10"
+
+[node name="StatAgility" type="Label" parent="HeroCards/HeroCard2/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "敏捷: 16 ★"
+
+[node name="StatTechnique" type="Label" parent="HeroCards/HeroCard2/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "技巧: 10"
+
+[node name="StatSpirit" type="Label" parent="HeroCards/HeroCard2/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "精神: 12"
+
+[node name="SelectBtn" type="Button" parent="HeroCards/HeroCard2"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 40)
+size_flags_horizontal = 4
+text = "选择"
+
+[node name="HeroCard3" type="VBoxContainer" parent="HeroCards"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="HeroCards/HeroCard3"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.160784, 0.501961, 0.72549, 1)
+
+[node name="NameLabel" type="Label" parent="HeroCards/HeroCard3"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "铁卫"
+horizontal_alignment = 1
+
+[node name="ClassDesc" type="Label" parent="HeroCards/HeroCard3"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "体魄型·防守反击"
+horizontal_alignment = 1
+
+[node name="StatsPreview" type="VBoxContainer" parent="HeroCards/HeroCard3"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="StatPhysique" type="Label" parent="HeroCards/HeroCard3/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "体魄: 16 ★"
+
+[node name="StatStrength" type="Label" parent="HeroCards/HeroCard3/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "力量: 8"
+
+[node name="StatAgility" type="Label" parent="HeroCards/HeroCard3/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "敏捷: 10"
+
+[node name="StatTechnique" type="Label" parent="HeroCards/HeroCard3/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "技巧: 10"
+
+[node name="StatSpirit" type="Label" parent="HeroCards/HeroCard3/StatsPreview"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "精神: 14"
+
+[node name="SelectBtn" type="Button" parent="HeroCards/HeroCard3"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 40)
+size_flags_horizontal = 4
+text = "选择"
+
+[node name="DetailPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -160.0
+offset_right = 300.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="DetailLabel" type="Label" parent="DetailPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "选择一名主角开始你的冒险。每位主角拥有独特的战斗风格和必杀技。"
+autowrap_mode = 3
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BackBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 100.0
+offset_bottom = 56.0
+text = "返回"

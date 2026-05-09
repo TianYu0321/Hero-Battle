@@ -1,0 +1,106 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/archive_view/archive_detail.gd" id="1_detail"]
+
+[node name="ArchiveDetail" type="PanelContainer"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_detail")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 1270.0
+offset_bottom = 710.0
+theme_override_constants/separation = 12
+
+[node name="TitleRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="VBox/TitleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "斗士档案详情"
+
+[node name="CloseButton" type="Button" parent="VBox/TitleRow"]
+layout_mode = 2
+text = "X"
+
+[node name="HeroRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="HeroNameLabel" type="Label" parent="VBox/HeroRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "勇者"
+
+[node name="RatingLabel" type="Label" parent="VBox/HeroRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "评级: C"
+
+[node name="TotalScoreLabel" type="Label" parent="VBox/HeroRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "总分: 52"
+
+[node name="AttrSection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="AttrTitle" type="Label" parent="VBox/AttrSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "五维快照"
+
+[node name="AttrContainer" type="VBoxContainer" parent="VBox/AttrSection"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="PartnerSection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="PartnerTitle" type="Label" parent="VBox/PartnerSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "伙伴队伍"
+
+[node name="PartnerContainer" type="HBoxContainer" parent="VBox/PartnerSection"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ScoreSection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="ScoreTitle" type="Label" parent="VBox/ScoreSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "评分明细"
+
+[node name="ScoreContainer" type="VBoxContainer" parent="VBox/ScoreSection"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="StatSection" type="VBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="StatTitle" type="Label" parent="VBox/StatSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "战斗统计"
+
+[node name="StatContainer" type="VBoxContainer" parent="VBox/StatSection"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="BackButton" type="Button" parent="VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "返回列表"

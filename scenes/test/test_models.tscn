@@ -1,0 +1,36 @@
+[gd_scene load_steps=2 format=3 uid="uid://cjm0kxx4v0q01"]
+
+[ext_resource type="Script" path="res://scenes/test/test_models.gd" id="1_abc12"]
+
+[node name="TestModels" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_abc12")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -25.0
+offset_right = 100.0
+offset_bottom = 25.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "运行测试"
+
+[node name="LabelResult" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 23.0
+grow_horizontal = 2
+text = "点击按钮运行测试"
+horizontal_alignment = 1

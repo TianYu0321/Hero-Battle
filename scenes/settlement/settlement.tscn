@@ -1,0 +1,99 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/settlement/settlement.gd" id="1_pqr12"]
+
+[node name="Settlement" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_pqr12")
+
+[node name="RatingLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 80.0
+offset_right = 740.0
+offset_bottom = 180.0
+theme_override_font_sizes/font_size = 72
+text = "S"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttrSnapshot" type="Control" parent="."]
+layout_mode = 0
+offset_left = 490.0
+offset_top = 240.0
+offset_right = 790.0
+offset_bottom = 440.0
+
+[node name="AttrLabel1" type="Label" parent="AttrSnapshot"]
+layout_mode = 0
+offset_right = 300.0
+offset_bottom = 36.0
+text = "体魄: 50"
+
+[node name="AttrLabel2" type="Label" parent="AttrSnapshot"]
+layout_mode = 0
+offset_top = 40.0
+offset_right = 300.0
+offset_bottom = 76.0
+text = "力量: 50"
+
+[node name="AttrLabel3" type="Label" parent="AttrSnapshot"]
+layout_mode = 0
+offset_top = 80.0
+offset_right = 300.0
+offset_bottom = 116.0
+text = "敏捷: 50"
+
+[node name="AttrLabel4" type="Label" parent="AttrSnapshot"]
+layout_mode = 0
+offset_top = 120.0
+offset_right = 300.0
+offset_bottom = 156.0
+text = "技巧: 50"
+
+[node name="AttrLabel5" type="Label" parent="AttrSnapshot"]
+layout_mode = 0
+offset_top = 160.0
+offset_right = 300.0
+offset_bottom = 196.0
+text = "精神: 50"
+
+[node name="ArchiveButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 440.0
+offset_top = 480.0
+offset_right = 640.0
+offset_bottom = 520.0
+text = "生成档案"
+
+[node name="ViewArchiveButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 440.0
+offset_top = 530.0
+offset_right = 640.0
+offset_bottom = 570.0
+visible = false
+text = "查看档案"
+
+[node name="SavedHintLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 440.0
+offset_top = 450.0
+offset_right = 640.0
+offset_bottom = 476.0
+theme_override_colors/font_color = Color(0.2, 0.8, 0.2, 1)
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MenuButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 440.0
+offset_top = 600.0
+offset_right = 640.0
+offset_bottom = 640.0
+text = "返回主菜单"

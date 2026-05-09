@@ -1,0 +1,308 @@
+[gd_scene load_steps=2 format=3 uid="uid://t1u2v3w4x5y6z"]
+
+[ext_resource type="Script" path="res://scenes/tavern/tavern.gd" id="1_tavern"]
+
+[node name="Tavern" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_tavern")
+
+[node name="BgPanel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.172549, 0.141176, 0.0980392, 1)
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 60.0
+offset_right = 200.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 28
+text = "酒馆集结 - 选择2名首发伙伴"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 100.0
+offset_right = 100.0
+offset_bottom = 130.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.905882, 0.298039, 0.235294, 1)
+text = "已选择: 0/2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PartnerGrid" type="GridContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -240.0
+offset_right = 300.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+columns = 3
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 20
+
+[node name="PartnerSlot1" type="VBoxContainer" parent="PartnerGrid"]
+custom_minimum_size = Vector2(180, 220)
+layout_mode = 2
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot1"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.905882, 0.298039, 0.235294, 1)
+
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot1"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "剑士"
+horizontal_alignment = 1
+
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot1"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "输出型·力量"
+horizontal_alignment = 1
+
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot1"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot1"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "加入队伍"
+
+[node name="PartnerSlot2" type="VBoxContainer" parent="PartnerGrid"]
+custom_minimum_size = Vector2(180, 220)
+layout_mode = 2
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot2"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.180392, 0.8, 0.443137, 1)
+
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "斥候"
+horizontal_alignment = 1
+
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "输出型·敏捷"
+horizontal_alignment = 1
+
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot2"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot2"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "加入队伍"
+
+[node name="PartnerSlot3" type="VBoxContainer" parent="PartnerGrid"]
+custom_minimum_size = Vector2(180, 220)
+layout_mode = 2
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot3"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.203922, 0.596078, 0.858824, 1)
+
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot3"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "盾卫"
+horizontal_alignment = 1
+
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot3"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "防御型·体魄"
+horizontal_alignment = 1
+
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot3"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot3"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "加入队伍"
+
+[node name="PartnerSlot4" type="VBoxContainer" parent="PartnerGrid"]
+custom_minimum_size = Vector2(180, 220)
+layout_mode = 2
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot4"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.945098, 0.768627, 0.0588235, 1)
+
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot4"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "药师"
+horizontal_alignment = 1
+
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot4"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "辅助型·精神"
+horizontal_alignment = 1
+
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot4"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot4"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "加入队伍"
+
+[node name="PartnerSlot5" type="VBoxContainer" parent="PartnerGrid"]
+custom_minimum_size = Vector2(180, 220)
+layout_mode = 2
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot5"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.607843, 0.34902, 0.713726, 1)
+
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot5"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "术士"
+horizontal_alignment = 1
+
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot5"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "控场型·技巧"
+horizontal_alignment = 1
+
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot5"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot5"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "加入队伍"
+
+[node name="PartnerSlot6" type="VBoxContainer" parent="PartnerGrid"]
+custom_minimum_size = Vector2(180, 220)
+layout_mode = 2
+alignment = 1
+
+[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot6"]
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.901961, 0.494118, 0.133333, 1)
+
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot6"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "猎人"
+horizontal_alignment = 1
+
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot6"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+text = "斩杀型·技巧"
+horizontal_alignment = 1
+
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot6"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Lv.1"
+horizontal_alignment = 1
+
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot6"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "加入队伍"
+
+[node name="ConfirmBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -110.0
+offset_right = 100.0
+offset_bottom = -60.0
+grow_horizontal = 2
+grow_vertical = 0
+custom_minimum_size = Vector2(200, 50)
+disabled = true
+text = "确认出发"
+
+[node name="BackBtn" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 100.0
+offset_bottom = 56.0
+text = "返回"

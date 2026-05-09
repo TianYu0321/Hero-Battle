@@ -1,0 +1,157 @@
+## res://autoload/save_manager.gd
+## 模块: SaveManager
+## 职责: 本地JSON存档读写，斗士档案生成与持久化
+## 依赖: ConfigManager（引用数据结构）
+## 被依赖: RunController, MenuUI
+## class_name: SaveManager
+
+extends Node
+
+const _REQUIRED_SAVE_FIELDS: Array[String] = [
+	"version",
+	"hero_id",
+	"current_round",
+	"current_node",
+	"party",
+	"inventory",
+	"gold",
+	"hero_stats",
+	"timestamp",
+]
+
+var _current_version: int = 1
+
+func _ready() -> void:
+	_ensure_save_dir()
+
+func _ensure_save_dir() -> void:
+	var dir: DirAccess = DirAccess.open("user://")
+	if dir == null:
+		push_error("[SaveManager] Cannot open user:// directory")
+		return
+	if not dir.dir_exists("saves"):
+		var err: Error = dir.make_dir("saves")
+		if err != OK:
+			push_error("[SaveManager] Failed to create saves directory: %d" % err)
+
+func save_run_state(run_data: Dictionary, is_auto: bool = true) -> bool:
+	var slot_id: int = 1
+	var file_path: String = ConfigManager.SAVE_DIR + "save_%03d.json" % slot_id
+	var data: Dictionary = run_data.duplicate(true)
+	data["version"] = _current_version
+	data["timestamp"] = Time.get_unix_time_from_system()
+	data["is_auto_save"] = is_auto
+
+	var json_text: String = JSON.stringify(data, "\t")
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+	if file == null:
+		push_error("[SaveManager] Failed to open file for writing: %s" % file_path)
+		EventBus.save_failed.emit(FileAccess.get_open_error(), "Failed to open save file", {"slot": slot_id})
+		return false
+
+	file.store_string(json_text)
+	file.close()
+
+	EventBus.game_saved.emit(slot_id, data["timestamp"], data.get("current_round", 0), is_auto)
+	return true
+
+func load_latest_run() -> Dictionary:
+	var latest_path: String = ""
+	var latest_time: int = 0
+	var dir: DirAccess = DirAccess.open(ConfigManager.SAVE_DIR)
+	if dir == null:
+		push_warning("[SaveManager] Save directory not found")
+		return {}
+
+	dir.list_dir_begin()
+	var file_name: String = dir.get_next()
+	while not file_name.is_empty():
+		if file_name.begins_with("save_") and file_name.ends_with(".json"):
+			var path: String = ConfigManager.SAVE_DIR + file_name
+			var modified: int = FileAccess.get_modified_time(path)
+			if modified > latest_time:
+				latest_time = modified
+				latest_path = path
+		file_name = dir.get_next()
+	dir.list_dir_end()
+
+	if latest_path.is_empty():
+		return {}
+
+	var data: Dictionary = ConfigManager._load_json_safe(latest_path, {})
+	if data.is_empty():
+		EventBus.load_failed.emit(4001, "Corrupt or empty save file", 1)
+		return {}
+
+	if not _validate_save_integrity(data):
+		EventBus.load_failed.emit(4001, "Save file missing required fields", 1)
+		return {}
+
+	EventBus.game_loaded.emit(data)
+	return data
+
+func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
+	var archive: Dictionary = archive_data.duplicate(true)
+	if not archive.has("archive_id") or archive.get("archive_id", "").is_empty():
+		archive["archive_id"] = _generate_archive_id()
+	if not archive.has("created_at"):
+		archive["created_at"] = Time.get_unix_time_from_system()
+	archive["is_fixed"] = true
+
+	var file_path: String = ConfigManager.ARCHIVE_FILE
+	var existing: Dictionary = ConfigManager._load_json_safe(file_path, {"version": 1, "archives": [], "last_updated": 0})
+	if not existing.has("archives"):
+		existing["archives"] = []
+	existing["archives"].append(archive)
+	existing["last_updated"] = Time.get_unix_time_from_system()
+	existing["version"] = _current_version
+
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(existing, "\t"))
+		file.close()
+	else:
+		push_error("[SaveManager] Failed to write archive file")
+
+	EventBus.archive_generated.emit(archive)
+	EventBus.archive_saved.emit(archive)
+	return archive
+
+func load_archives(sort_by: String = "date", limit: int = 100, filter_hero: String = "") -> Array[Dictionary]:
+	var file_path: String = ConfigManager.ARCHIVE_FILE
+	var data: Dictionary = ConfigManager._load_json_safe(file_path, {"archives": []})
+	var archives: Array = data.get("archives", [])
+	var result: Array[Dictionary] = []
+	for entry in archives:
+		if entry is Dictionary and entry.get("is_fixed", false):
+			# 按主角名称过滤
+			if not filter_hero.is_empty():
+				var hero_name: String = entry.get("hero_name", "")
+				if hero_name != filter_hero:
+					continue
+			result.append(entry)
+
+	# 排序
+	match sort_by:
+		"score":
+			result.sort_custom(func(a, b): return a.get("final_score", 0) > b.get("final_score", 0))
+		"grade":
+			var grade_order: Dictionary = {"S": 5, "A": 4, "B": 3, "C": 2, "D": 1, "": 0}
+			result.sort_custom(func(a, b): return grade_order.get(a.get("final_grade", ""), 0) > grade_order.get(b.get("final_grade", ""), 0))
+		_:
+			# 默认按日期降序（最新的在前面）
+			result.sort_custom(func(a, b): return a.get("created_at", 0) > b.get("created_at", 0))
+
+	return result.slice(0, limit)
+
+func _validate_save_integrity(save_data: Dictionary) -> bool:
+	for field in _REQUIRED_SAVE_FIELDS:
+		if not save_data.has(field):
+			push_warning("[SaveManager] Save missing required field: %s" % field)
+			return false
+	return true
+
+func _generate_archive_id() -> String:
+	var timestamp: int = Time.get_unix_time_from_system()
+	var random_part: int = randi() % 10000
+	return "ARC_%d_%04d" % [timestamp, random_part]

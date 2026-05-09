@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/shop/shop_popup.gd" id="1_ghi56"]
+
+[node name="ShopPopup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ghi56")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="Content" type="Control" parent="Overlay"]
+layout_mode = 0
+offset_left = 390.0
+offset_top = 160.0
+offset_right = 890.0
+offset_bottom = 560.0
+
+[node name="TitleLabel" type="Label" parent="Overlay/Content"]
+layout_mode = 0
+offset_right = 500.0
+offset_bottom = 40.0
+text = "商店"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ItemContainer" type="VBoxContainer" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 60.0
+offset_right = 450.0
+offset_bottom = 300.0
+
+[node name="ItemButton1" type="Button" parent="Overlay/Content/ItemContainer"]
+layout_mode = 2
+text = "主角升级 - 50金币"
+
+[node name="ItemButton2" type="Button" parent="Overlay/Content/ItemContainer"]
+layout_mode = 2
+text = "伙伴升级 - 30金币"
+
+[node name="ItemButton3" type="Button" parent="Overlay/Content/ItemContainer"]
+layout_mode = 2
+text = "生命恢复 - 20金币"
+
+[node name="ItemButton4" type="Button" parent="Overlay/Content/ItemContainer"]
+layout_mode = 2
+text = "属性提升 - 40金币"
+
+[node name="LeaveButton" type="Button" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 340.0
+offset_right = 300.0
+offset_bottom = 380.0
+text = "离开"

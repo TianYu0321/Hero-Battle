@@ -1,0 +1,254 @@
+[gd_scene load_steps=1 format=3]
+
+[ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
+
+[node name="RunMain" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_abc12")
+
+[node name="HudContainer" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 140.0
+grow_horizontal = 2
+
+[node name="RoundLabel" type="Label" parent="HudContainer"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 150.0
+offset_bottom = 50.0
+text = "回合: 1/30"
+
+[node name="GoldLabel" type="Label" parent="HudContainer"]
+layout_mode = 0
+offset_left = 180.0
+offset_top = 20.0
+offset_right = 330.0
+offset_bottom = 50.0
+text = "金币: 100"
+
+[node name="HpLabel" type="Label" parent="HudContainer"]
+layout_mode = 0
+offset_left = 360.0
+offset_top = 20.0
+offset_right = 510.0
+offset_bottom = 50.0
+text = "生命: 100/100"
+
+[node name="AttrBar1" type="ProgressBar" parent="HudContainer"]
+layout_mode = 0
+offset_left = 800.0
+offset_top = 10.0
+offset_right = 1000.0
+offset_bottom = 30.0
+value = 50.0
+
+[node name="AttrLabel1" type="Label" parent="HudContainer"]
+layout_mode = 0
+offset_left = 1010.0
+offset_top = 10.0
+offset_right = 1100.0
+offset_bottom = 30.0
+text = "体魄"
+
+[node name="AttrBar2" type="ProgressBar" parent="HudContainer"]
+layout_mode = 0
+offset_left = 800.0
+offset_top = 35.0
+offset_right = 1000.0
+offset_bottom = 55.0
+value = 50.0
+
+[node name="AttrLabel2" type="Label" parent="HudContainer"]
+layout_mode = 0
+offset_left = 1010.0
+offset_top = 35.0
+offset_right = 1100.0
+offset_bottom = 55.0
+text = "力量"
+
+[node name="AttrBar3" type="ProgressBar" parent="HudContainer"]
+layout_mode = 0
+offset_left = 800.0
+offset_top = 60.0
+offset_right = 1000.0
+offset_bottom = 80.0
+value = 50.0
+
+[node name="AttrLabel3" type="Label" parent="HudContainer"]
+layout_mode = 0
+offset_left = 1010.0
+offset_top = 60.0
+offset_right = 1100.0
+offset_bottom = 80.0
+text = "敏捷"
+
+[node name="AttrBar4" type="ProgressBar" parent="HudContainer"]
+layout_mode = 0
+offset_left = 800.0
+offset_top = 85.0
+offset_right = 1000.0
+offset_bottom = 105.0
+value = 50.0
+
+[node name="AttrLabel4" type="Label" parent="HudContainer"]
+layout_mode = 0
+offset_left = 1010.0
+offset_top = 85.0
+offset_right = 1100.0
+offset_bottom = 105.0
+text = "技巧"
+
+[node name="AttrBar5" type="ProgressBar" parent="HudContainer"]
+layout_mode = 0
+offset_left = 800.0
+offset_top = 110.0
+offset_right = 1000.0
+offset_bottom = 130.0
+value = 50.0
+
+[node name="AttrLabel5" type="Label" parent="HudContainer"]
+layout_mode = 0
+offset_left = 1010.0
+offset_top = 110.0
+offset_right = 1100.0
+offset_bottom = 130.0
+text = "精神"
+
+[node name="NodeSelectContainer" type="Control" parent="."]
+layout_mode = 0
+offset_left = 440.0
+offset_top = 280.0
+offset_right = 840.0
+offset_bottom = 470.0
+
+[node name="NodeButton1" type="Button" parent="NodeSelectContainer"]
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 50.0
+text = "节点 1"
+
+[node name="NodeButton2" type="Button" parent="NodeSelectContainer"]
+layout_mode = 0
+offset_top = 70.0
+offset_right = 400.0
+offset_bottom = 120.0
+text = "节点 2"
+
+[node name="NodeButton3" type="Button" parent="NodeSelectContainer"]
+layout_mode = 0
+offset_top = 140.0
+offset_right = 400.0
+offset_bottom = 190.0
+text = "节点 3"
+
+[node name="PartnerContainer" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -100.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="PartnerSlot1" type="ColorRect" parent="PartnerContainer"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 18.0
+offset_right = 264.0
+offset_bottom = 82.0
+color = Color(0.2, 0.6, 0.3, 1)
+
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "伙伴1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PartnerSlot2" type="ColorRect" parent="PartnerContainer"]
+layout_mode = 0
+offset_left = 400.0
+offset_top = 18.0
+offset_right = 464.0
+offset_bottom = 82.0
+color = Color(0.9, 0.5, 0.1, 1)
+
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "伙伴2"
+horizontal_alignment = 1
+vertical_alignment = 1
+[node name="PartnerSlot3" type="ColorRect" parent="PartnerContainer"]
+layout_mode = 0
+offset_left = 600.0
+offset_top = 18.0
+offset_right = 664.0
+offset_bottom = 82.0
+color = Color(0.2, 0.4, 0.8, 1)
+
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "伙伴3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PartnerSlot4" type="ColorRect" parent="PartnerContainer"]
+layout_mode = 0
+offset_left = 800.0
+offset_top = 18.0
+offset_right = 864.0
+offset_bottom = 82.0
+color = Color(0.7, 0.2, 0.7, 1)
+
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot4"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "伙伴4"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PartnerSlot5" type="ColorRect" parent="PartnerContainer"]
+layout_mode = 0
+offset_left = 1000.0
+offset_top = 18.0
+offset_right = 1064.0
+offset_bottom = 82.0
+color = Color(0.8, 0.8, 0.2, 1)
+
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot5"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "伙伴5"
+horizontal_alignment = 1
+vertical_alignment = 1

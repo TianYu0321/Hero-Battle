@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://dummy_battle_core_test"]
+
+[ext_resource type="Script" path="res://scripts/core/test_battle_core.gd" id="1_abc12"]
+
+[node name="TestBattleCore" type="Node2D"]
+script = ExtResource("1_abc12")

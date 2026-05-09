@@ -1,0 +1,92 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/training/training_popup.gd" id="1_def34"]
+
+[node name="TrainingPopup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_def34")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.8)
+
+[node name="Content" type="Control" parent="Overlay"]
+layout_mode = 0
+offset_left = 440.0
+offset_top = 160.0
+offset_right = 840.0
+offset_bottom = 560.0
+
+[node name="TitleLabel" type="Label" parent="Overlay/Content"]
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 40.0
+text = "锻炼选择"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="AttrButton1" type="Button" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 50.0
+offset_right = 350.0
+offset_bottom = 85.0
+text = "体魄"
+
+[node name="AttrButton2" type="Button" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 95.0
+offset_right = 350.0
+offset_bottom = 130.0
+text = "力量"
+
+[node name="AttrButton3" type="Button" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 140.0
+offset_right = 350.0
+offset_bottom = 175.0
+text = "敏捷"
+
+[node name="AttrButton4" type="Button" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 185.0
+offset_right = 350.0
+offset_bottom = 220.0
+text = "技巧"
+
+[node name="AttrButton5" type="Button" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 230.0
+offset_right = 350.0
+offset_bottom = 265.0
+text = "精神"
+
+[node name="PreviewLabel" type="Label" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 280.0
+offset_right = 350.0
+offset_bottom = 310.0
+text = "结果预览"
+
+[node name="CloseButton" type="Button" parent="Overlay/Content"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 330.0
+offset_right = 280.0
+offset_bottom = 370.0
+text = "关闭"

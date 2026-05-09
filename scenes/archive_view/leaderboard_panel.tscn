@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/archive_view/leaderboard_panel.gd" id="1_panel"]
+
+[node name="LeaderboardPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_panel")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="FilterRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="FilterLabel" type="Label" parent="VBox/FilterRow"]
+layout_mode = 2
+text = "过滤:"
+
+[node name="FilterOption" type="OptionButton" parent="VBox/FilterRow"]
+layout_mode = 2
+
+[node name="RefreshButton" type="Button" parent="VBox/FilterRow"]
+layout_mode = 2
+text = "刷新"
+
+[node name="Scroll" type="ScrollContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+[node name="TableContainer" type="VBoxContainer" parent="VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = Control.SIZE_EXPAND_FILL
+size_flags_vertical = Control.SIZE_EXPAND_FILL
+theme_override_constants/separation = 8

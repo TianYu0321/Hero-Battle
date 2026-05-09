@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "version": 1,
+    "last_modified": "2026-05-09",
+    "description": "PVP对手模板配置表"
+  },
+  "entries": {
+    "pvp_early": {
+      "id": "pvp_template_early",
+      "name": "前期PVP模板",
+      "min_turn": 10,
+      "max_turn": 10,
+      "hero_stat_multiplier": 0.90,
+      "hero_stat_variance": 0.05,
+      "partner_count": 3,
+      "partner_stat_multiplier": 0.85,
+      "partner_stat_variance": 0.10,
+      "enemy_difficulty_tier": 2
+    },
+    "pvp_mid": {
+      "id": "pvp_template_mid",
+      "name": "中期PVP模板",
+      "min_turn": 20,
+      "max_turn": 20,
+      "hero_stat_multiplier": 1.05,
+      "hero_stat_variance": 0.05,
+      "partner_count": 4,
+      "partner_stat_multiplier": 0.90,
+      "partner_stat_variance": 0.10,
+      "enemy_difficulty_tier": 3
+    }
+  }
+}

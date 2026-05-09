@@ -1,0 +1,100 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/battle/battle.gd" id="1_mno90"]
+
+[node name="Battle" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mno90")
+
+[node name="BattleField" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 500.0
+grow_horizontal = 2
+
+[node name="RoundLabel" type="Label" parent="BattleField"]
+layout_mode = 0
+offset_left = 540.0
+offset_top = 20.0
+offset_right = 740.0
+offset_bottom = 60.0
+text = "回合: 1/20"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeroRect" type="ColorRect" parent="BattleField"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 180.0
+offset_right = 264.0
+offset_bottom = 244.0
+color = Color(0.752941, 0.223529, 0.168627, 1)
+
+[node name="Label" type="Label" parent="BattleField/HeroRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "主角"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EnemyRect" type="ColorRect" parent="BattleField"]
+layout_mode = 0
+offset_left = 1016.0
+offset_top = 180.0
+offset_right = 1080.0
+offset_bottom = 244.0
+color = Color(0.5, 0.1, 0.1, 1)
+
+[node name="Label" type="Label" parent="BattleField/EnemyRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "敌人"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeroHpBar" type="ProgressBar" parent="BattleField"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 260.0
+offset_right = 304.0
+offset_bottom = 280.0
+value = 100.0
+
+[node name="EnemyHpBar" type="ProgressBar" parent="BattleField"]
+layout_mode = 0
+offset_left = 976.0
+offset_top = 260.0
+offset_right = 1120.0
+offset_bottom = 280.0
+value = 100.0
+
+[node name="BattleLog" type="RichTextLabel" parent="."]
+layout_mode = 0
+offset_left = 240.0
+offset_top = 520.0
+offset_right = 1040.0
+offset_bottom = 640.0
+bbcode_enabled = true
+text = "战斗日志..."
+
+[node name="SpeedButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 1100.0
+offset_top = 660.0
+offset_right = 1240.0
+offset_bottom = 700.0
+text = "速度: 1x"

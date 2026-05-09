@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "version": 1,
+    "last_modified": "2026-05-09",
+    "description": "战斗公式参数配置表"
+  },
+  "entries": {
+    "1": {
+      "id": 1,
+      "formula_name": "default",
+      "dmg_base_formula": "atk - def",
+      "dmg_rand_min": 0.9,
+      "dmg_rand_max": 1.1,
+      "atk_from_str": 1.0,
+      "def_from_vit": 1.0,
+      "hp_from_vit": 10.0,
+      "speed_from_agi": 1.0,
+      "crit_rate_base": 0.05,
+      "crit_dmg_multiplier": 1.5,
+      "evade_from_agi": 0.0,
+      "hit_from_tec": 0.0,
+      "resist_from_mnd": 0.0,
+      "chain_max_length": 4,
+      "chain_partner_max_per_battle": 2,
+      "mastery_margin_threshold": 0.6,
+      "mastery_margin_decrease": 0.2,
+      "mastery_secondary_share": 0.5,
+      "pvp_fail_attr_penalty": 0.15,
+      "score_damage_weight": 0.1,
+      "score_kill_bonus": 100,
+      "score_win_bonus": 500,
+      "score_lose_bonus": 100
+    }
+  }
+}

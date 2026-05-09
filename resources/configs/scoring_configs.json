@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "version": 1,
+    "last_modified": "2026-05-09",
+    "description": "通关评分公式配置表"
+  },
+  "entries": {
+    "1": {
+      "id": 1,
+      "config_name": "default",
+      "weight_final_performance": 0.4,
+      "weight_training_efficiency": 0.2,
+      "weight_pvp_performance": 0.2,
+      "weight_build_purity": 0.1,
+      "weight_chain_showcase": 0.1,
+      "final_win_score": 50,
+      "final_hp_ratio_max": 30,
+      "final_damage_ratio_max": 20,
+      "training_growth_max": 30,
+      "training_gold_eff_max": 30,
+      "training_balance_max": 20,
+      "training_elite_wr_max": 20,
+      "pvp_10th_win_score": 40,
+      "pvp_10th_lose_score": 15,
+      "pvp_10th_skip_score": 0,
+      "pvp_20th_win_score": 40,
+      "pvp_20th_lose_score": 15,
+      "pvp_20th_skip_score": 0,
+      "purity_main_attr_max": 50,
+      "purity_skill_trigger_max": 30,
+      "purity_partner_synergy_max": 20,
+      "chain_max_score": 40,
+      "chain_total_max": 30,
+      "chain_aid_total_max": 30,
+      "grade_s_threshold": 90,
+      "grade_a_threshold": 75,
+      "grade_b_threshold": 60,
+      "grade_c_threshold": 40
+    }
+  }
+}

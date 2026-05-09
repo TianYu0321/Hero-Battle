@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dnfnvsvn5slye"]
+
+[ext_resource type="Script" path="res://scenes/test/test_phase2_full_run.gd" id="1_p2fr1"]
+
+[node name="TestPhase2FullRun" type="Node2D"]
+script = ExtResource("1_p2fr1")
