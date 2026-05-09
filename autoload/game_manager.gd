@@ -67,17 +67,19 @@ func change_scene(to_state: String, transition_type: String = "fade") -> void:
 
 	var from_state: String = _current_state
 	_is_transitioning = true
+	var success: bool = false
 
 	if transition_type == "fade":
-		await _do_fade_transition(to_state)
+		success = await _do_fade_transition(to_state)
 	else:
-		_do_instant_transition(to_state)
+		success = _do_instant_transition(to_state)
 
-	_current_state = to_state
+	if success:
+		_current_state = to_state
 	_is_transitioning = false
-	EventBus.scene_state_changed.emit(from_state, to_state, {})
+	EventBus.scene_state_changed.emit(from_state, _current_state, {})
 
-func _do_fade_transition(to_state: String) -> void:
+func _do_fade_transition(to_state: String) -> bool:
 	var fade_color: ColorRect = _create_fade_overlay()
 	get_tree().root.call_deferred("add_child", fade_color)
 
@@ -87,7 +89,7 @@ func _do_fade_transition(to_state: String) -> void:
 	await tween_in.finished
 
 	# Change scene
-	_do_instant_transition(to_state)
+	var success: bool = _do_instant_transition(to_state)
 
 	# Fade out
 	var tween_out: Tween = get_tree().create_tween()
@@ -95,16 +97,19 @@ func _do_fade_transition(to_state: String) -> void:
 	await tween_out.finished
 
 	fade_color.queue_free()
+	return success
 
-func _do_instant_transition(to_state: String) -> void:
+func _do_instant_transition(to_state: String) -> bool:
 	var path: String = _SCENE_PATHS.get(to_state, "")
 	if path.is_empty():
 		push_error("[GameManager] No scene path defined for state: %s" % to_state)
-		return
+		return false
 
 	var err: Error = get_tree().change_scene_to_file(path)
 	if err != OK:
 		push_error("[GameManager] Failed to change scene to %s (error: %d)" % [path, err])
+		return false
+	return true
 
 func _create_fade_overlay() -> ColorRect:
 	var rect: ColorRect = ColorRect.new()

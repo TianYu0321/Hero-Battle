@@ -206,7 +206,7 @@ func _generate_node_options() -> void:
 
 	# 固定节点检查
 	if turn in _RESCUE_TURNS:
-		# 救援：3个候选伙伴
+		# 救援：3个候选伙伴（只生成一次，避免与NodeResolver重复生成导致不一致）
 		var candidates: Array[Dictionary] = _node_resolver._rescue_system.generate_candidates()
 		_current_node_options.clear()
 		for c in candidates:
@@ -216,6 +216,7 @@ func _generate_node_options() -> void:
 				"description": c.get("role", ""),
 				"node_id": "rescue_%d_%s" % [turn, c.get("partner_id", "")],
 				"partner_config_id": int(c.get("partner_id", "0")),
+				"candidates": candidates,
 			})
 		return
 

@@ -52,10 +52,17 @@ func _check_trigger_condition(cfg: Dictionary, ctx: Dictionary) -> bool:
 	var condition: String = cfg.get("trigger_condition", "")
 	var prob: float = cfg.get("trigger_prob", 0.0)
 
+	# 检查影舞者必杀技的伙伴概率提升
+	var hero: Dictionary = ctx.get("hero", {})
+	var boost_mult: float = 1.0
+	if hero.get("partner_boost_active", false):
+		boost_mult = hero.get("partner_boost_multiplier", 1.0)
+		hero["partner_boost_active"] = false  # 一次性效果
+
 	# 固定概率触发 (剑士30%/术士30%)
 	if condition == "主角攻击后" or condition == "每回合概率触发":
 		if ctx.get("hero_attacked", false):
-			return _rng.randf() < prob
+			return _rng.randf() < prob * boost_mult
 		return false
 
 	# 暴击后触发 (斥候)

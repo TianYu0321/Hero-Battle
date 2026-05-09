@@ -238,7 +238,11 @@ func _process_state() -> void:
 					if target:
 						_emit_damage_signals(_hero, target, pkt, "ULTIMATE")
 				EventBus.ultimate_executed.emit(_hero.hero_id, ult_result.log, [])
-			_state = BattleState.ROUND_END
+			# 必杀技击杀后检查战斗是否结束
+			if _check_battle_end():
+				_state = BattleState.BATTLE_END
+			else:
+				_state = BattleState.ROUND_END
 
 		BattleState.ROUND_END:
 			EventBus.battle_turn_ended.emit(_turn_number, _turn_chain_count, _result.chain_stats.total_chains)

@@ -78,7 +78,7 @@ func load_latest_run() -> Dictionary:
 	if latest_path.is_empty():
 		return {}
 
-	var data: Dictionary = ConfigManager._load_json_safe(latest_path, {})
+	var data: Dictionary = ModelsSerializer.load_json_file(latest_path)
 	if data.is_empty():
 		EventBus.load_failed.emit(4001, "Corrupt or empty save file", 1)
 		return {}
@@ -86,6 +86,15 @@ func load_latest_run() -> Dictionary:
 	if not _validate_save_integrity(data):
 		EventBus.load_failed.emit(4001, "Save file missing required fields", 1)
 		return {}
+
+	var version: int = data.get("version", 0)
+	if version != _current_version:
+		push_warning("[SaveManager] Save version mismatch: expected %d, got %d" % [_current_version, version])
+		# 未来可在此添加版本升级/降级逻辑
+		if version > _current_version:
+			push_error("[SaveManager] Save version newer than game version, cannot load")
+			EventBus.load_failed.emit(4002, "Save version newer than game", 1)
+			return {}
 
 	EventBus.game_loaded.emit(data)
 	return data
@@ -99,7 +108,9 @@ func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 	archive["is_fixed"] = true
 
 	var file_path: String = ConfigManager.ARCHIVE_FILE
-	var existing: Dictionary = ConfigManager._load_json_safe(file_path, {"version": 1, "archives": [], "last_updated": 0})
+	var existing: Dictionary = ModelsSerializer.load_json_file(file_path)
+	if existing.is_empty():
+		existing = {"version": _current_version, "archives": [], "last_updated": 0}
 	if not existing.has("archives"):
 		existing["archives"] = []
 	existing["archives"].append(archive)
@@ -119,7 +130,9 @@ func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 
 func load_archives(sort_by: String = "date", limit: int = 100, filter_hero: String = "") -> Array[Dictionary]:
 	var file_path: String = ConfigManager.ARCHIVE_FILE
-	var data: Dictionary = ConfigManager._load_json_safe(file_path, {"archives": []})
+	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
+	if data.is_empty():
+		data = {"archives": []}
 	var archives: Array = data.get("archives", [])
 	var result: Array[Dictionary] = []
 	for entry in archives:

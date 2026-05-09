@@ -7,12 +7,32 @@
 class_name SettlementSystem
 extends Node
 
-# Phase 2 调优后权重
-const _WEIGHT_FINAL: float = 0.30       # 终局战 30%（原40%）
-const _WEIGHT_TRAINING: float = 0.25    # 养成效率 25%（原20%）
-const _WEIGHT_PVP: float = 0.20         # PVP 20%（不变）
-const _WEIGHT_PURITY: float = 0.15      # 流派纯度 15%（原10%）
-const _WEIGHT_CHAIN: float = 0.10       # 连锁展示 10%（不变）
+# 权重从配置表读取，硬编码仅作为fallback
+var _weight_final: float = 0.30
+var _weight_training: float = 0.25
+var _weight_pvp: float = 0.20
+var _weight_purity: float = 0.15
+var _weight_chain: float = 0.10
+
+var _grade_s: int = 85
+var _grade_a: int = 70
+var _grade_b: int = 55
+var _grade_c: int = 35
+
+func _ready() -> void:
+	var scoring_cfg: Dictionary = ConfigManager.get_scoring_config()
+	for k in scoring_cfg:
+		var cfg: Dictionary = scoring_cfg[k]
+		_weight_final = cfg.get("weight_final_performance", _weight_final)
+		_weight_training = cfg.get("weight_training_efficiency", _weight_training)
+		_weight_pvp = cfg.get("weight_pvp_performance", _weight_pvp)
+		_weight_purity = cfg.get("weight_build_purity", _weight_purity)
+		_weight_chain = cfg.get("weight_chain_showcase", _weight_chain)
+		_grade_s = cfg.get("grade_s_threshold", _grade_s)
+		_grade_a = cfg.get("grade_a_threshold", _grade_a)
+		_grade_b = cfg.get("grade_b_threshold", _grade_b)
+		_grade_c = cfg.get("grade_c_threshold", _grade_c)
+		break
 
 
 func calculate_score(run: RuntimeRun, hero: RuntimeHero, final_battle: RuntimeFinalBattle) -> FighterArchiveScore:
@@ -95,23 +115,23 @@ func calculate_score(run: RuntimeRun, hero: RuntimeHero, final_battle: RuntimeFi
 
 	# 加权总分
 	var total: float = (
-		final_perf * _WEIGHT_FINAL
-		+ training_eff * _WEIGHT_TRAINING
-		+ pvp_score * _WEIGHT_PVP
-		+ purity * _WEIGHT_PURITY
-		+ chain_score * _WEIGHT_CHAIN
+		final_perf * _weight_final
+		+ training_eff * _weight_training
+		+ pvp_score * _weight_pvp
+		+ purity * _weight_purity
+		+ chain_score * _weight_chain
 	)
 
 	score.final_performance_raw = final_perf
-	score.final_performance_weighted = final_perf * _WEIGHT_FINAL
+	score.final_performance_weighted = final_perf * _weight_final
 	score.training_efficiency_raw = training_eff
-	score.training_efficiency_weighted = training_eff * _WEIGHT_TRAINING
+	score.training_efficiency_weighted = training_eff * _weight_training
 	score.pvp_performance_raw = pvp_score
-	score.pvp_performance_weighted = pvp_score * _WEIGHT_PVP
+	score.pvp_performance_weighted = pvp_score * _weight_pvp
 	score.build_purity_raw = purity
-	score.build_purity_weighted = purity * _WEIGHT_PURITY
+	score.build_purity_weighted = purity * _weight_purity
 	score.chain_showcase_raw = chain_score
-	score.chain_showcase_weighted = chain_score * _WEIGHT_CHAIN
+	score.chain_showcase_weighted = chain_score * _weight_chain
 	score.total_score = total
 	score.grade = _calculate_grade(int(total))
 
@@ -128,15 +148,15 @@ func generate_fighter_archive(run: RuntimeRun, hero: RuntimeHero, partners: Arra
 
 # --- 私有方法 ---
 
-# Phase 2 调优后评级阈值
+# 评级阈值从配置表读取，硬编码仅作为fallback
 func _calculate_grade(total_score: int) -> String:
-	if total_score >= 85:
+	if total_score >= _grade_s:
 		return "S"
-	elif total_score >= 70:
+	elif total_score >= _grade_a:
 		return "A"
-	elif total_score >= 55:
+	elif total_score >= _grade_b:
 		return "B"
-	elif total_score >= 35:
+	elif total_score >= _grade_c:
 		return "C"
 	else:
 		return "D"

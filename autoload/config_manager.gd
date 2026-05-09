@@ -101,6 +101,7 @@ var _node_configs: Dictionary = {}
 var _formula_configs: Dictionary = {}
 var _scoring_configs: Dictionary = {}
 var _partner_assist_configs: Dictionary = {}
+var _partner_support_configs: Dictionary = {}
 var _pvp_opponent_configs: Dictionary = {}
 
 # --- 数字ID → 字符串Key 映射（向后兼容） ---
@@ -257,7 +258,15 @@ func _load_all_configs() -> void:
 	_partner_assist_configs = assist_raw.get("entries", {})
 	var pvp_raw: Dictionary = _load_json_safe("res://resources/configs/pvp_opponent_templates.json", {})
 	_pvp_opponent_configs = pvp_raw.get("entries", {})
-	push_warning("[ConfigManager] Configs loaded. H:%d P:%d S:%d E:%d F:%d A:%d PVP:%d" % [_hero_configs.size(), _partner_configs.size(), _skill_configs.size(), _enemy_configs.size(), _formula_configs.size(), _partner_assist_configs.size(), _pvp_opponent_configs.size()])
+	var shop_raw: Dictionary = _load_json_safe("res://resources/configs/shop_configs.json", {})
+	_shop_configs = shop_raw.get("entries", {})
+	var node_raw: Dictionary = _load_json_safe("res://resources/configs/node_pool_configs.json", {})
+	_node_configs = node_raw.get("entries", {})
+	var scoring_raw: Dictionary = _load_json_safe("res://resources/configs/scoring_configs.json", {})
+	_scoring_configs = scoring_raw.get("entries", {})
+	var support_raw: Dictionary = _load_json_safe("res://resources/configs/partner_support_configs.json", {})
+	_partner_support_configs = support_raw.get("entries", {})
+	push_warning("[ConfigManager] Configs loaded. H:%d P:%d S:%d E:%d F:%d A:%d PVP:%d Shop:%d Node:%d Score:%d Support:%d" % [_hero_configs.size(), _partner_configs.size(), _skill_configs.size(), _enemy_configs.size(), _formula_configs.size(), _partner_assist_configs.size(), _pvp_opponent_configs.size(), _shop_configs.size(), _node_configs.size(), _scoring_configs.size(), _partner_support_configs.size()])
 
 static func _load_json_safe(file_path: String, fallback: Dictionary = {}) -> Dictionary:
 	if not FileAccess.file_exists(file_path):

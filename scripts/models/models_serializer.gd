@@ -39,6 +39,7 @@ func deserialize(json_text: String, model_type: String) -> Object:
 
 
 func deserialize_from_dict(data: Dictionary, model_type: String) -> Object:
+	# 安全加载：已确认存在的类直接调用，可能不存在的类通过动态加载避免编译错误
 	match model_type:
 		"RuntimeRun":
 			return RuntimeRun.from_dict(data)
@@ -49,30 +50,41 @@ func deserialize_from_dict(data: Dictionary, model_type: String) -> Object:
 		"RuntimeMastery":
 			return RuntimeMastery.from_dict(data)
 		"RuntimeBuff":
-			return RuntimeBuff.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/runtime_buff.gd", data)
 		"RuntimeTrainingLog":
-			return RuntimeTrainingLog.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/runtime_training_log.gd", data)
 		"RuntimeFinalBattle":
-			return RuntimeFinalBattle.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/runtime_final_battle.gd", data)
 		"PlayerAccount":
 			return PlayerAccount.from_dict(data)
 		"FighterArchiveMain":
 			return FighterArchiveMain.from_dict(data)
 		"FighterArchivePartner":
-			return FighterArchivePartner.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/fighter_archive_partner.gd", data)
 		"FighterArchiveScore":
-			return FighterArchiveScore.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/fighter_archive_score.gd", data)
 		"BattleMain":
-			return BattleMain.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/battle_main.gd", data)
 		"BattleRound":
-			return BattleRound.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/battle_round.gd", data)
 		"BattleAction":
-			return BattleAction.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/battle_action.gd", data)
 		"BattleFinalResult":
-			return BattleFinalResult.from_dict(data)
+			return _safe_load_and_call("res://scripts/models/battle_final_result.gd", data)
 		_:
 			push_error("[ModelsSerializer] Unknown model type: %s" % model_type)
 			return null
+
+
+func _safe_load_and_call(script_path: String, data: Dictionary) -> Object:
+	var script = load(script_path)
+	if script == null:
+		push_warning("[ModelsSerializer] Script not found: %s, returning null" % script_path)
+		return null
+	if script.has_method("from_dict"):
+		return script.from_dict(data)
+	push_warning("[ModelsSerializer] Script %s has no from_dict method, returning null" % script_path)
+	return null
 
 
 func roundtrip_test(obj: Object, model_type: String) -> bool:

@@ -55,5 +55,5 @@ func _compare_action_order(a: Dictionary, b: Dictionary) -> bool:
 	# 同类型: 基础敏捷降序
 	if a.base_agility != b.base_agility:
 		return a.base_agility > b.base_agility
-	# 完全相同: 随机
-	return randf() < 0.5
+	# 完全相同: 随机（使用实例化RNG保证可复现性）
+	return _rng.randf() < 0.5

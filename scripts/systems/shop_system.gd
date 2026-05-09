@@ -109,7 +109,13 @@ func reset() -> void:
 # --- 私有方法 ---
 
 func _get_item_base_cost(item_id: String) -> int:
-	# 从配置表读取基础价格，简化为默认值
+	# 从配置表读取基础价格
+	var shop_cfg: Dictionary = ConfigManager.get_shop_price_config()
+	for k in shop_cfg:
+		var item: Dictionary = shop_cfg[k]
+		if str(item.get("id", "")) == item_id:
+			return item.get("cost_base", 20)
+	# Fallback：按类型推断
 	if item_id.begins_with("hero_attr_"):
 		return 20
 	elif item_id.begins_with("partner_"):
@@ -119,8 +125,15 @@ func _get_item_base_cost(item_id: String) -> int:
 
 func _calculate_current_cost(item_id: String, base_cost: int) -> int:
 	var count: int = _shop_purchase_counts.get(item_id, 0)
-	# 线性递增：每次购买+10
-	return base_cost + count * 10
+	# 从配置表读取递增步长，fallback 为 +10
+	var step: int = 10
+	var shop_cfg: Dictionary = ConfigManager.get_shop_price_config()
+	for k in shop_cfg:
+		var item: Dictionary = shop_cfg[k]
+		if str(item.get("id", "")) == item_id:
+			step = item.get("cost_increase_per_buy", 10)
+			break
+	return base_cost + count * step
 
 
 func _attr_name(attr_type: int) -> String:

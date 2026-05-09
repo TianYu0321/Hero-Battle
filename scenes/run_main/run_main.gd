@@ -60,11 +60,28 @@ func _ready() -> void:
 
 
 func _update_hud() -> void:
-	round_label.text = "回合: 1/30"
-	gold_label.text = "金币: 100"
-	hp_label.text = "生命: 100/100"
+	if _run_controller == null:
+		return
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var current_turn: int = summary.get("current_turn", 1)
+	var gold: int = summary.get("gold", 0)
+	var hero_data: Dictionary = summary.get("hero", {})
+	var current_hp: int = hero_data.get("current_hp", 100)
+	var max_hp: int = hero_data.get("max_hp", 100)
+
+	round_label.text = "回合: %d/30" % current_turn
+	gold_label.text = "金币: %d" % gold
+	hp_label.text = "生命: %d/%d" % [current_hp, max_hp]
+
+	var attrs: Array[int] = [
+		hero_data.get("current_vit", 0),
+		hero_data.get("current_str", 0),
+		hero_data.get("current_agi", 0),
+		hero_data.get("current_tec", 0),
+		hero_data.get("current_mnd", 0),
+	]
 	for i in range(attr_bars.size()):
-		attr_bars[i].value = 50.0
+		attr_bars[i].value = float(attrs[i])
 
 
 func _on_node_button_pressed(index: int) -> void:

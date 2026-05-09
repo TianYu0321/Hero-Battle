@@ -102,6 +102,14 @@ func compute_damage(attacker: Dictionary, defender: Dictionary, skill_scale: flo
 	var final_damage: float = max(raw_damage - def_value, min_damage)
 	final_damage = max(final_damage, 1.0)
 
+	# 检查 defender 的 buff 中是否有 damage_reduction（铁卫不动如山等）
+	var buff_list: Array = defender.get("buff_list", [])
+	for buff in buff_list:
+		var effects: Dictionary = buff.get("effects", {})
+		if effects.has("damage_reduction"):
+			final_damage *= (1.0 - effects.damage_reduction)
+			break
+
 	# 重甲守卫减伤25%
 	if defender.get("special_mechanic", "").begins_with("坚甲"):
 		final_damage *= 0.75

@@ -76,6 +76,11 @@ func _check_shadow_ultimate(hero: Dictionary, enemies: Array, turn_number: int, 
 
 	var segment_count: int = trigger_params.get("segment_count", 6)
 	var power_scale: float = ult_cfg.get("power_scale", 0.4)
+	# 影舞者必杀技触发伙伴概率提升
+	var partner_boost: float = trigger_params.get("partner_boost", 1.0)
+	if partner_boost > 1.0:
+		hero["partner_boost_active"] = true
+		hero["partner_boost_multiplier"] = partner_boost
 	var packets: Array[Dictionary] = []
 	for i in range(segment_count):
 		if not target.get("is_alive", false):

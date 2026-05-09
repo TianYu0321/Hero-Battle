@@ -66,7 +66,10 @@ func resolve_node(node_type: int, node_config: Dictionary, run: RuntimeRun, hero
 			result["logs"].append("第%d回合：进入商店" % run.current_turn)
 
 		5:  # RESCUE
-			var candidates: Array[Dictionary] = _rescue_system.generate_candidates()
+			# 优先使用RunController已生成的候选（避免二次生成导致不一致）
+			var candidates: Array[Dictionary] = node_config.get("candidates", [])
+			if candidates.is_empty():
+				candidates = _rescue_system.generate_candidates()
 			result["rewards"].append({"type": "rescue_candidates", "candidates": candidates})
 			result["logs"].append("第%d回合：触发救援事件" % run.current_turn)
 

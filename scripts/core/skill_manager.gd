@@ -53,7 +53,7 @@ func brave_normal_attack(hero: Dictionary, target: Dictionary) -> Array[Dictiona
 	var prob_max: float = trigger_params.get("prob_max", 0.5)
 
 	var attr_val: int = _get_attr_value(stats, prob_attr_bonus)
-	var prob: float = base_prob + float(attr_val / prob_attr_step) * prob_attr_inc
+	var prob: float = base_prob + float(attr_val) / float(prob_attr_step) * prob_attr_inc
 	prob = min(prob, prob_max)
 	if _rng.randf() < prob:
 		var chase_pkt: Dictionary = _dc.compute_damage(hero, target, passive_cfg.get("power_scale", 0.6), "SKILL")
@@ -120,7 +120,7 @@ func check_iron_counter(hero: Dictionary, attacker: Dictionary, received_damage:
 	else:
 		var stats: Dictionary = hero.get("stats", {})
 		var attr_val: int = _get_attr_value(stats, prob_attr_bonus)
-		prob += float(attr_val / prob_attr_step) * prob_attr_inc
+		prob += float(attr_val) / float(prob_attr_step) * prob_attr_inc
 		prob = min(prob, prob_max)
 
 	if _rng.randf() >= prob:

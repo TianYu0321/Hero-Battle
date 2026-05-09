@@ -12,3 +12,9 @@ res://scenes/main_menu/menu.gd
 res://scripts/systems/character_manager.gd
 res://scripts/systems/node_resolver.gd
 res://scripts/systems/settlement_system.gd
+res://scripts/core/action_order.gd
+res://scripts/core/enemy_ai.gd
+res://scripts/core/partner_assist.gd
+res://scripts/models/models_serializer.gd
+res://scripts/systems/node_pool_system.gd
+res://scripts/systems/shop_system.gd
