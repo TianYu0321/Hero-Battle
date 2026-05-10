@@ -11,11 +11,14 @@ extends Control
 @onready var _btn_new_game: Button = %BtnNewGame
 @onready var _btn_continue: Button = %BtnContinue
 @onready var _btn_quit: Button = %BtnQuit
+@onready var _menu_button: Button = $MenuButton
+@onready var _pause_menu: PauseMenu = $PauseMenu
 
 func _ready() -> void:
 	_btn_new_game.pressed.connect(_on_new_game_pressed)
 	_btn_continue.pressed.connect(_on_continue_pressed)
 	_btn_quit.pressed.connect(_on_quit_pressed)
+	_menu_button.pressed.connect(_on_menu_button_pressed)
 
 	# Phase 1: 斗士档案按钮隐藏（MVP范围外）
 	var btn_archive: Button = get_node_or_null("%BtnArchive")
@@ -23,10 +26,11 @@ func _ready() -> void:
 		btn_archive.visible = false
 		btn_archive.disabled = true
 
-	var save_data: Dictionary = SaveManager.load_latest_run()
-	_btn_continue.disabled = save_data.is_empty()
-	if _btn_continue.disabled:
-		_btn_continue.modulate.a = 0.5
+	# 主菜单中隐藏PauseMenu的"返回主菜单"按钮
+	_pause_menu.set_is_main_menu(true)
+
+	var has_save: bool = SaveManager.has_active_run()
+	_btn_continue.visible = has_save
 
 	EventBus.save_loaded.connect(_on_save_loaded)
 	EventBus.load_failed.connect(_on_load_failed)
@@ -40,13 +44,17 @@ func _on_continue_pressed() -> void:
 func _on_quit_pressed() -> void:
 	get_tree().quit()
 
+func _on_menu_button_pressed() -> void:
+	if _pause_menu.visible:
+		_pause_menu.hide_menu()
+	else:
+		_pause_menu.show_menu()
+
 func _on_save_loaded(save_data: Dictionary) -> void:
-	_btn_continue.disabled = false
-	_btn_continue.modulate.a = 1.0
+	_btn_continue.visible = true
 
 func _on_load_failed(error_code: int, error_message: String, save_slot: int) -> void:
-	_btn_continue.disabled = true
-	_btn_continue.modulate.a = 0.5
+	_btn_continue.visible = false
 
 ## v2.0: 排行榜系统（净胜场制）
 func show_leaderboard() -> void:

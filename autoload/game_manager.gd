@@ -46,6 +46,7 @@ var pending_archive: Dictionary = {}
 # 运行时选择数据（供RunMain读取启动新局）
 var selected_hero_config_id: int = 0
 var selected_partner_config_ids: Array[int] = []
+var pending_save_data: Dictionary = {}
 
 var _current_state: String = "MENU"
 var _is_transitioning: bool = false
@@ -128,8 +129,12 @@ func _on_new_game_requested(hero_id: String) -> void:
 	change_scene("HERO_SELECT", "fade")
 
 func _on_continue_game_requested() -> void:
-	# Phase 1: load latest run and go to RUNNING (not implemented in Task 1)
-	push_warning("[GameManager] Continue game not yet implemented in Phase 1")
+	var save_data: Dictionary = SaveManager.load_latest_run()
+	if save_data.is_empty():
+		push_warning("[GameManager] No save data found, cannot continue")
+		return
+	pending_save_data = save_data
+	change_scene("RUNNING", "fade")
 
 func _on_hero_selected(hero_id: String) -> void:
 	selected_hero_config_id = _HERO_STRING_TO_ID.get(hero_id, 1)

@@ -12,6 +12,14 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_abc12")
 
+[node name="MenuButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 1160.0
+offset_top = 20.0
+offset_right = 1260.0
+offset_bottom = 60.0
+text = "菜单"
+
 [node name="HudContainer" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 10

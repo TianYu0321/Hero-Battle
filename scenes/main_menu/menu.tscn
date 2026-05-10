@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://c0m8q1p2x3y4z"]
+[gd_scene load_steps=3 format=3 uid="uid://c0m8q1p2x3y4z"]
 
 [ext_resource type="Script" path="res://scenes/main_menu/menu.gd" id="1_menu"]
+[ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -73,6 +74,16 @@ unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
 text = "退出游戏"
+
+[node name="MenuButton" type="Button" parent="."]
+layout_mode = 0
+offset_left = 1160.0
+offset_top = 20.0
+offset_right = 1260.0
+offset_bottom = 60.0
+text = "设置"
+
+[node name="PauseMenu" parent="." instance=ExtResource("2_pause")]
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1

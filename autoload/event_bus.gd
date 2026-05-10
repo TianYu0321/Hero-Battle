@@ -9,6 +9,7 @@ extends Node
 
 # --- 养成循环信号 (Run & Node Lifecycle) ---
 signal run_started(run_config: Dictionary)
+signal run_continued(save_data: Dictionary)
 signal run_ended(ending_type: String, final_score: int, archive: Dictionary)
 signal scene_state_changed(from_state: String, to_state: String, transition_data: Dictionary)
 signal game_paused(reason: String)

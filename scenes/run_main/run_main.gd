@@ -42,6 +42,7 @@ extends Control
 ]
 
 @onready var pause_menu: PauseMenu = $PauseMenu
+@onready var menu_button: Button = $MenuButton
 
 @onready var enemy_info_panel: VBoxContainer = $EnemyInfoPanel
 @onready var enemy_name_label: Label = $EnemyInfoPanel/EnemyNameLabel
@@ -95,6 +96,9 @@ func _ready() -> void:
 	pause_menu.resume_requested.connect(_on_resume_game)
 	pause_menu.main_menu_requested.connect(_on_return_main_menu)
 
+	# --- 菜单按钮 ---
+	menu_button.pressed.connect(_on_menu_button_pressed)
+
 	# --- 救援面板按钮绑定 ---
 	for i in range(rescue_candidate_buttons.size()):
 		rescue_candidate_buttons[i].pressed.connect(_on_rescue_partner_selected.bind(i))
@@ -104,14 +108,21 @@ func _ready() -> void:
 	_run_controller.name = "RunController"
 	add_child(_run_controller)
 
-	var hero_config_id: int = GameManager.selected_hero_config_id
-	var partner_config_ids: Array[int] = GameManager.selected_partner_config_ids.duplicate()
+	# 检查是否有待加载的存档（继续游戏）
+	var pending_save: Dictionary = GameManager.pending_save_data
+	if not pending_save.is_empty():
+		_run_controller.continue_from_save(pending_save)
+		GameManager.pending_save_data = {}
+		_update_hud()
+	else:
+		var hero_config_id: int = GameManager.selected_hero_config_id
+		var partner_config_ids: Array[int] = GameManager.selected_partner_config_ids.duplicate()
 
-	if hero_config_id <= 0:
-		push_error("[RunMain] No hero selected, cannot start run")
-		return
+		if hero_config_id <= 0:
+			push_error("[RunMain] No hero selected, cannot start run")
+			return
 
-	_run_controller.start_new_run(hero_config_id, partner_config_ids)
+		_run_controller.start_new_run(hero_config_id, partner_config_ids)
 
 
 func _update_hud() -> void:
@@ -312,6 +323,12 @@ func _on_pvp_result(result: Dictionary) -> void:
 func _on_floor_changed(current_floor: int, max_floor: int, floor_type: String) -> void:
 	floor_label.text = "层数: %d/%d" % [current_floor, max_floor]
 	print("[RunMain HUD] 楼层 %d/%d，类型: %s" % [current_floor, max_floor, floor_type])
+
+func _on_menu_button_pressed() -> void:
+	if pause_menu.visible:
+		pause_menu.hide_menu()
+	else:
+		pause_menu.show_menu()
 
 func _on_resume_game() -> void:
 	pass

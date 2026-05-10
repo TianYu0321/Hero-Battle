@@ -115,9 +115,41 @@ func start_new_run(hero_config_id: int, starter_partner_ids: Array[int]) -> void
 	_change_state(RunState.RUNNING_NODE_SELECT)
 
 
-func continue_run(save_data: Dictionary) -> bool:
-	# TODO: 从存档恢复完整状态
-	return false
+func continue_from_save(save_data: Dictionary) -> bool:
+	## 从存档恢复完整状态
+	if save_data.is_empty():
+		push_error("[RunController] Cannot continue from empty save data")
+		return false
+	
+	# 恢复RuntimeRun
+	_run = RuntimeRun.from_dict(save_data)
+	
+	# 恢复英雄
+	var hero_data: Dictionary = save_data.get("hero", {})
+	if not hero_data.is_empty():
+		_hero = RuntimeHero.from_dict(hero_data)
+		_character_manager._hero = _hero
+	
+	# 恢复伙伴
+	var partner_data: Array = save_data.get("partners", [])
+	_character_manager._partners.clear()
+	for p_data in partner_data:
+		if p_data is Dictionary:
+			var partner = RuntimePartner.from_dict(p_data)
+			_character_manager._partners.append(partner)
+	
+	# 恢复金币
+	_run.gold_owned = save_data.get("gold", _run.gold_owned)
+	
+	# 重置节点池
+	_node_pool_system.reset()
+	
+	# 恢复状态并生成当前层选项
+	_state = RunState.RUNNING_NODE_SELECT
+	_change_state(RunState.RUNNING_NODE_SELECT)
+	
+	EventBus.emit_signal("run_continued", save_data)
+	return true
 
 
 func select_node(node_index: int) -> void:

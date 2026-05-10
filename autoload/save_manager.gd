@@ -56,6 +56,25 @@ func save_run_state(run_data: Dictionary, is_auto: bool = true) -> bool:
 	EventBus.game_saved.emit(slot_id, data["timestamp"], data.get("current_round", 0), is_auto)
 	return true
 
+func has_active_run() -> bool:
+	var latest_path: String = ""
+	var latest_time: int = 0
+	var dir: DirAccess = DirAccess.open(ConfigManager.SAVE_DIR)
+	if dir == null:
+		return false
+	dir.list_dir_begin()
+	var file_name: String = dir.get_next()
+	while not file_name.is_empty():
+		if file_name.begins_with("save_") and file_name.ends_with(".json"):
+			var path: String = ConfigManager.SAVE_DIR + file_name
+			var modified: int = FileAccess.get_modified_time(path)
+			if modified > latest_time:
+				latest_time = modified
+				latest_path = path
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return not latest_path.is_empty()
+
 func load_latest_run() -> Dictionary:
 	var latest_path: String = ""
 	var latest_time: int = 0
