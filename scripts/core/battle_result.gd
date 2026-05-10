@@ -73,6 +73,23 @@ func finalize(hero: Dictionary, enemies: Array, partners: Array) -> Dictionary:
 		"total_damage_taken": total_damage_taken,
 	}
 
+## 转换为字典（供调用方使用）
+func to_dict() -> Dictionary:
+	return {
+		"winner": winner,
+		"turns_elapsed": turns_elapsed,
+		"mvp_partner": mvp_partner,
+		"combat_log": combat_log.duplicate(),
+		"drop_rewards": drop_rewards.duplicate(),
+		"chain_stats": chain_stats.duplicate(),
+		"ultimate_triggered": ultimate_triggered,
+		"total_damage_dealt": total_damage_dealt,
+		"total_damage_taken": total_damage_taken,
+		"partner_assist_count": partner_assist_count.duplicate(),
+		"hero_remaining_hp": hero_remaining_hp,
+		"enemy_remaining_hp": enemy_remaining_hp,
+	}
+
 func add_log(msg: String) -> void:
 	combat_log.append(msg)
 

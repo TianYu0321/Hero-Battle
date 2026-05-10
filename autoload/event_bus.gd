@@ -34,6 +34,11 @@ signal gold_changed(new_amount: int, delta: int, reason: String)
 signal rescue_encountered(candidates: Array[Dictionary], rescue_turn: int)
 signal partner_unlocked(partner_id: String, partner_name: String, slot: int, join_turn: int, role: String)
 
+## 局外商店信号 (Outgame Shop)
+signal mojo_coin_spent(amount: int, item_id: String)
+signal outgame_shop_opened
+signal outgame_shop_closed
+
 signal pvp_match_found(opponent_data: Dictionary)
 signal pvp_battle_started(allies: Array, enemies: Array, playback_mode: String)
 signal pvp_result(result: Dictionary)
@@ -72,8 +77,11 @@ signal enemy_action_decided(enemy_id: String, enemy_name: String, action_type: S
 
 # --- 角色管理信号 (Character & Stats) ---
 signal stats_changed(unit_id: String, stat_changes: Dictionary)
-signal hero_level_changed(new_level: int, old_level: int, upgrade_source: String, hero_id: String)
+signal hero_level_changed(old_level: int, new_level: int)
 signal partner_evolved(partner_id: String, partner_name: String, new_level: int, unlocked_skill: String, evolution_tier: String)
+signal partner_level_changed(partner_id: String, old_level: int, new_level: int)
+signal skill_milestone_reached(partner_id: String, milestone: int, effect: String)
+signal hero_skill_milestone_reached(milestone: int, effect: String)
 signal skill_learned(unit_id: String, skill_id: String, skill_name: String, skill_type: String)
 signal skill_triggered(unit_id: String, skill_id: String, skill_name: String, trigger_context: Dictionary)
 

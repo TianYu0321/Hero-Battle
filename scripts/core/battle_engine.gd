@@ -32,6 +32,7 @@ var _battle_seed: int = 0
 var _rng: RandomNumberGenerator
 var _dc: DamageCalculator
 var _action_order: ActionOrder
+var _attr_provider: IAttributeProvider = DefaultAttributeProvider.new()
 var _skill_mgr: SkillManager
 var _ultimate_mgr: UltimateManager
 var _partner_assist: PartnerAssist
@@ -55,7 +56,7 @@ func execute_battle(battle_config: Dictionary) -> Dictionary:
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = _battle_seed
 	_dc = DamageCalculator.new(_battle_seed)
-	_action_order = ActionOrder.new(_rng)
+	_action_order = ActionOrder.new(_rng, _attr_provider)
 	_skill_mgr = SkillManager.new(_dc, _rng)
 	_ultimate_mgr = UltimateManager.new(_dc, _rng)
 	_partner_assist = PartnerAssist.new(_dc, _rng)
@@ -106,7 +107,7 @@ func execute_battle(battle_config: Dictionary) -> Dictionary:
 
 
 func get_combat_log() -> Array[String]:
-	return _result.combat_log.duplicate()
+	return _result.to_dict().combat_log.duplicate()
 
 
 func _process_state() -> void:
@@ -154,6 +155,7 @@ func _process_state() -> void:
 			var was_hit: bool = false
 			for pkt in packets:
 				_emit_damage_signals(_hero, target, pkt, "HERO_ACTION")
+				_dc.apply_damage_packet(target, pkt)
 				if pkt.is_crit:
 					was_crit = true
 				if not pkt.is_miss:

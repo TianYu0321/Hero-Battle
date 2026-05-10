@@ -303,6 +303,10 @@ text = "HP: ???"
 layout_mode = 2
 text = "预计损失: ???"
 
+[node name="RiskLabel" type="Label" parent="EnemyInfoPanel"]
+layout_mode = 2
+text = "风险: ???"
+
 [node name="PartnerContainer" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 12

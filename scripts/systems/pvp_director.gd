@@ -7,6 +7,9 @@
 class_name PvpDirector
 extends Node
 
+# v2.0: 惩罚策略（策略模式 -- 行为变化用策略而非if-else）
+var _penalty_strategy: IPVPPenaltyStrategy = NullPenaltyStrategy.new()
+
 
 func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	var turn_number: int = pvp_config.get("turn_number", 0)
@@ -33,21 +36,12 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	# 3. 判断胜负（AI是hero，所以battle_result.winner=="player"表示AI赢）
 	var player_won: bool = (battle_result.winner == "enemy")
 
-	# 4. 计算惩罚
-	var penalty_tier: String = "none"
-	var penalty_value: int = 0
+	# 4. 计算惩罚（策略模式 -- v2.0无惩罚）
+	var penalty_result: Dictionary = _penalty_strategy.calculate_penalty(pvp_config, turn_number, player_won)
+	var penalty_tier: String = penalty_result.get("penalty_tier", "none")
+	var penalty_value: int = penalty_result.get("penalty_value", 0)
 
-	if not player_won:
-		if turn_number == 10:
-			penalty_tier = "gold_50"
-			var gold: int = pvp_config.get("player_gold", 0)
-			penalty_value = int(gold * 0.5)
-		elif turn_number == 20:
-			penalty_tier = "hp_30"
-			var hp: int = pvp_config.get("player_hp", 0)
-			penalty_value = int(hp * 0.3)
-
-	# 5. 组装PvpResult
+	# 5. 组装PvpResult（penalty相关字段保留用于日志和UI展示，但不修改玩家状态）
 	var opponent_hp_ratio: float = 0.0
 	if battle_config.hero.max_hp > 0:
 		opponent_hp_ratio = float(battle_config.hero.hp) / battle_config.hero.max_hp

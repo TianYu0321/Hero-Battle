@@ -31,6 +31,12 @@ extends Control
 @onready var training_panel: VBoxContainer = $TrainingPanel
 @onready var option_container: VBoxContainer = $OptionContainer
 
+@onready var enemy_info_panel: VBoxContainer = $EnemyInfoPanel
+@onready var enemy_name_label: Label = $EnemyInfoPanel/EnemyNameLabel
+@onready var enemy_hp_label: Label = $EnemyInfoPanel/EnemyHpLabel
+@onready var predicted_damage_label: Label = $EnemyInfoPanel/EstimatedDamageLabel
+@onready var risk_label: Label = $EnemyInfoPanel/RiskLabel
+
 @onready var training_select_buttons: Array[Button] = [
 	$TrainingPanel/AttrRow1/SelectBtn,
 	$TrainingPanel/AttrRow2/SelectBtn,
@@ -157,6 +163,9 @@ func _on_run_started(run_config: Dictionary) -> void:
 
 
 func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
+	# v2: 更新怪物信息和预计损失血量
+	_update_monster_info(node_options)
+
 	# 设置节点选项按钮文本和可见性
 	_show_option_container()
 	for i in range(option_buttons.size()):
@@ -231,3 +240,87 @@ func _on_pvp_result(result: Dictionary) -> void:
 func _on_floor_changed(current_floor: int, max_floor: int, floor_type: String) -> void:
 	floor_label.text = "层数: %d/%d" % [current_floor, max_floor]
 	print("[RunMain HUD] 楼层 %d/%d，类型: %s" % [current_floor, max_floor, floor_type])
+
+
+## v2: 更新怪物信息和预计损失血量
+func _update_monster_info(node_options: Array[Dictionary]) -> void:
+	## 查找包含敌人信息的节点
+	var has_enemy: bool = false
+	var enemy_name: String = "???"
+	var enemy_hp: int = 0
+	var enemy_stats: Dictionary = {}
+
+	for opt in node_options:
+		var node_type: int = opt.get("node_type", 0)
+		## 战斗节点: 普通战斗(2), 精英(3), 终局(7)
+		if node_type == 2 or node_type == 3 or node_type == 7:
+			has_enemy = true
+			var enemy_cfg: Dictionary = opt.get("enemy_config", {})
+			if enemy_cfg.is_empty():
+				enemy_cfg = _fetch_enemy_config_for_option(opt)
+			enemy_name = enemy_cfg.get("name", "???")
+			enemy_hp = enemy_cfg.get("hp", 0)
+			enemy_stats = enemy_cfg
+			break
+
+	if not has_enemy:
+		enemy_info_panel.visible = false
+		return
+
+	enemy_info_panel.visible = true
+	enemy_name_label.text = "敌人: %s" % enemy_name
+	enemy_hp_label.text = "HP: %d" % enemy_hp
+
+	## v2: 计算预计损失血量
+	var hero_stats: Dictionary = _get_current_hero_stats()
+	var prediction: Dictionary = DamagePredictor.predict_battle_outcome(
+		_get_current_hero_hp(), hero_stats, enemy_stats
+	)
+
+	predicted_damage_label.text = "预计损失: %d/击" % prediction.get("per_hit", 0)
+	var risk: String = prediction.get("risk_level", "unknown")
+	risk_label.text = DamagePredictor.get_risk_display_text(risk)
+	risk_label.modulate = DamagePredictor.get_risk_color(risk)
+
+
+## 从节点选项获取敌人配置
+func _fetch_enemy_config_for_option(opt: Dictionary) -> Dictionary:
+	var enemy_id: String = ""
+	var result: Dictionary = _run_controller.get_current_run_summary() if _run_controller != null else {}
+	var node_type: int = opt.get("node_type", 0)
+
+	match node_type:
+		2: ## 普通战斗
+			enemy_id = opt.get("enemy_config_id", "")
+		3: ## 精英战
+			enemy_id = opt.get("enemy_config_id", "")
+		7: ## 终局战
+			enemy_id = opt.get("enemy_config_id", "")
+
+	if enemy_id.is_empty():
+		return {}
+	return ConfigManager.get_enemy_config(enemy_id)
+
+
+## 获取当前主角属性
+func _get_current_hero_stats() -> Dictionary:
+	if _run_controller == null:
+		return {"vit": 10, "str": 10, "agi": 10, "tec": 10, "mnd": 10}
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var hero: Dictionary = summary.get("hero", {})
+	return {
+		"vit": hero.get("current_vit", 10),
+		"str": hero.get("current_str", 10),
+		"agi": hero.get("current_agi", 10),
+		"tec": hero.get("current_tec", 10),
+		"mnd": hero.get("current_mnd", 10),
+	}
+
+
+## 获取当前主角血量
+func _get_current_hero_hp() -> int:
+	if _run_controller == null:
+		return 100
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var hero: Dictionary = summary.get("hero", {})
+	return hero.get("current_hp", 100)

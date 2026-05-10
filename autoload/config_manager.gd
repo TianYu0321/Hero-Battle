@@ -103,6 +103,7 @@ var _scoring_configs: Dictionary = {}
 var _partner_assist_configs: Dictionary = {}
 var _partner_support_configs: Dictionary = {}
 var _pvp_opponent_configs: Dictionary = {}
+var _final_boss_configs: Dictionary = {}
 
 # --- 数字ID → 字符串Key 映射（向后兼容） ---
 const _HERO_ID_MAP: Dictionary = {
@@ -221,6 +222,7 @@ func _load_all_configs() -> void:
 	_scoring_configs = scoring_raw.get("entries", {})
 	var support_raw: Dictionary = _load_json_safe("res://resources/configs/partner_support_configs.json", {})
 	_partner_support_configs = support_raw.get("entries", {})
+	_final_boss_configs = _load_json_safe("res://resources/configs/final_boss_configs.json", {})
 	push_warning("[ConfigManager] Configs loaded. H:%d P:%d S:%d E:%d F:%d A:%d PVP:%d Shop:%d Node:%d Score:%d Support:%d" % [_hero_configs.size(), _partner_configs.size(), _skill_configs.size(), _enemy_configs.size(), _formula_configs.size(), _partner_assist_configs.size(), _pvp_opponent_configs.size(), _shop_configs.size(), _node_configs.size(), _scoring_configs.size(), _partner_support_configs.size()])
 
 static func _load_json_safe(file_path: String, fallback: Dictionary = {}) -> Dictionary:
@@ -364,3 +366,7 @@ func get_hero_id_by_config_id(config_id: int) -> String:
 		if cfg.get("hero_id", 0) == config_id:
 			return hero_id
 	return ""
+
+
+func get_final_boss_configs() -> Dictionary:
+	return _final_boss_configs.duplicate()

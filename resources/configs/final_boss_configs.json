@@ -1,0 +1,40 @@
+{
+    "metadata": {
+        "version": 1,
+        "description": "终局Boss池配置"
+    },
+    "boss_pool": [
+        {
+            "enemy_config_id": 2001,
+            "weight": 1,
+            "name": "重甲守卫·终局",
+            "difficulty": 1
+        },
+        {
+            "enemy_config_id": 2002,
+            "weight": 1,
+            "name": "暗影刺客·终局",
+            "difficulty": 2
+        },
+        {
+            "enemy_config_id": 2003,
+            "weight": 1,
+            "name": "元素法师·终局",
+            "difficulty": 3
+        },
+        {
+            "enemy_config_id": 2004,
+            "weight": 1,
+            "name": "狂战士·终局",
+            "difficulty": 4
+        },
+        {
+            "enemy_config_id": 2005,
+            "weight": 1,
+            "name": "混沌领主·终局",
+            "difficulty": 5
+        }
+    ],
+    "selection_mode": "random",
+    "unlock_condition": "reach_floor_30"
+}

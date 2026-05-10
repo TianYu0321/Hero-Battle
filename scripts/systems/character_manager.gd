@@ -130,8 +130,11 @@ func upgrade_partner(partner_config_id: int) -> bool:
 	for p in _partners:
 		if p.partner_config_id == partner_config_id:
 			if p.current_level < 5:
+				var old_level: int = p.current_level
 				p.current_level += 1
 				var config: Dictionary = ConfigManager.get_partner_config(str(partner_config_id))
+				# v2: 发射等级变更事件（事件驱动架构）
+				EventBus.emit_signal("partner_level_changed", str(partner_config_id), old_level, p.current_level)
 				if p.current_level == 3:
 					EventBus.emit_signal("partner_evolved", str(partner_config_id), config.get("name", ""), p.current_level, "", "LV3_QUALITATIVE")
 				return true

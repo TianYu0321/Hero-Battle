@@ -31,6 +31,7 @@ var _node_pool_system: NodePoolSystem = null
 var _node_resolver: NodeResolver = null
 var _settlement_system: SettlementSystem = null
 var _training_system: TrainingSystem = null
+var _boss_pool: FinalBossPool = null
 
 var _current_node_options: Array[Dictionary] = []
 var _pending_node_type: int = 0
@@ -38,6 +39,11 @@ var _pending_result: Dictionary = {}
 
 
 func _ready() -> void:
+	# 初始化Boss池（配置驱动，零硬编码）
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	_boss_pool = FinalBossPool.new(rng)
+
 	# 子系统初始化
 	_character_manager = CharacterManager.new()
 	_character_manager.name = "CharacterManager"
@@ -65,6 +71,12 @@ func _ready() -> void:
 	var elite_battle_system := EliteBattleSystem.new()
 	elite_battle_system.name = "EliteBattleSystem"
 	add_child(elite_battle_system)
+
+	# v2: 初始化技能质变系统
+	var skill_milestone_system := SkillMilestoneSystem.new()
+	skill_milestone_system.name = "SkillMilestoneSystem"
+	add_child(skill_milestone_system)
+	skill_milestone_system.initialize(_character_manager)
 
 	var pvp_director := PvpDirector.new()
 	pvp_director.name = "PvpDirector"
@@ -357,11 +369,15 @@ func _process_reward(reward: Dictionary) -> void:
 func _execute_final_battle() -> void:
 	var fb := RuntimeFinalBattle.new()
 	fb.run_id = _run.run_id
-	fb.enemy_config_id = 2005  # 混沌领主
+
+	# v2.0: 从Boss池随机选择（配置驱动，零硬编码）
+	var selected_boss: Dictionary = _boss_pool.select_random_boss()
+	fb.enemy_config_id = selected_boss.get("enemy_config_id", 2005)
 	fb.hero_max_hp = _hero.max_hp
+	print("[RunController] 终局Boss: %s (ID:%d)" % [selected_boss.get("name", "???"), fb.enemy_config_id])
 
 	# 接入真实 BattleEngine
-	var battle_result: Dictionary = _run_battle_engine(2005)
+	var battle_result: Dictionary = _run_battle_engine(fb.enemy_config_id)
 	fb.result = 1 if battle_result.get("winner", "") == "player" else 2
 	fb.hero_remaining_hp = battle_result.get("hero_remaining_hp", _hero.current_hp)
 	fb.damage_dealt_to_enemy = battle_result.get("total_damage_dealt", 0)
