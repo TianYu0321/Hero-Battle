@@ -76,18 +76,101 @@ func _resolve_training() -> Dictionary:
 	}
 
 
+func generate_enemy_for_floor(floor: int) -> Dictionary:
+	## 根据层数生成敌人信息（供UI预显示和简化战斗）
+	var enemy_cfgs: Dictionary = ConfigManager.get_all_enemy_configs()
+	var candidates: Array[Dictionary] = []
+	for k in enemy_cfgs:
+		var cfg: Dictionary = enemy_cfgs[k]
+		if cfg.is_empty() or not cfg.has("id"):
+			continue
+		var min_turn: int = cfg.get("appear_turn_min", 0)
+		var max_turn: int = cfg.get("appear_turn_max", 999)
+		if floor >= min_turn and floor <= max_turn:
+			candidates.append(cfg)
+
+	if candidates.is_empty():
+		## 默认敌人（层数越高越强）
+		var base_hp: int = 30 + floor * 5
+		var base_atk: int = 5 + floor * 2
+		return {
+			"name": "第%d层怪物" % floor,
+			"max_hp": base_hp,
+			"current_hp": base_hp,
+			"attack": base_atk,
+			"gold_drop": 10 + floor,
+			"estimated_damage": maxi(1, int(base_atk * 0.5)),
+		}
+	else:
+		var cfg: Dictionary = candidates[randi() % candidates.size()]
+		var base_hp: int = 50 + floor * 3
+		var base_atk: int = 5 + floor * 2
+		return {
+			"name": cfg.get("name", "???"),
+			"max_hp": base_hp,
+			"current_hp": base_hp,
+			"attack": base_atk,
+			"gold_drop": cfg.get("reward_gold_min", 20),
+			"estimated_damage": maxi(1, int(base_atk * 0.5)),
+			"enemy_config_id": cfg.get("id", 2001),
+		}
+
+
 func _resolve_battle(context: Dictionary) -> Dictionary:
-	## 普通战斗 — 根据当前层数选择敌人，返回战斗标记由调用方执行
+	## 简化回合制战斗：hero_attack vs enemy_hp，20回合上限
 	var turn: int = context.get("turn", 1)
-	var enemy_id: int = _select_enemy_for_turn(turn)
-	return {
+	var hero = context.get("hero")
+
+	## 生成敌人
+	var enemy: Dictionary = generate_enemy_for_floor(turn)
+	EventBus.emit_signal("enemy_encountered", enemy)
+
+	var result: Dictionary = {
 		"success": true,
 		"node_type": NodePoolSystem.NodeType.BATTLE,
-		"requires_battle": true,
+		"requires_battle": false,
 		"is_elite": false,
-		"enemy_config_id": enemy_id,
+		"enemy_data": enemy,
 		"rewards": [],
+		"logs": [],
 	}
+
+	if hero == null:
+		push_error("[NodeResolver] BATTLE node requires hero in context")
+		return result
+
+	## 简化攻击计算
+	var hero_attack: int = hero.current_str * 2 + hero.current_tec
+	var battle_rounds: int = 0
+	var hero_hp_loss: int = 0
+	var enemy_hp: int = enemy.get("current_hp", 50)
+	var enemy_atk: int = enemy.get("attack", 10)
+
+	while enemy_hp > 0 and battle_rounds < 20:
+		## 玩家攻击
+		enemy_hp -= hero_attack
+		battle_rounds += 1
+
+		## 敌人反击
+		if enemy_hp > 0:
+			var damage: int = maxi(1, enemy_atk - hero.current_vit)
+			hero_hp_loss += damage
+
+			## 检查玩家死亡（累计伤害是否超过当前HP）
+			if hero_hp_loss >= hero.current_hp:
+				result["success"] = false
+				result["logs"].append("第%d层：战斗失败，生命耗尽" % turn)
+				result["rewards"].append({"type": "hp_damage", "amount": hero_hp_loss})
+				return result
+
+	## 战斗胜利
+	if enemy_hp <= 0:
+		var gold_reward: int = enemy.get("gold_drop", 20)
+		result["rewards"].append({"type": "gold", "amount": gold_reward})
+		result["rewards"].append({"type": "hp_damage", "amount": hero_hp_loss})
+		result["logs"].append("第%d层：战斗胜利，获得%d金币，损失%d生命" % [turn, gold_reward, hero_hp_loss])
+
+	return result
 
 
 func _resolve_rest(context: Dictionary) -> Dictionary:
@@ -107,20 +190,20 @@ func _resolve_rest(context: Dictionary) -> Dictionary:
 
 func _resolve_outing(context: Dictionary) -> Dictionary:
 	## 外出 — 触发随机事件池
-	var total_weight: int = 0
+	var total_weight: float = 0.0
 	for evt in _OUTING_EVENTS:
-		total_weight += evt.get("weight", 0)
-	var roll: int = randi() % total_weight
-	var cumulative: int = 0
-	var selected_event: String = "rest"
+		total_weight += evt.get("weight", 0.0)
+	var roll: float = randf() * total_weight
+	var cumulative: float = 0.0
+	var selected_event: String = "gold_bonus"
 	for evt in _OUTING_EVENTS:
-		cumulative += evt.get("weight", 0)
+		cumulative += evt.get("weight", 0.0)
 		if roll < cumulative:
-			selected_event = evt.get("event", "rest")
+			selected_event = evt.get("event", "gold_bonus")
 			break
 
 	## 精英战需要返回战斗标记
-	if selected_event == "elite":
+	if selected_event == "elite_battle":
 		var turn: int = context.get("turn", 1)
 		var enemy_id: int = _select_enemy_for_turn(turn)
 		return {
@@ -133,14 +216,25 @@ func _resolve_outing(context: Dictionary) -> Dictionary:
 			"rewards": [],
 		}
 
-	## 商店事件
-	if selected_event == "shop":
+	## 金币奖励
+	if selected_event == "gold_bonus":
+		var gold_amount: int = randi() % 30 + 20
 		return {
 			"success": true,
 			"node_type": NodePoolSystem.NodeType.OUTING,
 			"event": selected_event,
-			"requires_ui_selection": true,
-			"rewards": [],
+			"rewards": [{"type": "gold", "amount": gold_amount}],
+		}
+
+	## 完全恢复
+	if selected_event == "full_heal":
+		var hero: RuntimeHero = context.get("hero")
+		var heal_amount: int = hero.max_hp - hero.current_hp if hero != null else 50
+		return {
+			"success": true,
+			"node_type": NodePoolSystem.NodeType.OUTING,
+			"event": selected_event,
+			"rewards": [{"type": "hp_heal", "amount": heal_amount}],
 		}
 
 	## 陷阱事件（简化：损失10%生命）
@@ -154,17 +248,17 @@ func _resolve_outing(context: Dictionary) -> Dictionary:
 			"rewards": [{"type": "hp_damage", "amount": trap_damage}],
 		}
 
-	## 休息/回复泉事件
-	if selected_event in ["rest", "heal"]:
-		var hero: RuntimeHero = context.get("hero")
-		var heal_amount: int = int(hero.max_hp * 0.15) if hero != null else 15
+	## 小偷事件（损失20%金币）
+	if selected_event == "thief":
 		return {
 			"success": true,
 			"node_type": NodePoolSystem.NodeType.OUTING,
 			"event": selected_event,
-			"rewards": [{"type": "hp_heal", "amount": heal_amount}],
+			"rewards": [{"type": "gold_theft", "ratio": 0.2}],
 		}
 
+	## 其他事件（random_level_up, lv5_training, weakness, weaken_potion）
+	## 简化处理：无即时效果，仅记录事件类型
 	return {
 		"success": true,
 		"node_type": NodePoolSystem.NodeType.OUTING,

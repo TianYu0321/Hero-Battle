@@ -42,91 +42,11 @@ offset_right = 510.0
 offset_bottom = 50.0
 text = "生命: 100/100"
 
-[node name="AttrBar1" type="ProgressBar" parent="HudContainer"]
-layout_mode = 0
-offset_left = 800.0
-offset_top = 10.0
-offset_right = 1000.0
-offset_bottom = 30.0
-value = 50.0
-
-[node name="AttrLabel1" type="Label" parent="HudContainer"]
-layout_mode = 0
-offset_left = 1010.0
-offset_top = 10.0
-offset_right = 1100.0
-offset_bottom = 30.0
-text = "体魄"
-
-[node name="AttrBar2" type="ProgressBar" parent="HudContainer"]
-layout_mode = 0
-offset_left = 800.0
-offset_top = 35.0
-offset_right = 1000.0
-offset_bottom = 55.0
-value = 50.0
-
-[node name="AttrLabel2" type="Label" parent="HudContainer"]
-layout_mode = 0
-offset_left = 1010.0
-offset_top = 35.0
-offset_right = 1100.0
-offset_bottom = 55.0
-text = "力量"
-
-[node name="AttrBar3" type="ProgressBar" parent="HudContainer"]
-layout_mode = 0
-offset_left = 800.0
-offset_top = 60.0
-offset_right = 1000.0
-offset_bottom = 80.0
-value = 50.0
-
-[node name="AttrLabel3" type="Label" parent="HudContainer"]
-layout_mode = 0
-offset_left = 1010.0
-offset_top = 60.0
-offset_right = 1100.0
-offset_bottom = 80.0
-text = "敏捷"
-
-[node name="AttrBar4" type="ProgressBar" parent="HudContainer"]
-layout_mode = 0
-offset_left = 800.0
-offset_top = 85.0
-offset_right = 1000.0
-offset_bottom = 105.0
-value = 50.0
-
-[node name="AttrLabel4" type="Label" parent="HudContainer"]
-layout_mode = 0
-offset_left = 1010.0
-offset_top = 85.0
-offset_right = 1100.0
-offset_bottom = 105.0
-text = "技巧"
-
-[node name="AttrBar5" type="ProgressBar" parent="HudContainer"]
-layout_mode = 0
-offset_left = 800.0
-offset_top = 110.0
-offset_right = 1000.0
-offset_bottom = 130.0
-value = 50.0
-
-[node name="AttrLabel5" type="Label" parent="HudContainer"]
-layout_mode = 0
-offset_left = 1010.0
-offset_top = 110.0
-offset_right = 1100.0
-offset_bottom = 130.0
-text = "精神"
-
 [node name="OptionContainer" type="VBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 40.0
+offset_left = 240.0
 offset_top = 280.0
-offset_right = 440.0
+offset_right = 640.0
 offset_bottom = 470.0
 
 [node name="TrainButton" type="Button" parent="OptionContainer"]
@@ -148,9 +68,9 @@ text = "外出"
 [node name="TrainingPanel" type="VBoxContainer" parent="."]
 visible = false
 layout_mode = 0
-offset_left = 40.0
+offset_left = 240.0
 offset_top = 280.0
-offset_right = 440.0
+offset_right = 640.0
 offset_bottom = 530.0
 
 [node name="TitleLabel" type="Label" parent="TrainingPanel"]
@@ -283,12 +203,43 @@ color = Color(0.8, 0.8, 0.8, 1)
 layout_mode = 2
 text = "选择"
 
-[node name="EnemyInfoPanel" type="VBoxContainer" parent="."]
-visible = false
+[node name="PlayerInfoPanel" type="VBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 500.0
+offset_left = 20.0
+offset_top = 160.0
+offset_right = 180.0
+offset_bottom = 420.0
+
+[node name="PlayerPortrait" type="ColorRect" parent="PlayerInfoPanel"]
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+color = Color(0.4, 0.6, 0.9, 1)
+
+[node name="PlayerVitLabel" type="Label" parent="PlayerInfoPanel"]
+layout_mode = 2
+text = "体魄: 0"
+
+[node name="PlayerStrLabel" type="Label" parent="PlayerInfoPanel"]
+layout_mode = 2
+text = "力量: 0"
+
+[node name="PlayerAgiLabel" type="Label" parent="PlayerInfoPanel"]
+layout_mode = 2
+text = "敏捷: 0"
+
+[node name="PlayerTecLabel" type="Label" parent="PlayerInfoPanel"]
+layout_mode = 2
+text = "技巧: 0"
+
+[node name="PlayerMndLabel" type="Label" parent="PlayerInfoPanel"]
+layout_mode = 2
+text = "精神: 0"
+
+[node name="EnemyInfoPanel" type="VBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 680.0
 offset_top = 280.0
-offset_right = 700.0
+offset_right = 880.0
 offset_bottom = 380.0
 
 [node name="EnemyNameLabel" type="Label" parent="EnemyInfoPanel"]

@@ -134,6 +134,11 @@ func select_node(node_index: int) -> void:
 	EventBus.emit_signal("node_selected", node_index)
 	_change_state(RunState.RUNNING_NODE_EXECUTE)
 
+	# 如果是战斗节点，预生成敌人信息供UI显示
+	if _pending_node_type == NodePoolSystem.NodeType.BATTLE:
+		var enemy_data: Dictionary = _node_resolver.generate_enemy_for_floor(_run.current_turn)
+		EventBus.emit_signal("enemy_encountered", enemy_data)
+
 	# 执行节点
 	var context: Dictionary = {
 		"hero": _hero,
@@ -286,7 +291,7 @@ func _process_node_result(result: Dictionary) -> void:
 		EventBus.emit_signal("panel_opened", _get_panel_name_from_node_type(_pending_node_type), result)
 		return
 
-	# 处理需要接入BattleEngine的战斗节点
+	# 处理需要接入BattleEngine的战斗节点（保留完整战斗引擎路径）
 	if result.get("requires_battle", false):
 		var enemy_config_id: int = result.get("enemy_config_id", 2001)
 		var battle_result: Dictionary = _run_battle_engine(enemy_config_id)
@@ -317,9 +322,12 @@ func _process_node_result(result: Dictionary) -> void:
 		_finish_node_execution(result)
 		return
 	else:
-		# 处理普通奖励
+		# 处理普通奖励（含简化战斗返回的hp_damage/gold）
 		for reward in result.get("rewards", []):
 			_process_reward(reward)
+		# 如果战斗失败导致死亡，已触发_end_run，不再推进回合
+		if _run != null and _run.run_status != 1:
+			return
 
 	_finish_node_execution(result)
 
@@ -348,7 +356,7 @@ func _process_reward(reward: Dictionary) -> void:
 			var damage_amount: int = reward.get("amount", 0)
 			if _hero != null and damage_amount > 0:
 				var old_hp: int = _hero.current_hp
-				_hero.current_hp = maxi(1, _hero.current_hp - damage_amount)
+				_hero.current_hp = maxi(0, _hero.current_hp - damage_amount)
 				_hero.is_alive = _hero.current_hp > 0
 				EventBus.emit_signal("stats_changed", _hero.id, {
 					0: {"old": old_hp, "new": _hero.current_hp, "delta": old_hp - _hero.current_hp, "attr_code": 0}

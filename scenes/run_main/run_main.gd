@@ -5,13 +5,11 @@ extends Control
 @onready var gold_label: Label = $HudContainer/GoldLabel
 @onready var hp_label: Label = $HudContainer/HpLabel
 
-@onready var attr_bars: Array[ProgressBar] = [
-	$HudContainer/AttrBar1,
-	$HudContainer/AttrBar2,
-	$HudContainer/AttrBar3,
-	$HudContainer/AttrBar4,
-	$HudContainer/AttrBar5,
-]
+@onready var player_vit_label: Label = $PlayerInfoPanel/PlayerVitLabel
+@onready var player_str_label: Label = $PlayerInfoPanel/PlayerStrLabel
+@onready var player_agi_label: Label = $PlayerInfoPanel/PlayerAgiLabel
+@onready var player_tec_label: Label = $PlayerInfoPanel/PlayerTecLabel
+@onready var player_mnd_label: Label = $PlayerInfoPanel/PlayerMndLabel
 
 @onready var option_buttons: Array[Button] = [
 	$OptionContainer/TrainButton,
@@ -76,6 +74,7 @@ func _ready() -> void:
 	EventBus.panel_opened.connect(_on_panel_opened)
 	EventBus.panel_closed.connect(_on_panel_closed)
 	EventBus.training_completed.connect(_on_training_completed)
+	EventBus.enemy_encountered.connect(_on_enemy_encountered)
 
 	# --- 实例化并启动 RunController ---
 	_run_controller = RunController.new()
@@ -106,15 +105,11 @@ func _update_hud() -> void:
 	gold_label.text = "金币: %d" % gold
 	hp_label.text = "生命: %d/%d" % [current_hp, max_hp]
 
-	var attrs: Array[int] = [
-		hero_data.get("current_vit", 0),
-		hero_data.get("current_str", 0),
-		hero_data.get("current_agi", 0),
-		hero_data.get("current_tec", 0),
-		hero_data.get("current_mnd", 0),
-	]
-	for i in range(attr_bars.size()):
-		attr_bars[i].value = float(attrs[i])
+	player_vit_label.text = "体魄: %d" % hero_data.get("current_vit", 0)
+	player_str_label.text = "力量: %d" % hero_data.get("current_str", 0)
+	player_agi_label.text = "敏捷: %d" % hero_data.get("current_agi", 0)
+	player_tec_label.text = "技巧: %d" % hero_data.get("current_tec", 0)
+	player_mnd_label.text = "精神: %d" % hero_data.get("current_mnd", 0)
 
 
 func _on_node_button_pressed(index: int) -> void:
@@ -220,10 +215,16 @@ func _on_stats_changed(_unit_id: String, stat_changes: Dictionary) -> void:
 				var new_hp: int = change.get("new", 0)
 				var max_hp: int = 100
 				hp_label.text = "生命: %d/%d" % [new_hp, max_hp]
-			1, 2, 3, 4, 5:
-				var bar_index: int = code - 1
-				if bar_index >= 0 and bar_index < attr_bars.size():
-					attr_bars[bar_index].value = float(change.get("new", 0))
+			1:
+				player_vit_label.text = "体魄: %d" % change.get("new", 0)
+			2:
+				player_str_label.text = "力量: %d" % change.get("new", 0)
+			3:
+				player_agi_label.text = "敏捷: %d" % change.get("new", 0)
+			4:
+				player_tec_label.text = "技巧: %d" % change.get("new", 0)
+			5:
+				player_mnd_label.text = "精神: %d" % change.get("new", 0)
 
 
 func _on_pvp_result(result: Dictionary) -> void:
@@ -240,6 +241,20 @@ func _on_pvp_result(result: Dictionary) -> void:
 func _on_floor_changed(current_floor: int, max_floor: int, floor_type: String) -> void:
 	floor_label.text = "层数: %d/%d" % [current_floor, max_floor]
 	print("[RunMain HUD] 楼层 %d/%d，类型: %s" % [current_floor, max_floor, floor_type])
+
+
+func _on_enemy_encountered(enemy_data: Dictionary) -> void:
+	update_enemy_info(enemy_data)
+
+
+func update_enemy_info(enemy_data: Dictionary) -> void:
+	enemy_info_panel.visible = true
+	enemy_name_label.text = "敌人: %s" % enemy_data.get("name", "???")
+	var max_hp: int = enemy_data.get("max_hp", 0)
+	var current_hp: int = enemy_data.get("current_hp", max_hp)
+	enemy_hp_label.text = "HP: %d/%d" % [current_hp, max_hp]
+	var estimated_damage: int = enemy_data.get("estimated_damage", 0)
+	predicted_damage_label.text = "预计损失血量: %d" % estimated_damage
 
 
 ## v2: 更新怪物信息和预计损失血量

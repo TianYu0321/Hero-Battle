@@ -33,6 +33,7 @@ signal gold_changed(new_amount: int, delta: int, reason: String)
 
 signal rescue_encountered(candidates: Array[Dictionary], rescue_turn: int)
 signal partner_unlocked(partner_id: String, partner_name: String, slot: int, join_turn: int, role: String)
+signal enemy_encountered(enemy_data: Dictionary)
 
 ## 局外商店信号 (Outgame Shop)
 signal mojo_coin_spent(amount: int, item_id: String)

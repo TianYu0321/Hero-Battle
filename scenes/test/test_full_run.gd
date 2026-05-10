@@ -168,7 +168,7 @@ func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	_last_node_result = result
 
 	# 检测精英战触发
-	if node_type == "OUTING" and result.get("event", "") == "elite":
+	if node_type == "OUTING" and result.get("event", "") == "elite_battle":
 		_mechanics.elite_triggered = true
 		print("  [MECHANIC] 精英战触发!")
 
