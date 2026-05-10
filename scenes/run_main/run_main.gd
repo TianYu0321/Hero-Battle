@@ -33,8 +33,8 @@ var _run_controller: RunController = null
 
 func _ready() -> void:
 	# --- 按钮点击绑定 ---
-	for i in range(node_buttons.size()):
-		node_buttons[i].pressed.connect(_on_node_button_pressed.bind(i))
+	for i in range(option_buttons.size()):
+		option_buttons[i].pressed.connect(_on_node_button_pressed.bind(i))
 
 	# --- EventBus 信号订阅（必须在 RunController 启动前连接，否则首回合信号会丢失） ---
 	EventBus.gold_changed.connect(_on_gold_changed)
@@ -105,22 +105,22 @@ func _on_run_started(run_config: Dictionary) -> void:
 
 func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 	# 设置节点选项按钮文本和可见性
-	for i in range(node_buttons.size()):
+	for i in range(option_buttons.size()):
 		if i < node_options.size():
 			var opt: Dictionary = node_options[i]
 			var node_name: String = opt.get("node_name", "未知节点")
 			var desc: String = opt.get("description", "")
-			node_buttons[i].text = "%s\n%s" % [node_name, desc] if not desc.is_empty() else node_name
-			node_buttons[i].visible = true
-			node_buttons[i].disabled = false
+			option_buttons[i].text = "%s\n%s" % [node_name, desc] if not desc.is_empty() else node_name
+			option_buttons[i].visible = true
+			option_buttons[i].disabled = false
 		else:
-			node_buttons[i].visible = false
-			node_buttons[i].disabled = true
+			option_buttons[i].visible = false
+			option_buttons[i].disabled = true
 
 
 func _on_turn_advanced(new_turn: int, phase: String, _is_fixed_node: bool) -> void:
 	# 回合推进后清空按钮（等待下一轮选项）
-	for btn in node_buttons:
+	for btn in option_buttons:
 		btn.text = "..."
 		btn.disabled = true
 
@@ -161,5 +161,5 @@ func _on_pvp_result(result: Dictionary) -> void:
 
 
 func _on_round_changed(current_round: int, max_round: int, phase: String) -> void:
-	round_label.text = "回合: %d/%d" % [current_round, max_round]
+	floor_label.text = "层数: %d/%d" % [current_round, max_round]
 	print("[RunMain HUD] 回合 %d/%d，阶段: %s" % [current_round, max_round, phase])

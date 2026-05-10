@@ -56,7 +56,7 @@ func compute_damage(attacker: Dictionary, defender: Dictionary, skill_scale: flo
 
 	# ---- 阶段0-1: 属性系数 ----
 	var power_coeff: float = _formula.get("atk_from_str", 1.0)
-	var tech_coeff: float = _formula.get("atk_from_str", 1.0)  # 同力量系数
+	var tech_coeff: float = _formula.get("atk_from_tec", 0.08)  # 技巧独立系数
 	var str_val: int = atk_stats.get("strength", 0)
 	var tec_val: int = atk_stats.get("technique", 0)
 	var attr_coeff: float = str_val * power_coeff + tec_val * tech_coeff
