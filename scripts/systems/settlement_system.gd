@@ -12,7 +12,11 @@ var _weight_final: float = 0.40
 var _weight_attr: float = 0.25
 var _weight_level: float = 0.20
 var _weight_gold: float = 0.15
-## var _weight_chain: float = 0.10  ## v2.0已删除
+## 兼容旧变量（v2.0已删除，设为0不再使用）
+var _weight_training: float = 0.0
+var _weight_pvp: float = 0.0
+var _weight_purity: float = 0.0
+var _weight_chain: float = 0.0
 
 var _grade_s: int = 85
 var _grade_a: int = 70
@@ -24,10 +28,10 @@ func _ready() -> void:
 	for k in scoring_cfg:
 		var cfg: Dictionary = scoring_cfg[k]
 		_weight_final = cfg.get("weight_final_performance", _weight_final)
-		_weight_training = cfg.get("weight_training_efficiency", _weight_training)
-		_weight_pvp = cfg.get("weight_pvp_performance", _weight_pvp)
-		_weight_purity = cfg.get("weight_build_purity", _weight_purity)
-		_weight_chain = cfg.get("weight_chain_showcase", _weight_chain)
+		_weight_training = cfg.get("weight_training_efficiency", 0.0)
+		_weight_pvp = cfg.get("weight_pvp_performance", 0.0)
+		_weight_purity = cfg.get("weight_build_purity", 0.0)
+		_weight_chain = cfg.get("weight_chain_showcase", 0.0)
 		_grade_s = cfg.get("grade_s_threshold", _grade_s)
 		_grade_a = cfg.get("grade_a_threshold", _grade_a)
 		_grade_b = cfg.get("grade_b_threshold", _grade_b)
