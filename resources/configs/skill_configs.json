@@ -88,7 +88,7 @@
         "segment_min": 2,
         "segment_max": 4,
         "segment_attr_bonus": 3,
-        "segment_attr_step": 20
+        "segment_attr_step": 15
       },
       "chain_tags": ["连击"],
       "icon_path": "",
@@ -138,7 +138,7 @@
       "prob_attr_bonus": 5,
       "prob_attr_step": 10,
       "prob_attr_inc": 0.02,
-      "prob_max": 0.5,
+      "prob_max": 0.4,
       "cooldown": 0,
       "once_per_battle": false,
       "condition_desc": "受击后概率触发",
@@ -148,7 +148,7 @@
         "prob_attr_bonus": 5,
         "prob_attr_step": 10,
         "prob_attr_inc": 0.02,
-        "prob_max": 0.5,
+        "prob_max": 0.4,
         "stun_prob": 0.10
       },
       "chain_tags": ["反击"],

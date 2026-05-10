@@ -1,38 +1,98 @@
 {
   "metadata": {
-    "version": 1,
-    "description": "外出事件池权重配置"
+    "version": 2,
+    "description": "外出事件池配置（v2.0补充说明）：3大类4:3:3比例"
   },
-  "events": [
-    {
-      "type": "rest",
-      "weight": 30,
-      "desc": "休息恢复15%生命"
+  "categories": {
+    "reward": {
+      "total_weight": 40,
+      "items": [
+        {
+          "type": "gold_bonus",
+          "weight": 10,
+          "desc": "大量金币奖励",
+          "effect": "gold",
+          "value": 50,
+          "value_range": [30, 80]
+        },
+        {
+          "type": "random_level_up",
+          "weight": 10,
+          "desc": "随机角色等级+1",
+          "effect": "level",
+          "value": 1,
+          "target": "random_partner"
+        },
+        {
+          "type": "full_heal",
+          "weight": 10,
+          "desc": "生命完全恢复",
+          "effect": "heal",
+          "value": 9999
+        },
+        {
+          "type": "lv5_training",
+          "weight": 10,
+          "desc": "LV5训练机会",
+          "effect": "training",
+          "value": 5,
+          "allow_overflow": true
+        }
+      ]
     },
-    {
-      "type": "shop",
-      "weight": 20,
-      "desc": "发现商店"
+    "penalty": {
+      "total_weight": 30,
+      "items": [
+        {
+          "type": "trap",
+          "weight": 7.5,
+          "desc": "遭遇陷阱，扣除血量",
+          "effect": "damage",
+          "value": 20,
+          "value_formula": "max_hp * 0.15"
+        },
+        {
+          "type": "weakness",
+          "weight": 7.5,
+          "desc": "训练效果减半（3层）",
+          "effect": "debuff",
+          "debuff_type": "training_half",
+          "duration": 3,
+          "value": 0.5
+        },
+        {
+          "type": "thief",
+          "weight": 7.5,
+          "desc": "偷走20%金币",
+          "effect": "steal_gold",
+          "value": 0.2
+        },
+        {
+          "type": "weaken_potion",
+          "weight": 7.5,
+          "desc": "受到伤害+20%（3层）",
+          "effect": "debuff",
+          "debuff_type": "damage_taken_up",
+          "duration": 3,
+          "value": 1.2
+        }
+      ]
     },
-    {
-      "type": "trap",
-      "weight": 15,
-      "desc": "遭遇陷阱"
-    },
-    {
-      "type": "heal",
-      "weight": 15,
-      "desc": "发现回复泉"
-    },
-    {
-      "type": "special",
-      "weight": 15,
-      "desc": "特殊事件"
-    },
-    {
-      "type": "elite",
-      "weight": 5,
-      "desc": "精英战"
+    "elite": {
+      "total_weight": 30,
+      "items": [
+        {
+          "type": "elite_battle",
+          "weight": 30,
+          "desc": "精英战斗",
+          "effect": "elite",
+          "rewards": {
+            "buff_options": 2,
+            "fixed_gold": 100,
+            "gold_range": [80, 150]
+          }
+        }
+      ]
     }
-  ]
+  }
 }

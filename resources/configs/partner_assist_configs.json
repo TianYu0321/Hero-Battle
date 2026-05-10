@@ -19,9 +19,9 @@
       "lv3_mechanic_desc": "攻击后追加一次低概率的二次斩击",
       "lv5_mechanic_desc": "",
       "cooldown": 0,
-      "max_trigger_per_battle": 2,
-      "chain_max": 4,
-      "chain_window": 3
+      "max_trigger_per_battle": 999,
+      "chain_max": 999,
+      "chain_window": 0
     },
     "6002": {
       "id": 6002,
@@ -37,9 +37,9 @@
       "lv3_mechanic_desc": "暴击后追加伤害提升50%",
       "lv5_mechanic_desc": "",
       "cooldown": 0,
-      "max_trigger_per_battle": 2,
-      "chain_max": 4,
-      "chain_window": 3
+      "max_trigger_per_battle": 999,
+      "chain_max": 999,
+      "chain_window": 0
     },
     "6003": {
       "id": 6003,
@@ -55,9 +55,9 @@
       "lv3_mechanic_desc": "护盾可吸收伤害并反弹10%",
       "lv5_mechanic_desc": "",
       "cooldown": 0,
-      "max_trigger_per_battle": 2,
-      "chain_max": 4,
-      "chain_window": 3
+      "max_trigger_per_battle": 999,
+      "chain_max": 999,
+      "chain_window": 0
     },
     "6004": {
       "id": 6004,
@@ -73,9 +73,9 @@
       "lv3_mechanic_desc": "治疗同时清除1个减益效果",
       "lv5_mechanic_desc": "",
       "cooldown": 2,
-      "max_trigger_per_battle": 2,
-      "chain_max": 4,
-      "chain_window": 3
+      "max_trigger_per_battle": 999,
+      "chain_max": 999,
+      "chain_window": 0
     },
     "6005": {
       "id": 6005,
@@ -91,9 +91,9 @@
       "lv3_mechanic_desc": "干扰同时降低敌人10%攻击力",
       "lv5_mechanic_desc": "",
       "cooldown": 0,
-      "max_trigger_per_battle": 2,
-      "chain_max": 4,
-      "chain_window": 3
+      "max_trigger_per_battle": 999,
+      "chain_max": 999,
+      "chain_window": 0
     },
     "6006": {
       "id": 6006,
@@ -109,9 +109,9 @@
       "lv3_mechanic_desc": "斩杀伤害对低血量敌人额外+20%",
       "lv5_mechanic_desc": "",
       "cooldown": 0,
-      "max_trigger_per_battle": 2,
-      "chain_max": 4,
-      "chain_window": 3
+      "max_trigger_per_battle": 999,
+      "chain_max": 999,
+      "chain_window": 0
     }
   }
 }

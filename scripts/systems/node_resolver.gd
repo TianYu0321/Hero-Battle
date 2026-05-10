@@ -7,13 +7,20 @@ extends Node
 
 signal node_resolved(node_type: int, result_data: Dictionary)
 
+## v2.0 外出事件池：3大类 4:3:3 比例
 const _OUTING_EVENTS: Array[Dictionary] = [
-	{"event": "rest", "weight": 20, "desc": "休息恢复"},
-	{"event": "shop", "weight": 15, "desc": "发现商店"},
-	{"event": "trap", "weight": 10, "desc": "遭遇陷阱"},
-	{"event": "heal", "weight": 10, "desc": "发现回复泉"},
-	{"event": "special", "weight": 20, "desc": "特殊事件"},
-	{"event": "elite", "weight": 25, "desc": "精英战"},
+	## 奖励类 40%
+	{"event": "gold_bonus",       "weight": 10, "category": "reward", "desc": "大量金币"},
+	{"event": "random_level_up",  "weight": 10, "category": "reward", "desc": "随机角色等级+1"},
+	{"event": "full_heal",        "weight": 10, "category": "reward", "desc": "生命完全恢复"},
+	{"event": "lv5_training",     "weight": 10, "category": "reward", "desc": "LV5训练机会"},
+	## 惩罚类 30%
+	{"event": "trap",             "weight": 7.5, "category": "penalty", "desc": "遭遇陷阱"},
+	{"event": "weakness",         "weight": 7.5, "category": "penalty", "desc": "训练效果减半(3层)"},
+	{"event": "thief",            "weight": 7.5, "category": "penalty", "desc": "偷走20%金币"},
+	{"event": "weaken_potion",    "weight": 7.5, "category": "penalty", "desc": "受到伤害+20%(3层)"},
+	## 精英类 30%
+	{"event": "elite_battle",     "weight": 30, "category": "elite", "desc": "精英战斗"},
 ]
 
 

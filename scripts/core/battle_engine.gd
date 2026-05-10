@@ -66,6 +66,13 @@ func execute_battle(battle_config: Dictionary) -> Dictionary:
 	_state = BattleState.INIT
 	_turn_number = 0
 
+	# v2: 初始化敌人的 spawn_turn 和 base_stats（供混沌领主/元素法师计算使用）
+	for enemy in _enemies:
+		if not enemy.has("spawn_turn"):
+			enemy["spawn_turn"] = _turn_number
+		if not enemy.has("base_stats"):
+			enemy["base_stats"] = enemy.get("stats", {}).duplicate()
+
 	# 初始化伙伴的 assist_count / chain_count
 	for p in _partners:
 		p.assist_count = 0

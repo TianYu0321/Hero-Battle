@@ -30,9 +30,11 @@ func execute_enemy_turn(enemy: Dictionary, hero: Dictionary, turn_number: int) -
 				enemy.buffs.remove_at(i)
 			return [{"is_stunned": true, "log": "%s 眩晕中，跳过行动" % enemy.get("name", "")}]
 
-	# 元素法师第3回合力×2.5
+	# 元素法师：出场后第3回合力×2.5
 	var skill_scale: float = 1.0
-	if mechanic.begins_with("蓄力爆发") and turn_number == 3:
+	var spawn_turn: int = enemy.get("spawn_turn", 1)
+	var turns_since_spawn: int = max(turn_number - spawn_turn, 0)
+	if mechanic.begins_with("蓄力爆发") and turns_since_spawn == 3:
 		skill_scale = 2.5
 
 	# 狂战士低血狂暴
@@ -41,7 +43,7 @@ func execute_enemy_turn(enemy: Dictionary, hero: Dictionary, turn_number: int) -
 		if hp_ratio < 0.30:
 			skill_scale = 1.5
 
-	# 混沌领主每回合+5%全属性（线性增长，基于初始属性）
+	# 混沌领主：每回合+5%全属性（线性增长，上限+45%，基于出场后回合数）
 	if mechanic.begins_with("成长进化"):
 		var stats: Dictionary = enemy.get("stats", {})
 		var base_stats: Dictionary = enemy.get("base_stats", {})
@@ -49,8 +51,11 @@ func execute_enemy_turn(enemy: Dictionary, hero: Dictionary, turn_number: int) -
 			# 首次调用，保存基准值
 			base_stats = stats.duplicate()
 			enemy["base_stats"] = base_stats
+		var _spawn_turn: int = enemy.get("spawn_turn", 1)
+		var _turns_since_spawn: int = max(turn_number - _spawn_turn, 0)
+		var growth: float = min(0.05 * _turns_since_spawn, 0.45)  # 上限+45%
 		for key in stats:
-			stats[key] = int(base_stats.get(key, stats[key]) * (1.0 + 0.05 * turn_number))
+			stats[key] = int(base_stats.get(key, stats[key]) * (1.0 + growth))
 
 	var pkt: Dictionary = _dc.compute_damage(enemy, hero, skill_scale, "NORMAL")
 	packets.append(pkt)
