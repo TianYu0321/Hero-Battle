@@ -304,6 +304,10 @@ func get_enemy_config(enemy_id: String) -> Dictionary:
 		return {}
 	return _enemy_configs[enemy_id]
 
+
+func get_all_enemy_configs() -> Dictionary:
+	return _enemy_configs.duplicate()
+
 func get_partner_assist_config(assist_id: String) -> Dictionary:
 	if not _partner_assist_configs.has(assist_id):
 		push_warning("[ConfigManager] assist_id not found: %s" % assist_id)
@@ -348,7 +352,7 @@ func get_all_partner_config_ids() -> Array[int]:
 	var result: Array[int] = []
 	for partner_id in _partner_configs:
 		var cfg: Dictionary = _partner_configs[partner_id]
-		var pid: int = cfg.get("hero_id", 0)
+		var pid: int = cfg.get("id", 0)
 		if pid > 0:
 			result.append(pid)
 	return result

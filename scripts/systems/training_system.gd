@@ -76,8 +76,8 @@ func execute_training(attr_type: int, floor: int, partner_bonus: int = 0) -> Dic
 	
 	# 更新该属性的训练计数
 	var attr_key: String = _get_attr_key(attr_type)
-	var current_count: int = hero.get("_training_count_" + attr_key, 0)
-	hero.set("_training_count_" + attr_key, current_count + 1)
+	var current_count: int = hero.training_counts.get(attr_key, 0)
+	hero.training_counts[attr_key] = current_count + 1
 	
 	# 检查是否升级
 	var new_level: int = _get_training_level(hero, attr_type)
@@ -115,7 +115,7 @@ func execute_training(attr_type: int, floor: int, partner_bonus: int = 0) -> Dic
 ## 获取某属性的训练等级
 func _get_training_level(hero: RuntimeHero, attr_type: int) -> int:
 	var attr_key: String = _get_attr_key(attr_type)
-	var count: int = hero.get("_training_count_" + attr_key, 0)
+	var count: int = hero.training_counts.get(attr_key, 0)
 	var level: int = (count / _LEVEL_UP_COUNT) + 1
 	return mini(level, _MAX_TRAINING_LEVEL)
 

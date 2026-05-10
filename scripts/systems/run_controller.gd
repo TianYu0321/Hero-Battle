@@ -30,9 +30,11 @@ var _character_manager: CharacterManager = null
 var _node_pool_system: NodePoolSystem = null
 var _node_resolver: NodeResolver = null
 var _settlement_system: SettlementSystem = null
+var _training_system: TrainingSystem = null
 
 var _current_node_options: Array[Dictionary] = []
 var _pending_node_type: int = 0
+var _pending_result: Dictionary = {}
 
 
 func _ready() -> void:
@@ -45,10 +47,10 @@ func _ready() -> void:
 	_node_pool_system.name = "NodePoolSystem"
 	add_child(_node_pool_system)
 
-	var training_system := TrainingSystem.new()
-	training_system.name = "TrainingSystem"
-	add_child(training_system)
-	training_system.initialize(_character_manager)
+	_training_system = TrainingSystem.new()
+	_training_system.name = "TrainingSystem"
+	add_child(_training_system)
+	_training_system.initialize(_character_manager)
 
 	var shop_system := ShopSystem.new()
 	shop_system.name = "ShopSystem"
@@ -71,7 +73,6 @@ func _ready() -> void:
 	_node_resolver = NodeResolver.new()
 	_node_resolver.name = "NodeResolver"
 	add_child(_node_resolver)
-	_node_resolver.initialize(training_system, shop_system, rescue_system, elite_battle_system, pvp_director, _character_manager)
 
 	_settlement_system = SettlementSystem.new()
 	_settlement_system.name = "SettlementSystem"
@@ -122,16 +123,29 @@ func select_node(node_index: int) -> void:
 	_change_state(RunState.RUNNING_NODE_EXECUTE)
 
 	# 执行节点
-	var result: Dictionary = _node_resolver.resolve_node(_pending_node_type, selected, _run, _hero)
+	var context: Dictionary = {
+		"hero": _hero,
+		"run": _run,
+		"turn": _run.current_turn,
+		"partners": _character_manager.get_partners(),
+	}
+	var result: Dictionary = _node_resolver.resolve(selected, context)
 	_process_node_result(result)
 
 
 func purchase_shop_item(item_data: Dictionary) -> Dictionary:
-	return _node_resolver.process_shop_purchase(item_data, _run)
+	var shop_system: ShopSystem = get_node_or_null("ShopSystem")
+	if shop_system == null:
+		push_error("[RunController] ShopSystem not found")
+		return {"success": false, "error": "ShopSystem not found"}
+	return shop_system.process_purchase(item_data, _run.gold_owned)
 
 
 func select_rescue_partner(partner_config_id: int) -> void:
-	_node_resolver.process_rescue_selection(partner_config_id, _run.current_turn, _run)
+	var rescue_system: RescueSystem = get_node_or_null("RescueSystem")
+	if rescue_system != null:
+		rescue_system.rescue_partner(partner_config_id, _run.current_turn)
+		_finish_node_execution(_pending_result)
 
 
 func advance_turn() -> void:
@@ -149,7 +163,7 @@ func advance_turn() -> void:
 	# 自动存档
 	_auto_save()
 
-	EventBus.emit_signal("turn_advanced", _run.current_turn, _get_phase_name(), _is_fixed_node_turn(_run.current_turn))
+	EventBus.emit_signal("floor_advanced", _run.current_turn, _get_phase_name(), _is_fixed_node_turn(_run.current_turn))
 	_change_state(RunState.RUNNING_NODE_SELECT)
 
 
@@ -186,7 +200,7 @@ func _change_state(new_state: int) -> void:
 		RunState.RUNNING_NODE_SELECT:
 			_generate_node_options()
 			EventBus.emit_signal("node_options_presented", _current_node_options)
-			EventBus.emit_signal("round_changed", _run.current_turn, _MAX_TURNS, _get_phase_name())
+			EventBus.emit_signal("floor_changed", _run.current_turn, _MAX_TURNS, _get_phase_name())
 
 		RunState.RUNNING_NODE_EXECUTE:
 			pass
@@ -207,7 +221,10 @@ func _generate_node_options() -> void:
 	# 固定节点检查
 	if turn in _RESCUE_TURNS:
 		# 救援：3个候选伙伴（只生成一次，避免与NodeResolver重复生成导致不一致）
-		var candidates: Array[Dictionary] = _node_resolver._rescue_system.generate_candidates()
+		var rescue_system: RescueSystem = get_node_or_null("RescueSystem")
+		var candidates: Array[Dictionary] = []
+		if rescue_system != null:
+			candidates = rescue_system.generate_candidates()
 		_current_node_options.clear()
 		for c in candidates:
 			_current_node_options.append({
@@ -222,7 +239,7 @@ func _generate_node_options() -> void:
 
 	if turn in _PVP_TURNS:
 		_current_node_options = [{
-			"node_type": 6,
+			"node_type": NodePoolSystem.NodeType.PVP_CHECK,
 			"node_name": "PVP检定",
 			"description": "与其他斗士进行对战检定",
 			"node_id": "pvp_%d" % turn,
@@ -243,6 +260,7 @@ func _generate_node_options() -> void:
 
 
 func _process_node_result(result: Dictionary) -> void:
+	_pending_result = result
 	if not result.get("success", true):
 		# 节点执行失败（如精英战败北）
 		if _hero != null and not _hero.is_alive:
@@ -250,33 +268,48 @@ func _process_node_result(result: Dictionary) -> void:
 			_end_run()
 			return
 
-	# 处理奖励
-	for reward in result.get("rewards", []):
-		_process_reward(reward)
+	# 处理需要UI选择的节点（训练/救援/商店）
+	if result.get("requires_ui_selection", false):
+		# 暂停状态机，等待UI回调（select_training_attr / select_rescue_partner / purchase_shop_item）
+		EventBus.emit_signal("panel_opened", _get_panel_name_from_node_type(_pending_node_type), result)
+		return
 
-	# 记录节点历史
-	_run.node_history.append({
-		"turn": _run.current_turn,
-		"node_type": _pending_node_type,
-		"result": result,
-	})
+	# 处理需要接入BattleEngine的战斗节点
+	if result.get("requires_battle", false):
+		var enemy_config_id: int = result.get("enemy_config_id", 2001)
+		var battle_result: Dictionary = _run_battle_engine(enemy_config_id)
+		# 同步战斗后主角HP
+		_hero.current_hp = battle_result.get("hero_remaining_hp", _hero.current_hp)
+		_hero.is_alive = battle_result.get("winner", "") == "player"
+		if not _hero.is_alive:
+			_run.run_status = 3  # LOSE
+			_end_run()
+			return
+		# 战斗胜利奖励金币
+		var gold_reward: int = randi() % 20 + 10
+		_process_reward({"type": "gold", "amount": gold_reward})
+	elif _pending_node_type == NodePoolSystem.NodeType.PVP_CHECK:
+		# PVP检定节点
+		var pvp_director: PvpDirector = get_node_or_null("PvpDirector")
+		if pvp_director != null:
+			var pvp_config: Dictionary = {
+				"turn_number": _run.current_turn,
+				"player_gold": _run.gold_owned,
+				"player_hp": _hero.current_hp,
+				"player_hero": _hero_to_battle_dict(),
+				"run_seed": _run.seed,
+			}
+			var pvp_result: Dictionary = pvp_director.execute_pvp(pvp_config)
+			var pvp_reward: Dictionary = {"type": "pvp_result", "data": pvp_result}
+			_process_reward(pvp_reward)
+		_finish_node_execution(result)
+		return
+	else:
+		# 处理普通奖励
+		for reward in result.get("rewards", []):
+			_process_reward(reward)
 
-	# 更新计数器
-	match _pending_node_type:
-		2, 3:
-			_run.battle_win_count += 1
-			if _pending_node_type == 3:
-				_run.elite_win_count += 1
-				_run.elite_total_count += 1
-		4:
-			_run.shop_visit_count += 1
-		6:
-			# PVP结果由 _process_reward 中的 "pvp_result" 分支处理
-			pass
-
-	_node_pool_system.record_selection(_pending_node_type)
-	_change_state(RunState.TURN_ADVANCE)
-	advance_turn()
+	_finish_node_execution(result)
 
 
 func _process_reward(reward: Dictionary) -> void:
@@ -291,34 +324,34 @@ func _process_reward(reward: Dictionary) -> void:
 			pass  # 属性提升已在TrainingSystem中通过CharacterManager应用
 		"elite_reward_choice":
 			pass  # 3选1奖励由UI层处理
+		"hp_heal":
+			var heal_amount: int = reward.get("amount", 0)
+			if _hero != null and heal_amount > 0:
+				var old_hp: int = _hero.current_hp
+				_hero.current_hp = mini(_hero.current_hp + heal_amount, _hero.max_hp)
+				EventBus.emit_signal("stats_changed", _hero.id, {
+					0: {"old": old_hp, "new": _hero.current_hp, "delta": _hero.current_hp - old_hp, "attr_code": 0}
+				})
+		"hp_damage":
+			var damage_amount: int = reward.get("amount", 0)
+			if _hero != null and damage_amount > 0:
+				var old_hp: int = _hero.current_hp
+				_hero.current_hp = maxi(1, _hero.current_hp - damage_amount)
+				_hero.is_alive = _hero.current_hp > 0
+				EventBus.emit_signal("stats_changed", _hero.id, {
+					0: {"old": old_hp, "new": _hero.current_hp, "delta": old_hp - _hero.current_hp, "attr_code": 0}
+				})
+			if _hero != null and not _hero.is_alive:
+				_run.run_status = 3  # LOSE
+				_end_run()
 		"pvp_result":
 			var pvp_data: Dictionary = reward.get("data", {})
 			if pvp_data != null and not pvp_data.is_empty():
-				if not pvp_data.get("won", true):
-					var penalty_tier: String = pvp_data.get("penalty_tier", "none")
-					var penalty_value: int = pvp_data.get("penalty_value", 0)
-					match penalty_tier:
-						"gold_50":
-							var old_gold: int = _run.gold_owned
-							_run.gold_owned = maxi(0, _run.gold_owned - penalty_value)
-							_run.gold_earned_total = maxi(0, _run.gold_earned_total - penalty_value)
-							EventBus.emit_signal("gold_changed", _run.gold_owned, _run.gold_owned - old_gold, "pvp_penalty")
-						"hp_30":
-							var old_hp: int = _hero.current_hp
-							_hero.current_hp = maxi(10, _hero.current_hp - penalty_value)
-							if _hero.current_hp <= 0:
-								_hero.current_hp = 10
-							_hero.is_alive = _hero.current_hp > 0
-							EventBus.emit_signal("stats_changed", _hero.id, {
-								0: {"old": old_hp, "new": _hero.current_hp, "delta": old_hp - _hero.current_hp, "attr_code": 0}
-							})
-				# 记录PVP结果到RuntimeRun
+				# v2: PVP失败仅影响奖励，无HP/金币惩罚
 				if _run.current_turn == 10:
 					_run.pvp_10th_result = 1 if pvp_data.get("won", false) else 2
 				elif _run.current_turn == 20:
 					_run.pvp_20th_result = 1 if pvp_data.get("won", false) else 2
-				if not pvp_data.get("won", false):
-					_run.pvp_fail_penalty_active = true
 
 
 func _execute_final_battle() -> void:
@@ -329,11 +362,11 @@ func _execute_final_battle() -> void:
 
 	# 接入真实 BattleEngine
 	var battle_result: Dictionary = _run_battle_engine(2005)
-	fb.result = 1 if battle_result.winner == "player" else 2
-	fb.hero_remaining_hp = battle_result.hero_remaining_hp if battle_result.has("hero_remaining_hp") else _hero.current_hp
-	fb.damage_dealt_to_enemy = battle_result.total_damage_dealt
-	fb.total_rounds = battle_result.turns_elapsed
-	fb.ultimate_triggered = battle_result.ultimate_triggered
+	fb.result = 1 if battle_result.get("winner", "") == "player" else 2
+	fb.hero_remaining_hp = battle_result.get("hero_remaining_hp", _hero.current_hp)
+	fb.damage_dealt_to_enemy = battle_result.get("total_damage_dealt", 0)
+	fb.total_rounds = battle_result.get("turns_elapsed", 0)
+	fb.ultimate_triggered = battle_result.get("ultimate_triggered", false)
 	_run.final_enemy_cleared = (fb.result == 1)
 	_run.run_status = 2 if fb.result == 1 else 3
 
@@ -360,13 +393,18 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 
 	var battle_partners: Array = []
 	for p in _character_manager.get_partners():
-		var pstats: Dictionary = {
-			"physique": p.current_vit, "strength": p.current_str,
-			"agility": p.current_agi, "technique": p.current_tec, "spirit": p.current_mnd,
-		}
 		var pid: String = ConfigManager._PARTNER_ID_MAP.get(str(p.partner_config_id), str(p.partner_config_id))
 		var pcfg: Dictionary = ConfigManager.get_partner_config(pid)
 		var p_name: String = pcfg.get("name", pid)
+		# v2: 伙伴属性从援助配置读取
+		var assist_cfg: Dictionary = ConfigManager.get_partner_assist_by_partner_id(pid)
+		var pstats: Dictionary = {
+			"physique": assist_cfg.get("base_physique", 10),
+			"strength": assist_cfg.get("base_strength", 10),
+			"agility": assist_cfg.get("base_agility", 10),
+			"technique": assist_cfg.get("base_technique", 10),
+			"spirit": assist_cfg.get("base_spirit", 10),
+		}
 		battle_partners.append(PartnerAssist.make_partner_battle_unit(pid, p_name, pstats))
 
 	var battle_engine: BattleEngine = BattleEngine.new()
@@ -376,7 +414,7 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 		"enemies": [enemy],
 		"partners": battle_partners,
 		"battle_seed": randi(),
-		"playback_mode": "fast_forward",
+		"playback_mode": "standard",
 	}
 	var result: Dictionary = battle_engine.execute_battle(config)
 	battle_engine.queue_free()
@@ -384,12 +422,14 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 	# 同步战斗后的 HP 回写到 RuntimeHero
 	_hero.current_hp = battle_hero.get("hp", _hero.current_hp)
 	_hero.is_alive = battle_hero.get("is_alive", true)
+	# 确保result包含hero_remaining_hp供调用方使用
+	result["hero_remaining_hp"] = battle_hero.get("hp", 0)
 	return result
 
 
 func _settle(final_battle: RuntimeFinalBattle) -> void:
 	var partners: Array[RuntimePartner] = _character_manager.get_partners()
-	var score: FighterArchiveScore = _settlement_system.calculate_score(_run, _hero, final_battle)
+	var score: FighterArchiveScore = _settlement_system.calculate_score(_run, _hero, final_battle, partners)
 	_run.total_score = int(score.total_score)
 	var archive: FighterArchiveMain = _settlement_system.generate_fighter_archive(_run, _hero, partners, score)
 
@@ -448,14 +488,78 @@ func _get_partner_dicts() -> Array:
 
 func select_training_attr(attr_type: int) -> void:
 	## 玩家从训练面板选择了具体属性
-	if _state == STATE.NODE_SELECT:
-		var gain: int = 5 + randi() % 3
-		_run_hero.current_vit += gain if attr_type == 1 else 0
-		_run_hero.current_str += gain if attr_type == 2 else 0
-		_run_hero.current_agi += gain if attr_type == 3 else 0
-		_run_hero.current_tec += gain if attr_type == 4 else 0
-		_run_hero.current_mnd += gain if attr_type == 5 else 0
-		EventBus.emit_signal("stats_changed", "hero", {
-			str(attr_type): {"new": _run_hero.get_attr_value(attr_type), "delta": gain}
-		})
-		_advance_floor()
+	if _state == RunState.RUNNING_NODE_EXECUTE:
+		var partner_bonus: int = _calculate_partner_bonus_for_attr(attr_type)
+		_training_system.execute_training(attr_type, _run.current_turn, partner_bonus)
+		_finish_node_execution(_pending_result)
+
+
+func _finish_node_execution(result: Dictionary) -> void:
+	## 统一完成节点执行：记录历史、更新计数器、推进层数
+	# 记录节点历史
+	_run.node_history.append({
+		"turn": _run.current_turn,
+		"node_type": _pending_node_type,
+		"result": result,
+	})
+
+	# 更新计数器
+	match _pending_node_type:
+		2:  # 普通战斗
+			_run.battle_win_count += 1
+		4:  # 外出事件
+			if result.get("event", "") == "shop":
+				_run.shop_visit_count += 1
+		6:  # 商店（直接选择）
+			_run.shop_visit_count += 1
+		7:  # PVP
+			# PVP结果由 _process_reward 中的 "pvp_result" 分支处理
+			pass
+	
+	# 战斗节点统一计数（含普通战斗、外出精英战）
+	if result.get("requires_battle", false):
+		_run.battle_win_count += 1
+		if result.get("is_elite", false):
+			_run.elite_win_count += 1
+			_run.elite_total_count += 1
+
+	_node_pool_system.record_selection(_pending_node_type)
+	_change_state(RunState.TURN_ADVANCE)
+	advance_turn()
+
+
+func _get_panel_name_from_node_type(node_type: int) -> String:
+	match node_type:
+		1: return "TRAINING_PANEL"
+		4: return "SHOP_PANEL"  # 外出事件的商店
+		5: return "RESCUE_PANEL"
+		6: return "SHOP_PANEL"
+		_: return "UNKNOWN_PANEL"
+
+
+func _calculate_partner_bonus_for_attr(attr_type: int) -> int:
+	## 计算该属性训练时伙伴提供的支援加成
+	var bonus: int = 0
+	for p in _character_manager.get_partners():
+		if p.favored_attr == attr_type and p.is_active:
+			bonus += 2  # 基础加成值，Lv3/Lv5时更高
+	return bonus
+
+
+func _hero_to_battle_dict() -> Dictionary:
+	## 将 RuntimeHero 转换为 PvpOpponentGenerator 需要的 battle dict 格式
+	var hero_id: String = ConfigManager.get_hero_id_by_config_id(_hero.hero_config_id)
+	if hero_id.is_empty():
+		hero_id = "hero_warrior"
+	return {
+		"hero_id": hero_id,
+		"stats": {
+			"physique": _hero.current_vit,
+			"strength": _hero.current_str,
+			"agility": _hero.current_agi,
+			"technique": _hero.current_tec,
+			"spirit": _hero.current_mnd,
+		},
+		"max_hp": _hero.max_hp,
+		"hp": _hero.current_hp,
+	}

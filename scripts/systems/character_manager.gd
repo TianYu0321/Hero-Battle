@@ -83,11 +83,6 @@ func add_partner(partner_config_id: int, position: int) -> RuntimePartner:
 	p.position = position
 	p.current_level = 1
 	p.is_active = true
-	p.current_vit = 10
-	p.current_str = 10
-	p.current_agi = 10
-	p.current_tec = 10
-	p.current_mnd = 10
 	_partners.append(p)
 	EventBus.emit_signal("partner_unlocked", str(partner_config_id), config.get("name", ""), position, 0, "")
 	return p
@@ -134,7 +129,7 @@ func modify_hero_stats(stat_changes: Dictionary) -> void:
 func upgrade_partner(partner_config_id: int) -> bool:
 	for p in _partners:
 		if p.partner_config_id == partner_config_id:
-			if p.current_level < 3:
+			if p.current_level < 5:
 				p.current_level += 1
 				var config: Dictionary = ConfigManager.get_partner_config(str(partner_config_id))
 				if p.current_level == 3:
@@ -186,38 +181,14 @@ func get_secondary_attr(attr_type: int) -> int:
 	return _SECONDARY_ATTR_MAP.get(attr_type, 0)
 
 
+## 获取战斗准备数据（原始运行时数据，不构造战斗Dictionary）
+## 战斗单位构造应由调用方（如BattleEngine或RunController）负责
 func get_battle_ready_team() -> Dictionary:
 	if _hero == null:
-		return {"hero": {}, "partners": []}
-
-	var hero_stats: Dictionary = {
-		"physique": _hero.current_vit,
-		"strength": _hero.current_str,
-		"agility": _hero.current_agi,
-		"technique": _hero.current_tec,
-		"spirit": _hero.current_mnd,
-	}
-	var hero_id: String = ConfigManager.get_hero_id_by_config_id(_hero.hero_config_id)
-	if hero_id.is_empty():
-		hero_id = "hero_warrior"
-	var battle_hero: Dictionary = DamageCalculator.spawn_hero(hero_id, hero_stats)
-	battle_hero.hp = _hero.current_hp
-	battle_hero.max_hp = _hero.max_hp
-
-	var battle_partners: Array = []
-	for p in _partners:
-		var pstats: Dictionary = {
-			"physique": p.current_vit, "strength": p.current_str,
-			"agility": p.current_agi, "technique": p.current_tec, "spirit": p.current_mnd,
-		}
-		var pid: String = ConfigManager._PARTNER_ID_MAP.get(str(p.partner_config_id), str(p.partner_config_id))
-		var pcfg: Dictionary = ConfigManager.get_partner_config(pid)
-		var p_name: String = pcfg.get("name", pid)
-		battle_partners.append(PartnerAssist.make_partner_battle_unit(pid, p_name, pstats))
-
+		return {"hero": null, "partners": []}
 	return {
-		"hero": battle_hero,
-		"partners": battle_partners,
+		"hero": _hero,
+		"partners": _partners.duplicate(),
 	}
 
 

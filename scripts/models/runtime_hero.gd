@@ -21,6 +21,7 @@ var passive_skill_id: int = 0
 var ultimate_skill_id: int = 0
 var ultimate_used: bool = false
 var buff_list: Array = []
+var training_counts: Dictionary = {}
 var total_training_count: int = 0
 var total_damage_dealt: int = 0
 var total_damage_taken: int = 0
@@ -28,6 +29,16 @@ var total_enemies_killed: int = 0
 var is_alive: bool = true
 var created_at: int = 0
 var updated_at: int = 0
+
+
+func get_attr_value(attr_type: int) -> int:
+	match attr_type:
+		1: return current_vit
+		2: return current_str
+		3: return current_agi
+		4: return current_tec
+		5: return current_mnd
+		_: return 0
 
 
 func to_dict() -> Dictionary:
@@ -46,6 +57,7 @@ func to_dict() -> Dictionary:
 		"ultimate_skill_id": ultimate_skill_id,
 		"ultimate_used": ultimate_used,
 		"buff_list": buff_list.duplicate(),
+		"training_counts": training_counts.duplicate(),
 		"total_training_count": total_training_count,
 		"total_damage_dealt": total_damage_dealt,
 		"total_damage_taken": total_damage_taken,
@@ -72,6 +84,7 @@ static func from_dict(data: Dictionary) -> RuntimeHero:
 	hero.ultimate_skill_id = data.get("ultimate_skill_id", 0)
 	hero.ultimate_used = data.get("ultimate_used", false)
 	hero.buff_list = data.get("buff_list", []).duplicate()
+	hero.training_counts = data.get("training_counts", {}).duplicate()
 	hero.total_training_count = data.get("total_training_count", 0)
 	hero.total_damage_dealt = data.get("total_damage_dealt", 0)
 	hero.total_damage_taken = data.get("total_damage_taken", 0)

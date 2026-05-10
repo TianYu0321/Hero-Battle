@@ -46,13 +46,13 @@ func generate_shop_inventory(turn: int, current_gold: int) -> Array[Dictionary]:
 		var cost: int = _calculate_current_cost(item_id, base_cost)
 		var config: Dictionary = ConfigManager.get_partner_config(str(p.partner_config_id))
 		var p_name: String = config.get("name", "伙伴")
-		var max_level_reached: bool = p.current_level >= 3
+		var max_level_reached: bool = p.current_level >= 5
 		inventory.append({
 			"item_id": item_id,
 			"item_type": "partner_upgrade",
 			"name": p_name + "升级",
 			"price": cost if not max_level_reached else 999999,
-			"effect_desc": "等级%d→%d" % [p.current_level, mini(3, p.current_level + 1)] if not max_level_reached else "已达最高等级",
+			"effect_desc": "等级%d→%d" % [p.current_level, mini(5, p.current_level + 1)] if not max_level_reached else "已达最高等级",
 			"can_afford": current_gold >= cost and not max_level_reached,
 			"target_id": str(p.partner_config_id),
 			"target_attr": 0,

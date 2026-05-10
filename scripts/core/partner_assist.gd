@@ -95,26 +95,40 @@ func _execute_assist_action(partner: Dictionary, cfg: Dictionary, hero: Dictiona
 	var attr_key: String = _attr_code_to_key(attr)
 	var result: Dictionary = {"type": "damage", "value": 0, "target": "", "log": ""}
 
+	# v2: 伙伴援助效果基于主角属性，而非伙伴自身属性
+	var hero_stats: Dictionary = hero.get("stats", {})
+	var hero_as_attacker: Dictionary = {
+		"unit_id": hero.get("unit_id", "hero"),
+		"name": hero.get("name", "主角"),
+		"stats": hero_stats,
+		"is_alive": hero.get("is_alive", true),
+	}
+	var hero_max_hp: int = hero.get("max_hp", 100)
+
 	match effect_type:
 		1:  # 造成伤害
 			var target = _get_front_enemy(enemies)
 			if target == null:
 				return {}
-			var pkt: Dictionary = _dc.compute_damage(partner, target, scale, "ASSIST")
+			# 剑气斩等 = 主角攻击力 × scale
+			var pkt: Dictionary = _dc.compute_damage(hero_as_attacker, target, scale, "ASSIST")
 			_dc.apply_damage_packet(target, pkt)
 			result.type = "damage"
 			result.value = pkt.value
 			result.target = target.get("unit_id", "")
 			result.log = "%s 触发援助【%s】造成 %d 伤害" % [partner.get("partner_name", ""), cfg.get("trigger_condition", ""), pkt.value]
 		2:  # 治疗
-			var heal_val: int = _dc.compute_heal(partner, hero, scale, attr_key)
+			# 药师等 = 主角最大生命 × scale（如15%）
+			var heal_val: int = max(int(hero_max_hp * scale), 1)
 			_dc.apply_heal(hero, heal_val)
 			result.type = "heal"
 			result.value = heal_val
 			result.target = hero.get("unit_id", "")
 			result.log = "%s 触发治疗，回复 %d HP" % [partner.get("partner_name", ""), heal_val]
-		3:  # 护盾 (简化为治疗)
-			var shield_val: int = int(partner.get("stats", {}).get(attr_key, 10) * scale)
+		3:  # 护盾
+			# 盾卫等 = 主角最大生命 × scale（如30%吸收量）
+			var shield_val: int = max(int(hero_max_hp * scale), 1)
+			# 护盾简化为治疗（实际应在BattleEngine中实现护盾buff）
 			_dc.apply_heal(hero, shield_val)
 			result.type = "shield"
 			result.value = shield_val
@@ -124,7 +138,7 @@ func _execute_assist_action(partner: Dictionary, cfg: Dictionary, hero: Dictiona
 			var target = _get_front_enemy(enemies)
 			if target == null:
 				return {}
-			var debuff_pkt: Dictionary = _dc.compute_damage(partner, target, scale, "ASSIST")
+			var debuff_pkt: Dictionary = _dc.compute_damage(hero_as_attacker, target, scale, "ASSIST")
 			_dc.apply_damage_packet(target, debuff_pkt)
 			result.type = "debuff_damage"
 			result.value = debuff_pkt.value

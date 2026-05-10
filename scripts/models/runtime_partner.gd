@@ -52,7 +52,7 @@ static func from_dict(data: Dictionary) -> RuntimePartner:
 	partner.current_level = data.get("current_level", 1)
 	partner.current_hp = data.get("current_hp", 0)
 	partner.favored_attr = data.get("favored_attr", 0)
-						partner.aid_trigger_count = data.get("aid_trigger_count", 0)
+	partner.aid_trigger_count = data.get("aid_trigger_count", 0)
 	partner.chain_trigger_count = data.get("chain_trigger_count", 0)
 	partner.buff_list = data.get("buff_list", []).duplicate()
 	partner.is_active = data.get("is_active", true)

@@ -29,10 +29,16 @@ func try_trigger_chain(hero: Dictionary, enemies: Array, partners: Array, turn_c
 	if valid_partners.is_empty():
 		return {"triggered": false}
 
+	# 连锁触发概率（随段数递减，防止死循环）
+	var base_prob: float = 0.6
+	var trigger_prob: float = base_prob * pow(0.7, turn_chain_count)
+	if _rng.randf() >= trigger_prob:
+		return {"triggered": false}
+
 	# 随机选择一个伙伴触发连锁
 	var partner: Dictionary = valid_partners[_rng.randi_range(0, valid_partners.size() - 1)]
 	var target = _get_front_enemy(enemies)
-	if target == null:
+	if target == null or target.is_empty():
 		return {"triggered": false}
 
 	## 连锁伤害递增
@@ -40,7 +46,7 @@ func try_trigger_chain(hero: Dictionary, enemies: Array, partners: Array, turn_c
 	var pkt: Dictionary = _dc.compute_damage(partner, target, scale, "CHAIN")
 	_dc.apply_damage_packet(target, pkt)
 	
-	## v2.0: 不增加chain_count限制
+	## v2.0: 不增加chain_count限制（概率递减已防止死循环）
 	partner.chain_count = partner.get("chain_count", 0) + 1
 
 	return {

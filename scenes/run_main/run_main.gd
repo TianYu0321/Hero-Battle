@@ -28,6 +28,25 @@ extends Control
 	$PartnerContainer/PartnerSlot5,
 ]
 
+@onready var training_panel: VBoxContainer = $TrainingPanel
+@onready var option_container: VBoxContainer = $OptionContainer
+
+@onready var training_select_buttons: Array[Button] = [
+	$TrainingPanel/AttrRow1/SelectBtn,
+	$TrainingPanel/AttrRow2/SelectBtn,
+	$TrainingPanel/AttrRow3/SelectBtn,
+	$TrainingPanel/AttrRow4/SelectBtn,
+	$TrainingPanel/AttrRow5/SelectBtn,
+]
+
+@onready var training_lv_labels: Array[Label] = [
+	$TrainingPanel/AttrRow1/LvLabel,
+	$TrainingPanel/AttrRow2/LvLabel,
+	$TrainingPanel/AttrRow3/LvLabel,
+	$TrainingPanel/AttrRow4/LvLabel,
+	$TrainingPanel/AttrRow5/LvLabel,
+]
+
 var _run_controller: RunController = null
 
 
@@ -36,7 +55,11 @@ func _ready() -> void:
 	for i in range(option_buttons.size()):
 		option_buttons[i].pressed.connect(_on_node_button_pressed.bind(i))
 
-	# --- EventBus 信号订阅（必须在 RunController 启动前连接，否则首回合信号会丢失） ---
+	# 训练属性选择按钮绑定
+	for i in range(training_select_buttons.size()):
+		training_select_buttons[i].pressed.connect(_on_training_attr_selected.bind(i + 1))
+
+	# --- EventBus 信号订阅 ---
 	EventBus.gold_changed.connect(_on_gold_changed)
 	EventBus.stats_changed.connect(_on_stats_changed)
 	EventBus.pvp_result.connect(_on_pvp_result)
@@ -44,6 +67,9 @@ func _ready() -> void:
 	EventBus.node_options_presented.connect(_on_node_options_presented)
 	EventBus.run_started.connect(_on_run_started)
 	EventBus.floor_advanced.connect(_on_floor_advanced)
+	EventBus.panel_opened.connect(_on_panel_opened)
+	EventBus.panel_closed.connect(_on_panel_closed)
+	EventBus.training_completed.connect(_on_training_completed)
 
 	# --- 实例化并启动 RunController ---
 	_run_controller = RunController.new()
@@ -86,16 +112,43 @@ func _update_hud() -> void:
 
 
 func _on_node_button_pressed(index: int) -> void:
-	if _run_controller != null:
-		_run_controller.select_node(index)
-	else:
+	if _run_controller == null:
 		push_warning("[RunMain] RunController not available")
+		return
+	_run_controller.select_node(index)
+
+
+func _on_training_attr_selected(attr_type: int) -> void:
+	## 玩家从训练面板选择了具体属性
+	if _run_controller != null:
+		_run_controller.select_training_attr(attr_type)
+	_show_option_container()
+
+
+func _show_training_panel() -> void:
+	## 显示训练属性选择面板
+	option_container.visible = false
+	training_panel.visible = true
+	# 更新各属性训练等级显示
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var hero_data: Dictionary = summary.get("hero", {})
+	var training_counts: Dictionary = hero_data.get("training_counts", {})
+	var attr_names: Array[String] = ["vit", "str", "agi", "tec", "mnd"]
+	for i in range(5):
+		var count: int = training_counts.get(attr_names[i], 0)
+		var level: int = (count / 5) + 1
+		training_lv_labels[i].text = "LV:%d" % level
+
+
+func _show_option_container() -> void:
+	## 恢复显示主选项按钮
+	training_panel.visible = false
+	option_container.visible = true
 
 
 # --- EventBus 信号处理 ---
 
 func _on_run_started(run_config: Dictionary) -> void:
-	# 初始化 HUD 显示
 	_update_hud()
 	print("[RunMain] Run started with hero_id=%d, partners=%s" % [
 		run_config.get("hero_id", 0),
@@ -105,6 +158,7 @@ func _on_run_started(run_config: Dictionary) -> void:
 
 func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 	# 设置节点选项按钮文本和可见性
+	_show_option_container()
 	for i in range(option_buttons.size()):
 		if i < node_options.size():
 			var opt: Dictionary = node_options[i]
@@ -118,8 +172,27 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 			option_buttons[i].disabled = true
 
 
-func _on_turn_advanced(new_turn: int, phase: String, _is_fixed_node: bool) -> void:
-	# 回合推进后清空按钮（等待下一轮选项）
+func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
+	match panel_name:
+		"TRAINING_PANEL":
+			_show_training_panel()
+		"SHOP_PANEL":
+			pass  # TODO: 实现商店面板
+		"RESCUE_PANEL":
+			pass  # TODO: 实现救援面板
+
+
+func _on_panel_closed(panel_name: String, close_reason: String) -> void:
+	_show_option_container()
+
+
+func _on_training_completed(attr_code: int, attr_name: String, gain_value: int, new_total: int, proficiency_stage: String, bonus_applied: int) -> void:
+	_update_hud()
+	print("[RunMain] 训练完成: %s +%d (当前%d, %s, 伙伴加成%d)" % [attr_name, gain_value, new_total, proficiency_stage, bonus_applied])
+
+
+func _on_floor_advanced(new_floor: int, floor_type: String, is_special: bool) -> void:
+	# 楼层推进后清空按钮（等待下一轮选项）
 	for btn in option_buttons:
 		btn.text = "..."
 		btn.disabled = true
@@ -127,20 +200,16 @@ func _on_turn_advanced(new_turn: int, phase: String, _is_fixed_node: bool) -> vo
 
 func _on_gold_changed(new_amount: int, delta: int, _reason: String) -> void:
 	gold_label.text = "金币: %d" % new_amount
-	# 可以在这里添加金币变化动画效果（Phase 4）
 
 
 func _on_stats_changed(_unit_id: String, stat_changes: Dictionary) -> void:
-	# stat_changes: {attr_code: {old, new, delta, attr_code}}
-	# attr_code: 1=体魄, 2=力量, 3=敏捷, 4=技巧, 5=精神
-	# attr_code 0 = HP（PVP惩罚等）
 	for attr_code in stat_changes.keys():
 		var change: Dictionary = stat_changes[attr_code]
 		var code: int = int(attr_code)
 		match code:
 			0:  # HP
 				var new_hp: int = change.get("new", 0)
-				var max_hp: int = 100  # HUD暂时使用固定最大值，实际应从RunController获取
+				var max_hp: int = 100
 				hp_label.text = "生命: %d/%d" % [new_hp, max_hp]
 			1, 2, 3, 4, 5:
 				var bar_index: int = code - 1
@@ -149,7 +218,6 @@ func _on_stats_changed(_unit_id: String, stat_changes: Dictionary) -> void:
 
 
 func _on_pvp_result(result: Dictionary) -> void:
-	# PVP结束后刷新金币/生命显示
 	var penalty_tier: String = result.get("penalty_tier", "none")
 	var penalty_value: int = result.get("penalty_value", 0)
 	if penalty_tier != "none" and penalty_value > 0:
@@ -160,6 +228,6 @@ func _on_pvp_result(result: Dictionary) -> void:
 		print("[RunMain HUD] %s" % log_msg)
 
 
-func _on_round_changed(current_round: int, max_round: int, phase: String) -> void:
-	floor_label.text = "层数: %d/%d" % [current_round, max_round]
-	print("[RunMain HUD] 回合 %d/%d，阶段: %s" % [current_round, max_round, phase])
+func _on_floor_changed(current_floor: int, max_floor: int, floor_type: String) -> void:
+	floor_label.text = "层数: %d/%d" % [current_floor, max_floor]
+	print("[RunMain HUD] 楼层 %d/%d，类型: %s" % [current_floor, max_floor, floor_type])

@@ -177,7 +177,8 @@ func _test_settlement_integration() -> void:
 	fb.damage_dealt_to_enemy = 300
 	fb.enemy_max_hp = 350
 
-	var score: FighterArchiveScore = ss.calculate_score(run, hero, fb)
+	var partners: Array[RuntimePartner] = []
+	var score: FighterArchiveScore = ss.calculate_score(run, hero, fb, partners)
 	_assert(score.total_score >= 0, "总分 >= 0")
 	_assert(score.grade in ["S", "A", "B", "C", "D"], "评级合法")
 
@@ -186,7 +187,6 @@ func _test_settlement_integration() -> void:
 	_assert(score.total_score >= 55, "正常游玩用例应达到B档（55+分）")
 
 	# 生成档案
-	var partners: Array[RuntimePartner] = []
 	var archive: FighterArchiveMain = ss.generate_fighter_archive(run, hero, partners, score)
 	_assert(archive.final_score == int(score.total_score), "档案分数与结算分数一致")
 	_assert(archive.final_grade == score.grade, "档案评级与结算评级一致")

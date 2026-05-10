@@ -13,6 +13,7 @@ var partner_config_id: int = 0
 var partner_name: String = ""
 var position: int = 1
 var final_level: int = 1
+var favored_attr: int = 0
 var aid_trigger_count: int = 0
 var chain_trigger_count: int = 0
 var sort_order: int = 0
@@ -42,7 +43,7 @@ static func from_dict(data: Dictionary) -> FighterArchivePartner:
 	p.position = data.get("position", 1)
 	p.final_level = data.get("final_level", 1)
 	p.favored_attr = data.get("favored_attr", 0)
-						p.aid_trigger_count = data.get("aid_trigger_count", 0)
+	p.aid_trigger_count = data.get("aid_trigger_count", 0)
 	p.chain_trigger_count = data.get("chain_trigger_count", 0)
 	p.sort_order = data.get("sort_order", 0)
 	return p
@@ -54,6 +55,6 @@ static func from_runtime_partner(partner: RuntimePartner) -> FighterArchivePartn
 	p.position = partner.position
 	p.final_level = partner.current_level
 	p.favored_attr = partner.favored_attr
-						p.aid_trigger_count = partner.aid_trigger_count
+	p.aid_trigger_count = partner.aid_trigger_count
 	p.chain_trigger_count = partner.chain_trigger_count
 	return p
