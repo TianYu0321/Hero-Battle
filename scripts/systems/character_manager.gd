@@ -111,6 +111,8 @@ func modify_hero_stats(stat_changes: Dictionary) -> void:
 	if _hero == null:
 		return
 	var old_values: Dictionary = _get_hero_stats_dict()
+	var old_max_hp: int = _hero.max_hp
+	var old_hp: int = _hero.current_hp
 	for attr_code in stat_changes.keys():
 		var delta: int = stat_changes[attr_code]
 		match int(attr_code):
@@ -122,6 +124,13 @@ func modify_hero_stats(stat_changes: Dictionary) -> void:
 	_hero.max_hp = _calculate_max_hp(_hero.current_vit)
 	_hero.current_hp = mini(_hero.current_hp, _hero.max_hp)
 	var changes: Dictionary = _compute_stat_changes(old_values, _get_hero_stats_dict())
+	# 如果max_hp发生变化，在每个变化条目中附加max_hp信息
+	if _hero.max_hp != old_max_hp:
+		for key in changes.keys():
+			changes[key]["max_hp"] = _hero.max_hp
+		# 如果属性变化为空但max_hp变了（如vit不变但计算方式改变），添加HP变化条目
+		if changes.is_empty():
+			changes[0] = {"old": old_hp, "new": _hero.current_hp, "delta": 0, "max_hp": _hero.max_hp, "attr_code": 0}
 	if not changes.is_empty():
 		EventBus.emit_signal("stats_changed", _hero.id, changes)
 

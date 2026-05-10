@@ -237,21 +237,25 @@ func _generate_node_options() -> void:
 
 	# 固定节点检查
 	if turn in _RESCUE_TURNS:
-		# 救援：3个候选伙伴（只生成一次，避免与NodeResolver重复生成导致不一致）
+		# 救援+商店特殊层：显示两个按钮
 		var rescue_system: RescueSystem = get_node_or_null("RescueSystem")
 		var candidates: Array[Dictionary] = []
 		if rescue_system != null:
 			candidates = rescue_system.generate_candidates()
 		_current_node_options.clear()
-		for c in candidates:
-			_current_node_options.append({
-				"node_type": 5,
-				"node_name": "救援：" + c.get("name", ""),
-				"description": c.get("role", ""),
-				"node_id": "rescue_%d_%s" % [turn, c.get("partner_id", "")],
-				"partner_config_id": int(c.get("partner_id", "0")),
-				"candidates": candidates,
-			})
+		_current_node_options.append({
+			"node_type": NodePoolSystem.NodeType.RESCUE,
+			"node_name": "救援",
+			"description": "选择一名伙伴加入队伍",
+			"node_id": "rescue_%d" % turn,
+			"candidates": candidates,
+		})
+		_current_node_options.append({
+			"node_type": NodePoolSystem.NodeType.SHOP,
+			"node_name": "商店",
+			"description": "购买道具和装备",
+			"node_id": "shop_%d" % turn,
+		})
 		return
 
 	if turn in _PVP_TURNS:
@@ -350,7 +354,7 @@ func _process_reward(reward: Dictionary) -> void:
 				var old_hp: int = _hero.current_hp
 				_hero.current_hp = mini(_hero.current_hp + heal_amount, _hero.max_hp)
 				EventBus.emit_signal("stats_changed", _hero.id, {
-					0: {"old": old_hp, "new": _hero.current_hp, "delta": _hero.current_hp - old_hp, "attr_code": 0}
+					0: {"old": old_hp, "new": _hero.current_hp, "delta": _hero.current_hp - old_hp, "max_hp": _hero.max_hp, "attr_code": 0}
 				})
 		"hp_damage":
 			var damage_amount: int = reward.get("amount", 0)
@@ -359,7 +363,7 @@ func _process_reward(reward: Dictionary) -> void:
 				_hero.current_hp = maxi(0, _hero.current_hp - damage_amount)
 				_hero.is_alive = _hero.current_hp > 0
 				EventBus.emit_signal("stats_changed", _hero.id, {
-					0: {"old": old_hp, "new": _hero.current_hp, "delta": old_hp - _hero.current_hp, "attr_code": 0}
+					0: {"old": old_hp, "new": _hero.current_hp, "delta": old_hp - _hero.current_hp, "max_hp": _hero.max_hp, "attr_code": 0}
 				})
 			if _hero != null and not _hero.is_alive:
 				_run.run_status = 3  # LOSE
@@ -372,6 +376,21 @@ func _process_reward(reward: Dictionary) -> void:
 					_run.pvp_10th_result = 1 if pvp_data.get("won", false) else 2
 				elif _run.current_turn == 20:
 					_run.pvp_20th_result = 1 if pvp_data.get("won", false) else 2
+		"level_up":
+			var attr: int = randi() % 5 + 1
+			if _character_manager != null:
+				_character_manager.modify_hero_stats({attr: 1})
+		"train_lv5":
+			var attr: int = reward.get("attr", -1)
+			if attr < 1 or attr > 5:
+				attr = randi() % 5 + 1
+			if _character_manager != null:
+				_character_manager.modify_hero_stats({attr: 5})
+		"debuff":
+			# 简化：记录debuff日志，实际效果待Buff系统完善
+			var effect: String = reward.get("effect", "")
+			var duration: int = reward.get("duration", 3)
+			print("[RunController] 获得Debuff: %s, 持续%d层" % [effect, duration])
 
 
 func _execute_final_battle() -> void:
@@ -526,6 +545,10 @@ func _finish_node_execution(result: Dictionary) -> void:
 		"node_type": _pending_node_type,
 		"result": result,
 	})
+
+	# 显示日志
+	for log in result.get("logs", []):
+		EventBus.emit_signal("hud_log_appended", log, "event", int(Time.get_unix_time_from_system()))
 
 	# 更新计数器
 	match _pending_node_type:

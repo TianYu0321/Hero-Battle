@@ -46,7 +46,7 @@ func resolve(node_option: Dictionary, context: Dictionary) -> Dictionary:
 		NodePoolSystem.NodeType.OUTING:
 			result = _resolve_outing(context)
 		NodePoolSystem.NodeType.RESCUE:
-			result = _resolve_rescue()
+			result = _resolve_rescue(node_option, context)
 		NodePoolSystem.NodeType.SHOP:
 			result = _resolve_shop()
 		NodePoolSystem.NodeType.PVP_CHECK:
@@ -189,92 +189,94 @@ func _resolve_rest(context: Dictionary) -> Dictionary:
 
 
 func _resolve_outing(context: Dictionary) -> Dictionary:
-	## 外出 — 触发随机事件池
-	var total_weight: float = 0.0
-	for evt in _OUTING_EVENTS:
-		total_weight += evt.get("weight", 0.0)
-	var roll: float = randf() * total_weight
-	var cumulative: float = 0.0
-	var selected_event: String = "gold_bonus"
-	for evt in _OUTING_EVENTS:
-		cumulative += evt.get("weight", 0.0)
-		if roll < cumulative:
-			selected_event = evt.get("event", "gold_bonus")
-			break
+	## 外出 — 触发随机事件池（4:3:3 比例）
+	var result := {"success": true, "node_type": NodePoolSystem.NodeType.OUTING, "rewards": [], "logs": []}
+	var hero = context.get("hero")
+	var run = context.get("run")
+	var roll = randi() % 10
 
-	## 精英战需要返回战斗标记
-	if selected_event == "elite_battle":
+	if roll < 4:  ## 40% 奖励事件
+		var reward_events = [
+			{"type": "gold", "amount": 30 + (run.current_turn if run != null else 1) * 2, "log": "发现宝藏，获得%d金币"},
+			{"type": "level_up", "target": "random", "log": "遇到导师，随机角色等级+1"},
+			{"type": "heal_full", "log": "发现圣泉，生命完全恢复"},
+			{"type": "train_lv5", "attr": -1, "log": "神秘训练场，自选属性享受LV5训练"},
+		]
+		var evt = reward_events[randi() % reward_events.size()]
+
+		match evt.type:
+			"gold":
+				result["rewards"].append({"type": "gold", "amount": evt.amount})
+				result["logs"].append(evt.log % evt.amount)
+			"level_up":
+				result["rewards"].append({"type": "level_up", "target": "random"})
+				result["logs"].append(evt.log)
+			"heal_full":
+				var old_hp = hero.current_hp if hero != null else 0
+				var heal_amount = (hero.max_hp - old_hp) if hero != null else 0
+				result["rewards"].append({"type": "hp_heal", "amount": heal_amount})
+				result["logs"].append(evt.log)
+			"train_lv5":
+				result["rewards"].append({"type": "train_lv5", "attr": evt.attr})
+				result["logs"].append(evt.log)
+
+	elif roll < 7:  ## 30% 惩罚事件
+		var penalty_events = [
+			{"type": "damage", "amount_percent": 0.15, "log": "落入陷阱，损失%d生命"},
+			{"type": "debuff", "effect": "weak", "duration": 3, "log": "中了虚弱，接下来3层训练效果减半"},
+			{"type": "steal_gold", "percent": 0.2, "log": "遭遇小偷，损失%d金币"},
+			{"type": "debuff", "effect": "vulnerable", "duration": 3, "log": "喝了弱化药水，接下来3场战斗受到伤害+20%%"},
+		]
+		var evt = penalty_events[randi() % penalty_events.size()]
+
+		match evt.type:
+			"damage":
+				var dmg = int(hero.max_hp * evt.amount_percent) if hero != null else 10
+				result["rewards"].append({"type": "hp_damage", "amount": dmg})
+				result["logs"].append(evt.log % dmg)
+			"debuff":
+				result["rewards"].append({"type": "debuff", "effect": evt.effect, "duration": evt.duration})
+				result["logs"].append(evt.log)
+			"steal_gold":
+				var stolen = int(run.gold_owned * evt.percent) if run != null else 0
+				result["rewards"].append({"type": "gold", "amount": -stolen})
+				result["logs"].append(evt.log % stolen)
+
+	else:  ## 30% 精英
 		var turn: int = context.get("turn", 1)
 		var enemy_id: int = _select_enemy_for_turn(turn)
-		return {
-			"success": true,
-			"node_type": NodePoolSystem.NodeType.OUTING,
-			"event": selected_event,
-			"requires_battle": true,
-			"is_elite": true,
-			"enemy_config_id": enemy_id,
-			"rewards": [],
-		}
+		result["requires_battle"] = true
+		result["is_elite"] = true
+		result["enemy_config_id"] = enemy_id
+		result["logs"].append("遭遇精英怪物！")
 
-	## 金币奖励
-	if selected_event == "gold_bonus":
-		var gold_amount: int = randi() % 30 + 20
-		return {
-			"success": true,
-			"node_type": NodePoolSystem.NodeType.OUTING,
-			"event": selected_event,
-			"rewards": [{"type": "gold", "amount": gold_amount}],
-		}
-
-	## 完全恢复
-	if selected_event == "full_heal":
-		var hero: RuntimeHero = context.get("hero")
-		var heal_amount: int = hero.max_hp - hero.current_hp if hero != null else 50
-		return {
-			"success": true,
-			"node_type": NodePoolSystem.NodeType.OUTING,
-			"event": selected_event,
-			"rewards": [{"type": "hp_heal", "amount": heal_amount}],
-		}
-
-	## 陷阱事件（简化：损失10%生命）
-	if selected_event == "trap":
-		var hero: RuntimeHero = context.get("hero")
-		var trap_damage: int = int(hero.max_hp * 0.1) if hero != null else 10
-		return {
-			"success": true,
-			"node_type": NodePoolSystem.NodeType.OUTING,
-			"event": selected_event,
-			"rewards": [{"type": "hp_damage", "amount": trap_damage}],
-		}
-
-	## 小偷事件（损失20%金币）
-	if selected_event == "thief":
-		return {
-			"success": true,
-			"node_type": NodePoolSystem.NodeType.OUTING,
-			"event": selected_event,
-			"rewards": [{"type": "gold_theft", "ratio": 0.2}],
-		}
-
-	## 其他事件（random_level_up, lv5_training, weakness, weaken_potion）
-	## 简化处理：无即时效果，仅记录事件类型
-	return {
-		"success": true,
-		"node_type": NodePoolSystem.NodeType.OUTING,
-		"event": selected_event,
-		"rewards": {},
-	}
+	return result
 
 
-func _resolve_rescue() -> Dictionary:
+func _resolve_rescue(node_option: Dictionary, context: Dictionary) -> Dictionary:
 	## 救援 — 生成候选伙伴
-	return {
-		"success": true,
-		"node_type": NodePoolSystem.NodeType.RESCUE,
-		"requires_ui_selection": true,
-		"rewards": {},
-	}
+	var result := {"success": true, "node_type": NodePoolSystem.NodeType.RESCUE, "requires_ui_selection": true, "rewards": [], "logs": []}
+	var run = context.get("run")
+	var candidates = node_option.get("candidates", [])
+
+	if candidates.is_empty():
+		## 后备：自己生成候选伙伴
+		var all_partner_ids = ConfigManager.get_all_partner_config_ids()
+		var available_ids = all_partner_ids.duplicate()
+		available_ids.shuffle()
+		for i in range(min(3, available_ids.size())):
+			var cfg = ConfigManager.get_partner_config(str(available_ids[i]))
+			candidates.append({
+				"partner_config_id": available_ids[i],
+				"name": cfg.get("name", "未知伙伴"),
+				"role": cfg.get("role", ""),
+				"favored_attr": cfg.get("favored_attr", 1),
+			})
+
+	result["candidates"] = candidates
+	if run != null:
+		result["logs"].append("第%d层：发现遇险伙伴，请选择一名加入" % run.current_turn)
+	return result
 
 
 func _resolve_shop() -> Dictionary:

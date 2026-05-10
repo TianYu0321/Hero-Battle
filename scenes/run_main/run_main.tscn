@@ -1,6 +1,7 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
+[ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 
 [node name="RunMain" type="Control"]
 layout_mode = 3
@@ -257,6 +258,85 @@ text = "预计损失: ???"
 [node name="RiskLabel" type="Label" parent="EnemyInfoPanel"]
 layout_mode = 2
 text = "风险: ???"
+
+[node name="RescuePanel" type="Panel" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 240.0
+offset_top = 200.0
+offset_right = 640.0
+offset_bottom = 420.0
+
+[node name="TitleLabel" type="Label" parent="RescuePanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 30.0
+grow_horizontal = 2
+text = "选择一名伙伴加入"
+horizontal_alignment = 1
+
+[node name="CandidateBtn1" type="Button" parent="RescuePanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 40.0
+offset_right = -20.0
+offset_bottom = 95.0
+grow_horizontal = 2
+
+[node name="Label" type="Label" parent="RescuePanel/CandidateBtn1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CandidateBtn2" type="Button" parent="RescuePanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 105.0
+offset_right = -20.0
+offset_bottom = 160.0
+grow_horizontal = 2
+
+[node name="Label" type="Label" parent="RescuePanel/CandidateBtn2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CandidateBtn3" type="Button" parent="RescuePanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 170.0
+offset_right = -20.0
+offset_bottom = 225.0
+grow_horizontal = 2
+
+[node name="Label" type="Label" parent="RescuePanel/CandidateBtn3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PauseMenu" parent="." instance=ExtResource("2_pause")]
 
 [node name="PartnerContainer" type="Control" parent="."]
 layout_mode = 3

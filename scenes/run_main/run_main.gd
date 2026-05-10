@@ -29,6 +29,20 @@ extends Control
 @onready var training_panel: VBoxContainer = $TrainingPanel
 @onready var option_container: VBoxContainer = $OptionContainer
 
+@onready var rescue_panel: Control = $RescuePanel
+@onready var rescue_candidate_buttons: Array[Button] = [
+	$RescuePanel/CandidateBtn1,
+	$RescuePanel/CandidateBtn2,
+	$RescuePanel/CandidateBtn3,
+]
+@onready var rescue_candidate_labels: Array[Label] = [
+	$RescuePanel/CandidateBtn1/Label,
+	$RescuePanel/CandidateBtn2/Label,
+	$RescuePanel/CandidateBtn3/Label,
+]
+
+@onready var pause_menu: PauseMenu = $PauseMenu
+
 @onready var enemy_info_panel: VBoxContainer = $EnemyInfoPanel
 @onready var enemy_name_label: Label = $EnemyInfoPanel/EnemyNameLabel
 @onready var enemy_hp_label: Label = $EnemyInfoPanel/EnemyHpLabel
@@ -75,6 +89,15 @@ func _ready() -> void:
 	EventBus.panel_closed.connect(_on_panel_closed)
 	EventBus.training_completed.connect(_on_training_completed)
 	EventBus.enemy_encountered.connect(_on_enemy_encountered)
+	EventBus.node_resolved.connect(_on_node_resolved)
+
+	# --- 暂停菜单信号 ---
+	pause_menu.resume_requested.connect(_on_resume_game)
+	pause_menu.main_menu_requested.connect(_on_return_main_menu)
+
+	# --- 救援面板按钮绑定 ---
+	for i in range(rescue_candidate_buttons.size()):
+		rescue_candidate_buttons[i].pressed.connect(_on_rescue_partner_selected.bind(i))
 
 	# --- 实例化并启动 RunController ---
 	_run_controller = RunController.new()
@@ -112,6 +135,13 @@ func _update_hud() -> void:
 	player_mnd_label.text = "精神: %d" % hero_data.get("current_mnd", 0)
 
 
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		if pause_menu.visible:
+			pause_menu.hide_menu()
+		else:
+			pause_menu.show_menu()
+
 func _on_node_button_pressed(index: int) -> void:
 	if _run_controller == null:
 		push_warning("[RunMain] RunController not available")
@@ -144,6 +174,7 @@ func _show_training_panel() -> void:
 func _show_option_container() -> void:
 	## 恢复显示主选项按钮
 	training_panel.visible = false
+	rescue_panel.visible = false
 	option_container.visible = true
 
 
@@ -183,7 +214,7 @@ func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
 		"SHOP_PANEL":
 			pass  # TODO: 实现商店面板
 		"RESCUE_PANEL":
-			pass  # TODO: 实现救援面板
+			_show_rescue_panel(panel_data.get("candidates", []))
 
 
 func _on_panel_closed(panel_name: String, close_reason: String) -> void:
@@ -202,6 +233,42 @@ func _on_floor_advanced(new_floor: int, floor_type: String, is_special: bool) ->
 		btn.disabled = true
 
 
+func _show_rescue_panel(candidates: Array[Dictionary]) -> void:
+	rescue_panel.visible = true
+	option_container.visible = false
+	for i in range(rescue_candidate_buttons.size()):
+		if i < candidates.size():
+			rescue_candidate_buttons[i].visible = true
+			var candidate = candidates[i]
+			rescue_candidate_labels[i].text = "%s\n%s" % [candidate.get("name", "???"), candidate.get("role", "")]
+			rescue_candidate_buttons[i].disabled = false
+		else:
+			rescue_candidate_buttons[i].visible = false
+			rescue_candidate_buttons[i].disabled = true
+
+func _on_rescue_partner_selected(index: int) -> void:
+	rescue_panel.visible = false
+	var summary = _run_controller.get_current_run_summary()
+	var node_options = summary.get("node_options", [])
+	var candidates = []
+	if node_options.size() > 0 and node_options[0].get("node_type") == NodePoolSystem.NodeType.RESCUE:
+		candidates = node_options[0].get("candidates", [])
+	if index < candidates.size():
+		var partner_config_id = int(candidates[index].get("partner_config_id", candidates[index].get("partner_id", 0)))
+		if partner_config_id > 0:
+			_run_controller.select_rescue_partner(partner_config_id)
+
+func _on_node_resolved(node_type: String, result: Dictionary) -> void:
+	if node_type == "OUTING":
+		_show_event_result(result.get("logs", []), result.get("rewards", []))
+
+func _show_event_result(logs: Array, _rewards: Array) -> void:
+	var msg = ""
+	for log in logs:
+		msg += log + "\n"
+	if not msg.is_empty():
+		print("[RunMain Event] %s" % msg)
+
 func _on_gold_changed(new_amount: int, delta: int, _reason: String) -> void:
 	gold_label.text = "金币: %d" % new_amount
 
@@ -213,7 +280,11 @@ func _on_stats_changed(_unit_id: String, stat_changes: Dictionary) -> void:
 		match code:
 			0:  # HP
 				var new_hp: int = change.get("new", 0)
-				var max_hp: int = 100
+				var max_hp: int = change.get("max_hp", 0)
+				if max_hp <= 0:
+					var summary = _run_controller.get_current_run_summary() if _run_controller != null else {}
+					var hero_data = summary.get("hero", {})
+					max_hp = hero_data.get("max_hp", 100)
 				hp_label.text = "生命: %d/%d" % [new_hp, max_hp]
 			1:
 				player_vit_label.text = "体魄: %d" % change.get("new", 0)
@@ -241,6 +312,12 @@ func _on_pvp_result(result: Dictionary) -> void:
 func _on_floor_changed(current_floor: int, max_floor: int, floor_type: String) -> void:
 	floor_label.text = "层数: %d/%d" % [current_floor, max_floor]
 	print("[RunMain HUD] 楼层 %d/%d，类型: %s" % [current_floor, max_floor, floor_type])
+
+func _on_resume_game() -> void:
+	pass
+
+func _on_return_main_menu() -> void:
+	pass
 
 
 func _on_enemy_encountered(enemy_data: Dictionary) -> void:
