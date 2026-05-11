@@ -126,6 +126,8 @@ func get_current_state() -> String:
 # --- EventBus callbacks ---
 
 func _on_new_game_requested(hero_id: String) -> void:
+	pending_save_data = {}
+	pending_archive = {}
 	change_scene("HERO_SELECT", "fade")
 
 func _on_continue_game_requested() -> void:
@@ -141,6 +143,7 @@ func _on_hero_selected(hero_id: String) -> void:
 	change_scene("TAVERN", "fade")
 
 func _on_team_confirmed(partner_ids: Array[String]) -> void:
+	pending_save_data = {}
 	selected_partner_config_ids.clear()
 	for pid in partner_ids:
 		selected_partner_config_ids.append(_PARTNER_STRING_TO_ID.get(pid, 1001))
@@ -151,6 +154,8 @@ func _on_run_ended(ending_type: String, final_score: int, archive: Dictionary) -
 	change_scene("SETTLEMENT", "fade")
 
 func _on_back_to_menu_requested() -> void:
+	pending_save_data = {}
+	pending_archive = {}
 	change_scene("MENU", "fade")
 
 func _on_back_to_hero_select() -> void:

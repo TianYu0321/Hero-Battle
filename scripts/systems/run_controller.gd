@@ -568,8 +568,64 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 
 
 func _end_run() -> void:
-	# 清理或返回主菜单
-	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, {})
+	## 游戏结束：生成档案数据并传递
+	var partners: Array[RuntimePartner] = _character_manager.get_partners()
+	
+	# --- 生成档案数据 ---
+	var final_battle_data: Dictionary = _pending_battle_result if _pending_battle_result != null else {}
+	var archive_data: Dictionary = {
+		"hero_config_id": _run.hero_config_id,
+		"final_turn": _run.current_turn,
+		"final_score": _run.total_score,
+		"final_grade": "S",
+		"attr_snapshot_vit": _hero.current_vit,
+		"attr_snapshot_str": _hero.current_str,
+		"attr_snapshot_agi": _hero.current_agi,
+		"attr_snapshot_tec": _hero.current_tec,
+		"attr_snapshot_mnd": _hero.current_mnd,
+		"initial_vit": _hero.current_vit,
+		"initial_str": _hero.current_str,
+		"initial_agi": _hero.current_agi,
+		"initial_tec": _hero.current_tec,
+		"initial_mnd": _hero.current_mnd,
+		"battle_win_count": _run.battle_win_count,
+		"elite_win_count": _run.elite_win_count,
+		"elite_total_count": _run.elite_total_count,
+		"pvp_10th_result": _run.pvp_10th_result,
+		"pvp_20th_result": _run.pvp_20th_result,
+		"training_count": _hero.total_training_count,
+		"shop_visit_count": _run.shop_visit_count,
+		"rescue_success_count": _run.rescue_success_count,
+		"total_damage_dealt": _run.total_damage_dealt,
+		"total_enemies_killed": _run.total_enemies_killed,
+		"max_chain_reached": _run.max_chain_reached,
+		"total_chain_count": _run.total_chain_count,
+		"total_aid_trigger_count": _run.total_aid_trigger_count,
+		"ultimate_triggered": _hero.ultimate_used,
+		"gold_spent": _run.gold_spent,
+		"gold_earned_total": _run.gold_earned_total,
+		"partner_count": partners.size(),
+		"max_hp_reached": _hero.max_hp,
+		"ended_at": Time.get_unix_time_from_system(),
+		"final_battle": {
+			"result": 1 if final_battle_data.get("winner", "") == "player" else 0,
+			"hero_remaining_hp": final_battle_data.get("hero_remaining_hp", 0),
+			"hero_max_hp": final_battle_data.get("hero_max_hp", _hero.max_hp),
+			"damage_dealt_to_enemy": final_battle_data.get("damage_dealt_to_enemy", 0),
+			"enemy_max_hp": final_battle_data.get("enemy_max_hp", 0),
+		},
+		"partners": _get_partner_dicts(),
+	}
+	
+	# 通过 GameManager 传递档案数据
+	var gm = get_node_or_null("/root/GameManager")
+	if gm != null:
+		gm.pending_archive = archive_data
+		print("[RunController] 档案数据已传给 GameManager")
+	else:
+		push_error("[RunController] GameManager not found, cannot pass archive")
+	
+	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_data)
 
 
 func _auto_save() -> void:

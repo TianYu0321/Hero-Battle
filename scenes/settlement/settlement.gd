@@ -33,16 +33,64 @@ func _ready() -> void:
 	var gm = get_node_or_null("/root/GameManager")
 	if gm != null and not gm.pending_archive.is_empty():
 		_archive_data = gm.pending_archive.duplicate()
+		_calculate_real_score()
 		_populate_from_data(_archive_data)
 	else:
-		#  fallback: 使用硬编码占位数据
-		rating_label.text = "S"
+		# fallback: 提示数据缺失
+		rating_label.text = "?"
 		for i in range(attr_labels.size()):
-			attr_labels[i].text = "属性%d: 50" % (i + 1)
+			attr_labels[i].text = "属性%d: 数据缺失" % (i + 1)
+		archive_button.disabled = true
+		archive_button.text = "无档案数据"
 
 func populate(archive: Dictionary) -> void:
 	_archive_data = archive.duplicate()
 	_populate_from_data(_archive_data)
+
+func _calculate_real_score() -> void:
+	var final_battle_data: Dictionary = _archive_data.get("final_battle", {})
+	var partners_data: Array = _archive_data.get("partners", [])
+	
+	var run := RuntimeRun.new()
+	run.current_turn = _archive_data.get("final_turn", 30)
+	run.hero_config_id = _archive_data.get("hero_config_id", 0)
+	run.battle_win_count = _archive_data.get("battle_win_count", 0)
+	run.elite_win_count = _archive_data.get("elite_win_count", 0)
+	run.gold_earned_total = _archive_data.get("gold_earned_total", 0)
+	run.gold_owned = _archive_data.get("gold_earned_total", 0)
+	run.gold_spent = _archive_data.get("gold_spent", 0)
+	
+	var hero := RuntimeHero.new()
+	hero.hero_config_id = _archive_data.get("hero_config_id", 0)
+	hero.current_vit = _archive_data.get("attr_snapshot_vit", 0)
+	hero.current_str = _archive_data.get("attr_snapshot_str", 0)
+	hero.current_agi = _archive_data.get("attr_snapshot_agi", 0)
+	hero.current_tec = _archive_data.get("attr_snapshot_tec", 0)
+	hero.current_mnd = _archive_data.get("attr_snapshot_mnd", 0)
+	hero.max_hp = _archive_data.get("max_hp_reached", 0)
+	hero.total_training_count = _archive_data.get("training_count", 0)
+	
+	var final_battle := RuntimeFinalBattle.from_dict(final_battle_data)
+	
+	var partners: Array[RuntimePartner] = []
+	for p_dict in partners_data:
+		partners.append(RuntimePartner.from_dict(p_dict))
+	
+	var settlement_system := SettlementSystem.new()
+	var score := settlement_system.calculate_score(run, hero, final_battle, partners)
+	
+	_archive_data["final_score"] = int(score.total_score)
+	_archive_data["final_grade"] = score.grade
+	_archive_data["score_breakdown"] = {
+		"final_performance_raw": score.final_performance_raw,
+		"final_performance_weighted": score.final_performance_weighted,
+		"attr_total_raw": score.attr_total_raw,
+		"attr_total_weighted": score.attr_total_weighted,
+		"level_score_raw": score.level_score_raw,
+		"level_score_weighted": score.level_score_weighted,
+		"gold_score_raw": score.gold_score_raw,
+		"gold_score_weighted": score.gold_score_weighted,
+	}
 
 func _populate_from_data(data: Dictionary) -> void:
 	rating_label.text = data.get("final_grade", data.get("rating", "S"))

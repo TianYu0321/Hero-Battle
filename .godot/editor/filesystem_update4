@@ -19,3 +19,7 @@ res://scripts/systems/pvp_opponent_generator.gd
 res://scenes/run_main/shop_item_button.tscn
 res://scenes/run_main/battle_summary_panel.gd
 res://scripts/models/runtime_partner.gd
+res://autoload/game_manager.gd
+res://scripts/core/battle_result.gd
+res://scripts/models/runtime_final_battle.gd
+res://scenes/archive_view/leaderboard_panel.gd

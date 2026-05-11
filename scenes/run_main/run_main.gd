@@ -159,6 +159,8 @@ func _ready() -> void:
 			push_error("[RunMain] 存档恢复失败，回到主菜单")
 			get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")
 	else:
+		# 正常新开局，确保清空残留存档数据
+		GameManager.pending_save_data = {}
 		var hero_config_id: int = GameManager.selected_hero_config_id
 		var partner_config_ids: Array[int] = GameManager.selected_partner_config_ids.duplicate()
 

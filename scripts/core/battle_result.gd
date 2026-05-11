@@ -61,6 +61,14 @@ func finalize(hero: Dictionary, enemies: Array, partners: Array) -> Dictionary:
 	for e in enemies:
 		enemy_remaining_hp += e.get("hp", 0)
 
+	# 计算对敌人造成的伤害和敌人最大HP（取第一个敌人）
+	var damage_dealt_to_enemy: int = 0
+	var enemy_max_hp: int = 0
+	if enemies.size() > 0:
+		var first_enemy: Dictionary = enemies[0]
+		enemy_max_hp = first_enemy.get("max_hp", 0)
+		damage_dealt_to_enemy = enemy_max_hp - first_enemy.get("hp", 0)
+
 	return {
 		"winner": winner,
 		"turns_elapsed": turns_elapsed,
@@ -71,6 +79,10 @@ func finalize(hero: Dictionary, enemies: Array, partners: Array) -> Dictionary:
 		"ultimate_triggered": ultimate_triggered,
 		"total_damage_dealt": total_damage_dealt,
 		"total_damage_taken": total_damage_taken,
+		"hero_remaining_hp": hero_remaining_hp,
+		"hero_max_hp": hero.get("max_hp", 100),
+		"damage_dealt_to_enemy": damage_dealt_to_enemy,
+		"enemy_max_hp": enemy_max_hp,
 	}
 
 ## 转换为字典（供调用方使用）
