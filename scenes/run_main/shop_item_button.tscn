@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scenes/run_main/shop_item_button.gd" id="1_shopitem"]
 
 [node name="ShopItemButton" type="Button"]
-custom_minimum_size = Vector2(360, 60)
+custom_minimum_size = Vector2(360, 50)
 script = ExtResource("1_shopitem")
 
 [node name="InfoContainer" type="VBoxContainer" parent="."]
