@@ -74,6 +74,7 @@ extends Control
 var _run_controller: RunController = null
 var _last_rescue_candidates: Array[Dictionary] = []
 var _shop_item_buttons: Array = []
+var _selected_rescue_partner_id: int = -1
 
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
@@ -347,9 +348,11 @@ func _show_training_panel_details(_panel_data: Dictionary) -> void:
 
 
 func _show_rescue_panel_details(candidates: Array[Dictionary]) -> void:
+	_selected_rescue_partner_id = -1
 	for i in range(rescue_candidate_buttons.size()):
 		if i < candidates.size():
 			rescue_candidate_buttons[i].visible = true
+			rescue_candidate_buttons[i].modulate = Color(1, 1, 1)
 			var candidate = candidates[i]
 			rescue_candidate_labels[i].text = "%s\n%s" % [candidate.get("name", "???"), candidate.get("role", "")]
 			rescue_candidate_buttons[i].disabled = false
@@ -359,8 +362,15 @@ func _show_rescue_panel_details(candidates: Array[Dictionary]) -> void:
 
 func _on_rescue_partner_selected(index: int) -> void:
 	if index < _last_rescue_candidates.size():
-		var partner_config_id = int(_last_rescue_candidates[index].get("partner_id", 0))
+		var candidate = _last_rescue_candidates[index]
+		var partner_config_id = int(candidate.get("partner_id", 0))
 		if partner_config_id > 0:
+			_selected_rescue_partner_id = partner_config_id
+			print("[RunMain] 选择救援伙伴: id=%d" % _selected_rescue_partner_id)
+			# 高亮选中的按钮
+			for btn in rescue_candidate_buttons:
+				btn.modulate = Color(0.5, 0.5, 0.5)
+			rescue_candidate_buttons[index].modulate = Color(1, 1, 1)
 			_run_controller.select_rescue_partner(partner_config_id)
 			# UI状态切换由 RunController 的下一个 panel_opened 信号驱动
 
@@ -409,14 +419,11 @@ func _on_shop_item_purchased(item_data: Dictionary) -> void:
 		shop_gold_label.text = "持有金币: %d" % new_gold
 		gold_label.text = "金币: %d" % new_gold
 		
-		# 标记已售出
-		for btn in _shop_item_buttons:
-			if btn.item_data.get("item_id", "") == item_data.get("item_id", ""):
-				btn.mark_sold_out()
-				break
+		# 刷新整个商店面板，允许继续升级
+		var fresh_items = _run_controller.get_current_shop_items()
+		_show_shop_panel(fresh_items)
 		
-		# 刷新其他按钮可购买状态
-		_refresh_shop_buttons_affordability(new_gold)
+		print("[RunMain] 商店已刷新，当前金币=%d" % new_gold)
 	else:
 		print("[RunMain] 购买失败: %s" % result.get("error", "???"))
 

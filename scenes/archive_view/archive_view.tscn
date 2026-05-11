@@ -62,12 +62,12 @@ text = "排行榜"
 
 [node name="Scroll" type="ScrollContainer" parent="VBox"]
 layout_mode = 2
-size_flags_vertical = Control.SIZE_EXPAND_FILL
+size_flags_vertical = 3
 
 [node name="ListContainer" type="VBoxContainer" parent="VBox/Scroll"]
 layout_mode = 2
-size_flags_horizontal = Control.SIZE_EXPAND_FILL
-size_flags_vertical = Control.SIZE_EXPAND_FILL
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 10
 
 [node name="ArchiveDetail" parent="VBox" instance=ExtResource("2_detail")]

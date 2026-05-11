@@ -10,6 +10,9 @@ var is_sold_out: bool = false
 
 func setup(item: Dictionary) -> void:
 	item_data = item
+	is_sold_out = false
+	modulate = Color(1, 1, 1)
+	
 	var item_type = item.get("item_type", "")
 	
 	match item_type:
@@ -22,8 +25,9 @@ func setup(item: Dictionary) -> void:
 	price_label.text = "%d金币" % item.get("price", 0)
 	
 	var can_afford = item.get("can_afford", true)
-	disabled = not can_afford
-	if not can_afford:
+	var max_level_reached = item.get("current_level", 1) >= 5
+	disabled = not can_afford or max_level_reached
+	if disabled:
 		modulate = Color(0.5, 0.5, 0.5)
 
 func mark_sold_out() -> void:

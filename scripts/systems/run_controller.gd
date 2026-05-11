@@ -625,7 +625,27 @@ func _end_run() -> void:
 	else:
 		push_error("[RunController] GameManager not found, cannot pass archive")
 	
+	# 删除所有存档文件，防止已结束的局被"继续游戏"加载
+	var dir: DirAccess = DirAccess.open(ConfigManager.SAVE_DIR)
+	if dir != null:
+		dir.list_dir_begin()
+		var file_name: String = dir.get_next()
+		while not file_name.is_empty():
+			if file_name.begins_with("save_") and file_name.ends_with(".json"):
+				var save_path: String = ConfigManager.SAVE_DIR + file_name
+				DirAccess.remove_absolute(save_path)
+				print("[RunController] 已删除存档: %s" % save_path)
+			file_name = dir.get_next()
+		dir.list_dir_end()
+	
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_data)
+
+
+func get_current_shop_items() -> Array[Dictionary]:
+	var shop_system = get_node_or_null("ShopSystem")
+	if shop_system != null:
+		return shop_system.generate_shop_inventory(_run.current_turn, _run.gold_owned)
+	return []
 
 
 func _auto_save() -> void:

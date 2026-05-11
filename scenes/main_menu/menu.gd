@@ -21,11 +21,15 @@ func _ready() -> void:
 	_btn_quit.pressed.connect(_on_quit_pressed)
 	_menu_button.pressed.connect(_on_menu_button_pressed)
 
-	# Phase 1: 斗士档案按钮隐藏（MVP范围外）
+	# 启用斗士档案按钮
 	var btn_archive: Button = get_node_or_null("%BtnArchive")
 	if btn_archive != null:
-		btn_archive.visible = false
-		btn_archive.disabled = true
+		btn_archive.visible = true
+		btn_archive.disabled = false
+		btn_archive.pressed.connect(_on_archive_button_pressed)
+		print("[MainMenu] 档案按钮已启用")
+	else:
+		push_warning("[MainMenu] BtnArchive 未找到")
 
 	# 主菜单中隐藏PauseMenu的"返回主菜单"按钮
 	_pause_menu.set_is_main_menu(true)
@@ -50,6 +54,10 @@ func _on_continue_pressed() -> void:
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
+
+func _on_archive_button_pressed() -> void:
+	print("[MainMenu] 查看档案按钮点击")
+	EventBus.archive_view_requested.emit()
 
 func _on_menu_button_pressed() -> void:
 	print("[MainMenu] 菜单按钮点击")

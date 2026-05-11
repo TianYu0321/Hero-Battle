@@ -82,9 +82,11 @@ func has_active_run() -> bool:
 	var has_hero = data.has("hero_config_id") or data.has("hero_id")
 	var has_floor = data.has("current_floor") and data.get("current_floor", 0) > 0
 	var has_turn = data.has("current_turn") and data.get("current_turn", 0) > 0
+	var run_status = data.get("run_status", 1)
+	var is_ongoing = (run_status == 1)
 	
-	print("[SaveManager] 存档检查: has_hero=", has_hero, ", has_floor=", has_floor or has_turn, ", floor=", data.get("current_floor", data.get("current_turn", 0)))
-	var result = has_hero and (has_floor or has_turn)
+	print("[SaveManager] 存档检查: has_hero=", has_hero, ", has_floor=", has_floor or has_turn, ", floor=", data.get("current_floor", data.get("current_turn", 0)), ", run_status=", run_status)
+	var result = has_hero and (has_floor or has_turn) and is_ongoing
 	print("[SaveManager] 检查结果: ", result)
 	return result
 
@@ -118,6 +120,11 @@ func load_latest_run() -> Dictionary:
 
 	if not _validate_save_integrity(data):
 		EventBus.load_failed.emit(4001, "Save file missing required fields", 1)
+		return {}
+	
+	var run_status = data.get("run_status", 1)
+	if run_status != 1:
+		print("[SaveManager] 最新存档已完成(run_status=%d)，不可继续" % run_status)
 		return {}
 
 	var version: int = data.get("version", 0)

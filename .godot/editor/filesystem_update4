@@ -23,3 +23,5 @@ res://autoload/game_manager.gd
 res://scripts/core/battle_result.gd
 res://scripts/models/runtime_final_battle.gd
 res://scenes/archive_view/leaderboard_panel.gd
+res://scenes/main_menu/menu.gd
+res://scenes/run_main/shop_item_button.gd
