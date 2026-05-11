@@ -116,6 +116,7 @@ func start_new_run(hero_config_id: int, starter_partner_ids: Array[int]) -> void
 
 
 func continue_from_save(save_data: Dictionary) -> bool:
+	print("[RunController] 恢复存档, floor=", save_data.get("current_floor", save_data.get("current_turn", 0)))
 	## 从存档恢复完整状态
 	if save_data.is_empty():
 		push_error("[RunController] Cannot continue from empty save data")
@@ -149,6 +150,7 @@ func continue_from_save(save_data: Dictionary) -> bool:
 	_change_state(RunState.RUNNING_NODE_SELECT)
 	
 	EventBus.emit_signal("run_continued", save_data)
+	print("[RunController] 存档恢复完成，当前层=", _run.current_floor if _run != null else "?")
 	return true
 
 

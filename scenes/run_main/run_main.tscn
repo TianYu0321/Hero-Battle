@@ -13,7 +13,8 @@ grow_vertical = 2
 script = ExtResource("1_abc12")
 
 [node name="MenuButton" type="Button" parent="."]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 1
 offset_left = 1160.0
 offset_top = 20.0
 offset_right = 1260.0

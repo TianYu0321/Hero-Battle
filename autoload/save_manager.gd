@@ -9,15 +9,8 @@ extends Node
 
 const _REQUIRED_SAVE_FIELDS: Array[String] = [
 	"version",
-	"hero_id",
-	"current_round",
-	"current_node",
-	"party",
-	"inventory",
-	"gold",
-	"mocheng_coin",
-	"hero_stats",
-	"timestamp",
+	"hero_config_id",
+	"current_floor",
 ]
 
 var _current_version: int = 1
@@ -57,6 +50,7 @@ func save_run_state(run_data: Dictionary, is_auto: bool = true) -> bool:
 	return true
 
 func has_active_run() -> bool:
+	print("[SaveManager] has_active_run 被调用")
 	var latest_path: String = ""
 	var latest_time: int = 0
 	var dir: DirAccess = DirAccess.open(ConfigManager.SAVE_DIR)
@@ -73,7 +67,24 @@ func has_active_run() -> bool:
 				latest_path = path
 		file_name = dir.get_next()
 	dir.list_dir_end()
-	return not latest_path.is_empty()
+	
+	if latest_path.is_empty():
+		print("[SaveManager] 检查结果: false (无存档文件)")
+		return false
+	
+	var data = ModelsSerializer.load_json_file(latest_path)
+	if data == null or data.is_empty():
+		print("[SaveManager] 检查结果: false (存档为空)")
+		return false
+	
+	var has_hero = data.has("hero_config_id") or data.has("hero_id")
+	var has_floor = data.has("current_floor") and data.get("current_floor", 0) > 0
+	var has_turn = data.has("current_turn") and data.get("current_turn", 0) > 0
+	
+	print("[SaveManager] 存档检查: has_hero=", has_hero, ", has_floor=", has_floor or has_turn, ", floor=", data.get("current_floor", data.get("current_turn", 0)))
+	var result = has_hero and (has_floor or has_turn)
+	print("[SaveManager] 检查结果: ", result)
+	return result
 
 func load_latest_run() -> Dictionary:
 	var latest_path: String = ""

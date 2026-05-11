@@ -15,6 +15,7 @@ extends Control
 @onready var _pause_menu: PauseMenu = $PauseMenu
 
 func _ready() -> void:
+	print("[MainMenu] _ready 开始, continue_button=", _btn_continue != null)
 	_btn_new_game.pressed.connect(_on_new_game_pressed)
 	_btn_continue.pressed.connect(_on_continue_pressed)
 	_btn_quit.pressed.connect(_on_quit_pressed)
@@ -31,6 +32,7 @@ func _ready() -> void:
 
 	var has_save: bool = SaveManager.has_active_run()
 	_btn_continue.visible = has_save
+	print("[MainMenu] 继续游戏按钮显隐: ", has_save)
 
 	EventBus.save_loaded.connect(_on_save_loaded)
 	EventBus.load_failed.connect(_on_load_failed)
@@ -39,12 +41,18 @@ func _on_new_game_pressed() -> void:
 	EventBus.new_game_requested.emit("")
 
 func _on_continue_pressed() -> void:
+	print("[MainMenu] 继续游戏点击, has_active_run=", SaveManager.has_active_run())
+	if not SaveManager.has_active_run():
+		push_error("[MainMenu] 点击继续游戏但存档无效")
+		_btn_continue.visible = false
+		return
 	EventBus.continue_game_requested.emit()
 
 func _on_quit_pressed() -> void:
 	get_tree().quit()
 
 func _on_menu_button_pressed() -> void:
+	print("[MainMenu] 菜单按钮点击")
 	if _pause_menu.visible:
 		_pause_menu.hide_menu()
 	else:
@@ -55,6 +63,12 @@ func _on_save_loaded(save_data: Dictionary) -> void:
 
 func _on_load_failed(error_code: int, error_message: String, save_slot: int) -> void:
 	_btn_continue.visible = false
+
+func _enter_tree() -> void:
+	if _btn_continue:
+		var has_save = SaveManager.has_active_run()
+		_btn_continue.visible = has_save
+		print("[MainMenu] _enter_tree 重新检查存档: ", has_save)
 
 ## v2.0: 排行榜系统（净胜场制）
 func show_leaderboard() -> void:

@@ -55,4 +55,3 @@ func _on_resume() -> void:
 func _on_main_menu() -> void:
 	hide_menu()
 	main_menu_requested.emit()
-	get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")

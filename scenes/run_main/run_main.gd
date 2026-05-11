@@ -70,6 +70,7 @@ var _run_controller: RunController = null
 
 
 func _ready() -> void:
+	print("[RunMain] _ready 开始")
 	# --- 按钮点击绑定 ---
 	for i in range(option_buttons.size()):
 		option_buttons[i].pressed.connect(_on_node_button_pressed.bind(i))
@@ -325,6 +326,7 @@ func _on_floor_changed(current_floor: int, max_floor: int, floor_type: String) -
 	print("[RunMain HUD] 楼层 %d/%d，类型: %s" % [current_floor, max_floor, floor_type])
 
 func _on_menu_button_pressed() -> void:
+	print("[RunMain] 菜单按钮被点击")
 	if pause_menu.visible:
 		pause_menu.hide_menu()
 	else:
@@ -334,7 +336,13 @@ func _on_resume_game() -> void:
 	pass
 
 func _on_return_main_menu() -> void:
-	pass
+	print("[RunMain] 返回主菜单")
+	if _run_controller != null:
+		var summary = _run_controller.get_current_run_summary()
+		if not summary.is_empty():
+			SaveManager.save_run_state(summary, false)
+			print("[RunMain] 返回主菜单前已保存进度")
+	get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")
 
 
 func _on_enemy_encountered(enemy_data: Dictionary) -> void:

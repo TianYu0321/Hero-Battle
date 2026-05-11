@@ -1,6 +1,0 @@
-res://autoload/event_bus.gd
-res://autoload/game_manager.gd
-res://autoload/save_manager.gd
-res://scenes/main_menu/menu.gd
-res://scenes/run_main/run_main.gd
-res://scripts/systems/run_controller.gd
