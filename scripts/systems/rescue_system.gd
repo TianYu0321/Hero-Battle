@@ -91,8 +91,15 @@ func generate_candidates() -> Array[Dictionary]:
 
 
 func rescue_partner(partner_config_id: int, turn: int) -> RuntimePartner:
+	print("[RescueSystem] rescue_partner 被调用: partner_config_id=%d, turn=%d" % [partner_config_id, turn])
 	var slot: int = get_rescue_slot(turn)
-	return _character_manager.add_partner(partner_config_id, slot)
+	print("[RescueSystem] 计算 slot=%d" % slot)
+	var result = _character_manager.add_partner(partner_config_id, slot)
+	if result == null:
+		print("[RescueSystem] 警告: add_partner 返回 null")
+	else:
+		print("[RescueSystem] add_partner 成功: instance_id=%d, config_id=%d, is_active=%s" % [result.instance_id, result.partner_config_id, str(result.is_active)])
+	return result
 
 
 # --- 私有方法 ---

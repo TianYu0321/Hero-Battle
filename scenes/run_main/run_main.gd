@@ -29,7 +29,7 @@ extends Control
 @onready var training_panel: VBoxContainer = $TrainingPanel
 @onready var option_container: VBoxContainer = $OptionContainer
 @onready var shop_panel: Panel = $ShopPanel
-@onready var shop_item_container: VBoxContainer = $ShopPanel/ContentVBox/ShopItemContainer
+@onready var shop_item_container: VBoxContainer = $ShopPanel/ContentVBox/Scroll/ShopItemContainer
 @onready var shop_gold_label: Label = $ShopPanel/ContentVBox/GoldDisplayLabel
 @onready var battle_summary_panel = $BattleSummaryPanel
 @onready var ui_modal_blocker: ColorRect = $UIModalBlocker
@@ -361,9 +361,12 @@ func _show_rescue_panel_details(candidates: Array[Dictionary]) -> void:
 			rescue_candidate_buttons[i].disabled = true
 
 func _on_rescue_partner_selected(index: int) -> void:
+	print("[RunMain] _on_rescue_partner_selected 被调用: index=%d, candidates.size=%d" % [index, _last_rescue_candidates.size()])
 	if index < _last_rescue_candidates.size():
 		var candidate = _last_rescue_candidates[index]
+		print("[RunMain] 候选伙伴字典: " + str(candidate))
 		var partner_config_id = int(candidate.get("partner_id", 0))
+		print("[RunMain] 解析 partner_config_id=%d" % partner_config_id)
 		if partner_config_id > 0:
 			_selected_rescue_partner_id = partner_config_id
 			print("[RunMain] 选择救援伙伴: id=%d" % _selected_rescue_partner_id)
@@ -373,6 +376,10 @@ func _on_rescue_partner_selected(index: int) -> void:
 			rescue_candidate_buttons[index].modulate = Color(1, 1, 1)
 			_run_controller.select_rescue_partner(partner_config_id)
 			# UI状态切换由 RunController 的下一个 panel_opened 信号驱动
+		else:
+			print("[RunMain] 警告: partner_config_id <= 0，不调用 select_rescue_partner")
+	else:
+		print("[RunMain] 警告: index >= candidates.size，忽略点击")
 
 func _on_shop_close_pressed() -> void:
 	print("[RunMain] 商店关闭")

@@ -221,9 +221,14 @@ func purchase_shop_item(item_data: Dictionary) -> Dictionary:
 
 
 func select_rescue_partner(partner_config_id: int) -> void:
+	print("[RunController] select_rescue_partner 被调用: partner_config_id=%d, turn=%d, phase=%d" % [partner_config_id, _run.current_turn if _run != null else -1, _special_floor_phase])
 	var rescue_system: RescueSystem = get_node_or_null("RescueSystem")
+	var rescued_partner = null
 	if rescue_system != null:
-		rescue_system.rescue_partner(partner_config_id, _run.current_turn)
+		rescued_partner = rescue_system.rescue_partner(partner_config_id, _run.current_turn)
+		print("[RunController] rescue_system.rescue_partner() 返回值: " + ("null" if rescued_partner == null else "instance_id=" + str(rescued_partner.instance_id)))
+	else:
+		print("[RunController] 警告: RescueSystem 为 null")
 	
 	# 如果当前是救援层的救援阶段，进入商店阶段
 	if _special_floor_phase == SpecialFloorPhase.RESCUE_SELECT:
@@ -233,9 +238,13 @@ func select_rescue_partner(partner_config_id: int) -> void:
 		var shop_items = []
 		if shop_system != null:
 			shop_items = shop_system.generate_shop_inventory(_run.current_turn, _run.gold_owned)
+			print("[RunController] 生成商店商品: " + str(shop_items.size()) + " 个")
+		else:
+			print("[RunController] 警告: ShopSystem 为 null")
 		EventBus.emit_signal("panel_opened", "SHOP_PANEL", {"items": shop_items})
 	else:
 		# 非救援层的普通救援（如果有的话），直接完成
+		print("[RunController] 非救援层阶段，直接完成节点")
 		_finish_node_execution(_pending_result)
 
 

@@ -22,14 +22,18 @@ func generate_items(turn: int) -> Array[Dictionary]:
 func generate_shop_inventory(turn: int, current_gold: int) -> Array[Dictionary]:
 	var inventory: Array[Dictionary] = []
 	var partners: Array[RuntimePartner] = _character_manager.get_partners()
+	print("[ShopSystem] generate_shop_inventory 被调用: turn=%d, gold=%d, partners.count=%d" % [turn, current_gold, partners.size()])
+	for p in partners:
+		print("[ShopSystem] 伙伴: config_id=%d, instance_id=%d, is_active=%s, level=%d" % [p.partner_config_id, p.instance_id, str(p.is_active), p.current_level])
 	var seen_instance_ids: Array[int] = []
 
-	# 伙伴升级选项（最多显示3个活跃伙伴）
-	var shown: int = 0
+	# 伙伴升级选项（显示所有活跃伙伴）
 	for p in partners:
-		if not p.is_active or shown >= 3:
+		if not p.is_active:
+			print("[ShopSystem] 跳过伙伴 (is_active=false): config_id=%d" % p.partner_config_id)
 			continue
 		if p.instance_id in seen_instance_ids:
+			print("[ShopSystem] 跳过伙伴 (instance_id 重复): config_id=%d, instance_id=%d" % [p.partner_config_id, p.instance_id])
 			continue
 		seen_instance_ids.append(p.instance_id)
 		var item_id: String = "partner_%d_%d" % [p.partner_config_id, p.instance_id]
@@ -50,8 +54,9 @@ func generate_shop_inventory(turn: int, current_gold: int) -> Array[Dictionary]:
 			"target_config_id": str(p.partner_config_id),
 			"target_attr": 0,
 		})
-		shown += 1
+		print("[ShopSystem] 添加商店项: name=%s, item_id=%s" % [p_name + " Lv%d→%d" % [p.current_level, mini(5, p.current_level + 1)], item_id])
 
+	print("[ShopSystem] 返回商店商品数: " + str(inventory.size()))
 	return inventory
 
 
