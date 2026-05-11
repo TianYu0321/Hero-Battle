@@ -155,7 +155,7 @@ func _test_save_load_round_25() -> void:
 	_assert(restored_run.node_history.size() == 3, "节点历史恢复: 3条")
 	_assert(restored_hero.current_hp == 45, "HP恢复: 45")
 	_assert(restored_hero.max_hp == 180, "MaxHP恢复: 180")
-	_assert(restored_hero.agi == 35, "敏捷恢复: 35")
+	_assert(restored_hero.current_agi == 35, "敏捷恢复: 35")
 	_assert(restored_hero.passive_skill_id == 8003, "被动技能ID恢复: 8003")
 	_assert(restored_hero.ultimate_used == true, "必杀已使用恢复: true")
 	_assert(restored_hero.buff_list.size() == 1, "buff_list恢复: 1条")
@@ -211,8 +211,8 @@ func _test_save_integrity_validation() -> void:
 	# 完整存档应通过验证
 	var valid_save: Dictionary = {
 		"version": 1,
-		"hero_id": "hero_warrior",
-		"current_round": 15,
+		"hero_config_id": "hero_warrior",
+		"current_floor": 15,
 		"current_node": 2,
 		"party": [1001, 1002],
 		"inventory": [],
@@ -226,9 +226,8 @@ func _test_save_integrity_validation() -> void:
 	# 缺少必填字段应失败
 	var invalid_save: Dictionary = {
 		"version": 1,
-		"hero_id": "hero_warrior",
-		"current_round": 15,
-		# 缺少 current_node, party, inventory, gold, hero_stats, timestamp
+		"hero_config_id": "hero_warrior",
+		# 缺少 current_floor, current_node, party, inventory, gold, hero_stats, timestamp
 	}
 	var result_invalid: bool = SaveManager._validate_save_integrity(invalid_save)
 	_assert(result_invalid == false, "缺少字段的存档应验证失败")

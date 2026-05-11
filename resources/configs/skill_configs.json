@@ -32,7 +32,9 @@
         "prob_attr_inc": 0.02,
         "prob_max": 0.5
       },
-      "chain_tags": ["追击"],
+      "chain_tags": [
+        "追击"
+      ],
       "icon_path": "",
       "sort_order": 1
     },
@@ -57,10 +59,12 @@
       "condition_desc": "敌方HP<40%",
       "special_effect": "无视30%防御",
       "trigger_params": {
-        "hp_threshold": 0.40,
-        "ignore_def_ratio": 0.30
+        "hp_threshold": 0.4,
+        "ignore_def_ratio": 0.3
       },
-      "chain_tags": ["必杀"],
+      "chain_tags": [
+        "必杀"
+      ],
       "icon_path": "",
       "sort_order": 2
     },
@@ -88,9 +92,11 @@
         "segment_min": 2,
         "segment_max": 4,
         "segment_attr_bonus": 3,
-        "segment_attr_step": 15
+        "segment_attr_step": 20
       },
-      "chain_tags": ["连击"],
+      "chain_tags": [
+        "连击"
+      ],
       "icon_path": "",
       "sort_order": 3
     },
@@ -119,7 +125,10 @@
         "segment_count": 6,
         "partner_boost": 1.5
       },
-      "chain_tags": ["必杀", "连击"],
+      "chain_tags": [
+        "必杀",
+        "连击"
+      ],
       "icon_path": "",
       "sort_order": 4
     },
@@ -149,9 +158,11 @@
         "prob_attr_step": 10,
         "prob_attr_inc": 0.02,
         "prob_max": 0.4,
-        "stun_prob": 0.10
+        "stun_prob": 0.1
       },
-      "chain_tags": ["反击"],
+      "chain_tags": [
+        "反击"
+      ],
       "icon_path": "",
       "sort_order": 5
     },
@@ -176,13 +187,16 @@
       "condition_desc": "自身HP<50%",
       "special_effect": "3回合减伤40%，反击100%，眩晕25%",
       "trigger_params": {
-        "hp_threshold": 0.50,
+        "hp_threshold": 0.5,
         "buff_duration": 3,
-        "damage_reduction": 0.40,
+        "damage_reduction": 0.4,
         "counter_prob_override": 1.0,
         "stun_prob": 0.25
       },
-      "chain_tags": ["必杀", "反击"],
+      "chain_tags": [
+        "必杀",
+        "反击"
+      ],
       "icon_path": "",
       "sort_order": 6
     },
@@ -206,7 +220,9 @@
       "once_per_battle": false,
       "condition_desc": "主角攻击后概率触发",
       "special_effect": "",
-      "chain_tags": ["追击"],
+      "chain_tags": [
+        "追击"
+      ],
       "icon_path": "",
       "sort_order": 7
     },
@@ -230,7 +246,9 @@
       "once_per_battle": false,
       "condition_desc": "主角暴击后触发",
       "special_effect": "",
-      "chain_tags": ["追击"],
+      "chain_tags": [
+        "追击"
+      ],
       "icon_path": "",
       "sort_order": 8
     },
@@ -254,7 +272,9 @@
       "once_per_battle": false,
       "condition_desc": "主角受击后触发",
       "special_effect": "提供护盾",
-      "chain_tags": ["防御"],
+      "chain_tags": [
+        "防御"
+      ],
       "icon_path": "",
       "sort_order": 9
     },
@@ -278,7 +298,9 @@
       "once_per_battle": false,
       "condition_desc": "主角HP<30%",
       "special_effect": "治疗",
-      "chain_tags": ["治疗"],
+      "chain_tags": [
+        "治疗"
+      ],
       "icon_path": "",
       "sort_order": 10
     },
@@ -302,7 +324,9 @@
       "once_per_battle": false,
       "condition_desc": "每回合概率触发",
       "special_effect": "降低敌人10%防御",
-      "chain_tags": ["控场"],
+      "chain_tags": [
+        "控场"
+      ],
       "icon_path": "",
       "sort_order": 11
     },
@@ -326,7 +350,9 @@
       "once_per_battle": false,
       "condition_desc": "敌方HP<40%",
       "special_effect": "斩杀伤害",
-      "chain_tags": ["斩杀"],
+      "chain_tags": [
+        "斩杀"
+      ],
       "icon_path": "",
       "sort_order": 12
     },
@@ -398,7 +424,9 @@
       "once_per_battle": false,
       "condition_desc": "",
       "special_effect": "减伤30%",
-      "chain_tags": ["防御"],
+      "chain_tags": [
+        "防御"
+      ],
       "icon_path": "",
       "sort_order": 15
     },
@@ -422,7 +450,9 @@
       "once_per_battle": false,
       "condition_desc": "",
       "special_effect": "回复HP",
-      "chain_tags": ["治疗"],
+      "chain_tags": [
+        "治疗"
+      ],
       "icon_path": "",
       "sort_order": 16
     },
@@ -446,7 +476,9 @@
       "once_per_battle": false,
       "condition_desc": "",
       "special_effect": "闪避+20%",
-      "chain_tags": ["闪避"],
+      "chain_tags": [
+        "闪避"
+      ],
       "icon_path": "",
       "sort_order": 17
     },
@@ -494,7 +526,9 @@
       "once_per_battle": false,
       "condition_desc": "",
       "special_effect": "攻击+25%，受伤+15%",
-      "chain_tags": ["狂暴"],
+      "chain_tags": [
+        "狂暴"
+      ],
       "icon_path": "",
       "sort_order": 19
     },

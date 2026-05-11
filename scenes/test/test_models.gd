@@ -12,6 +12,11 @@ extends Control
 func _ready() -> void:
 	_btn_run.pressed.connect(_on_run_tests)
 	_label_result.text = "点击按钮运行测试"
+	# Headless 自动运行
+	await get_tree().process_frame
+	_on_run_tests()
+	await get_tree().process_frame
+	get_tree().quit()
 
 
 func _on_run_tests() -> void:
@@ -147,8 +152,8 @@ func _create_test_partner() -> RuntimePartner:
 	p.partner_config_id = 1001
 	p.position = 1
 	p.current_level = 2
-	p.current_vit = 10
-	p.current_str = 14
+	p.current_hp = 100
+	p.favored_attr = 2
 	return p
 
 

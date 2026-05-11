@@ -44,6 +44,11 @@ func _ready() -> void:
 	EventBus.chain_triggered.connect(_on_chain)
 	EventBus.ultimate_triggered.connect(_on_ultimate)
 
+	# Headless 自动运行默认测试
+	await get_tree().process_frame
+	await _start_test("hero_warrior")
+	get_tree().quit()
+
 func _start_test(hero_id: String) -> void:
 	_selected_hero_id = hero_id
 	_log_label.clear()

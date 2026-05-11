@@ -445,6 +445,9 @@ func _update_monster_info(node_options: Array[Dictionary]) -> void:
 	enemy_hp_label.text = "HP: %d" % enemy_hp
 
 	## v2: 计算预计损失血量
+	if enemy_stats.is_empty():
+		enemy_info_panel.visible = false
+		return
 	var hero_stats: Dictionary = _get_current_hero_stats()
 	var prediction: Dictionary = DamagePredictor.predict_battle_outcome(
 		_get_current_hero_hp(), hero_stats, enemy_stats

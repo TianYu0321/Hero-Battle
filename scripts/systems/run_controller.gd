@@ -303,6 +303,7 @@ func _generate_node_options() -> void:
 	if turn in _RESCUE_TURNS:
 		_special_floor_phase = SpecialFloorPhase.RESCUE_SELECT
 		print("[RunController] 特殊层阶段: RESCUE_SELECT")
+		_current_node_options.clear()
 		var rescue_system: RescueSystem = get_node_or_null("RescueSystem")
 		var candidates: Array[Dictionary] = []
 		if rescue_system != null:

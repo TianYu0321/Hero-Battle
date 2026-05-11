@@ -269,11 +269,20 @@ func get_partner_config(partner_id: String) -> Dictionary:
 func get_all_partner_configs() -> Dictionary:
 	return _partner_configs.duplicate()
 
-func get_skill_config(skill_id: String) -> Dictionary:
-	if not _skill_configs.has(skill_id):
-		push_warning("[ConfigManager] skill_id not found: %s" % skill_id)
+func get_skill_config(skill_id) -> Dictionary:
+	var normalized_id: String
+	if skill_id is float:
+		normalized_id = str(int(skill_id))
+	elif skill_id is int:
+		normalized_id = str(skill_id)
+	else:
+		normalized_id = str(skill_id)
+		if normalized_id.ends_with(".0"):
+			normalized_id = normalized_id.left(normalized_id.length() - 2)
+	if not _skill_configs.has(normalized_id):
+		push_warning("[ConfigManager] skill_id not found: %s" % normalized_id)
 		return {}
-	return _skill_configs[skill_id]
+	return _skill_configs[normalized_id]
 
 func get_enemy_template(enemy_id: String) -> Dictionary:
 	if not _enemy_configs.has(enemy_id):

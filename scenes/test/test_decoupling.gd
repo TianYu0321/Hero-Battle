@@ -107,16 +107,19 @@ func _test_skill_manager_config_driven() -> void:
 
 	print("  数值一致性检查（通过配置计算）:")
 	var tec: int = brave_hero.stats.technique
-	var prob: float = brave_tp.base_trigger_prob + float(tec / brave_tp.prob_attr_step) * brave_tp.prob_attr_inc
+	var prob_step: int = int(brave_tp.prob_attr_step)
+	var prob: float = brave_tp.base_trigger_prob + float(tec / prob_step) * brave_tp.prob_attr_inc
 	prob = min(prob, brave_tp.prob_max)
 	_assert(abs(prob - 0.32) < 0.001, "勇者追击概率计算 = 0.32 (与重构前一致)")
 
 	var agi: int = shadow_hero.stats.agility
-	var segments: int = clampi(shadow_tp.segment_min + int(agi / shadow_tp.segment_attr_step), shadow_tp.segment_min, shadow_tp.segment_max)
-	_assert(segments == 2, "影舞者段数计算 = 2 (与重构前一致)")
+	var seg_step: int = int(shadow_tp.segment_attr_step)
+	var segments: int = clampi(shadow_tp.segment_min + int(agi / seg_step), shadow_tp.segment_min, shadow_tp.segment_max)
+	_assert(segments == 2, "影舞者段数计算 = 2 (配置step=20, 16/20=0, 2+0=2)")
 
 	var mnd: int = iron_hero.stats.spirit
-	var iron_prob: float = iron_tp.base_trigger_prob + float(mnd / iron_tp.prob_attr_step) * iron_tp.prob_attr_inc
+	var iron_prob_step: int = int(iron_tp.prob_attr_step)
+	var iron_prob: float = iron_tp.base_trigger_prob + float(mnd / iron_prob_step) * iron_tp.prob_attr_inc
 	iron_prob = min(iron_prob, iron_tp.prob_max)
 	_assert(abs(iron_prob - 0.27) < 0.001, "铁卫反击概率计算 = 0.27 (与重构前一致)")
 

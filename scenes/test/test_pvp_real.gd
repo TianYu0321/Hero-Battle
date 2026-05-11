@@ -36,8 +36,8 @@ func _test_pvp_opponent_generation() -> void:
 	cm.initialize_partners([1001, 1002])
 
 	var team: Dictionary = cm.get_battle_ready_team()
-	_assert(team.hero.has("hero_id"), "get_battle_ready_team 返回的 hero 应有 hero_id")
-	_assert(team.hero.hero_id == "hero_warrior", "hero_id 应为 hero_warrior")
+	_assert(team.hero is RuntimeHero, "get_battle_ready_team 返回的 hero 应为 RuntimeHero")
+	_assert(team.hero.hero_config_id == 1, "hero_config_id 应为 1（勇者）")
 	_assert(team.partners.size() == 2, "伙伴数应为2")
 
 	var generator := PvpOpponentGenerator.new()
@@ -45,7 +45,7 @@ func _test_pvp_opponent_generation() -> void:
 		"player_hero": team.hero,
 		"player_partners": team.partners,
 		"player_gold": 100,
-		"player_hp": team.hero.hp,
+		"player_hp": team.hero.current_hp,
 		"player_max_hp": team.hero.max_hp,
 		"run_seed": 12345,
 	}
@@ -61,7 +61,7 @@ func _test_pvp_opponent_generation() -> void:
 	_assert(battle_config_early.battle_seed == 12355, "战斗种子 = run_seed + turn = 12355")
 
 	# 检查AI属性是否被缩放（前期乘数0.90，应比玩家低）
-	var player_str: int = team.hero.stats.strength
+	var player_str: int = team.hero.current_str
 	var ai_str: int = battle_config_early.hero.stats.strength
 	_assert(ai_str < player_str * 1.1, "第10回合AI力量应接近或低于玩家（乘数0.90）")
 
@@ -97,7 +97,7 @@ func _test_pvp_battle_turn_10() -> void:
 		"player_hero": team.hero,
 		"player_partners": team.partners,
 		"player_gold": 100,
-		"player_hp": team.hero.hp,
+		"player_hp": team.hero.current_hp,
 		"player_max_hp": team.hero.max_hp,
 		"run_seed": 12345,
 	}
@@ -141,7 +141,7 @@ func _test_pvp_battle_turn_20() -> void:
 		"player_hero": team.hero,
 		"player_partners": team.partners,
 		"player_gold": 200,
-		"player_hp": team.hero.hp,
+		"player_hp": team.hero.current_hp,
 		"player_max_hp": team.hero.max_hp,
 		"run_seed": 54321,
 	}

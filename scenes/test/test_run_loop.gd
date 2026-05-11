@@ -7,11 +7,11 @@ extends Control
 
 @onready var _btn_start: Button = $VBoxContainer/BtnStart
 @onready var _btn_advance: Button = $VBoxContainer/BtnAdvance
-@onready var _btn_train_vit: Button = $VBoxContainer/BtnTrainVit
-@onready var _btn_train_str: Button = $VBoxContainer/BtnTrainStr
-@onready var _btn_train_agi: Button = $VBoxContainer/BtnTrainAgi
-@onready var _btn_train_tec: Button = $VBoxContainer/BtnTrainTec
-@onready var _btn_train_mnd: Button = $VBoxContainer/BtnTrainMnd
+@onready var _btn_train_vit: Button = $VBoxContainer/HBoxContainer/BtnTrainVit
+@onready var _btn_train_str: Button = $VBoxContainer/HBoxContainer/BtnTrainStr
+@onready var _btn_train_agi: Button = $VBoxContainer/HBoxContainer/BtnTrainAgi
+@onready var _btn_train_tec: Button = $VBoxContainer/HBoxContainer/BtnTrainTec
+@onready var _btn_train_mnd: Button = $VBoxContainer/HBoxContainer/BtnTrainMnd
 @onready var _label_status: Label = $VBoxContainer/LabelStatus
 @onready var _label_log: Label = $VBoxContainer/LabelLog
 
@@ -32,6 +32,22 @@ func _ready() -> void:
 	add_child(_run_controller)
 
 	_update_ui("点击【开始新局】启动测试")
+
+	# Headless 自动运行
+	if DisplayServer.get_name() == "headless":
+		await get_tree().process_frame
+		_on_start()
+		for i in range(3):
+			await get_tree().process_frame
+			var turn: int = _run_controller.get_current_run_summary().get("current_turn", 0)
+			if turn in [5, 15, 25]:
+				_run_controller.select_rescue_partner(1001)
+				await get_tree().process_frame
+				_run_controller.close_shop_panel()
+				continue
+			_on_advance()
+		print("test_run_loop headless pass")
+		get_tree().quit()
 
 
 func _on_start() -> void:

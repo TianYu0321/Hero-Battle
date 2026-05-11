@@ -121,7 +121,13 @@ static func from_dict(data: Dictionary) -> RuntimeRun:
 	run.total_damage_dealt = data.get("total_damage_dealt", 0)
 	run.total_enemies_killed = data.get("total_enemies_killed", 0)
 	var tpa = data.get("training_count_per_attr", [0, 0, 0, 0, 0])
-	run.training_count_per_attr = tpa.duplicate() if tpa is Array else [0, 0, 0, 0, 0]
+	if tpa is Array:
+		var tpa_int: Array = []
+		for v in tpa:
+			tpa_int.append(int(v))
+		run.training_count_per_attr = tpa_int
+	else:
+		run.training_count_per_attr = [0, 0, 0, 0, 0]
 	run.initial_attr_sum = data.get("initial_attr_sum", 0)
 	run.created_at = data.get("created_at", 0)
 	run.updated_at = data.get("updated_at", 0)

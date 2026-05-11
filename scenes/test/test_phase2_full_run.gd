@@ -45,10 +45,19 @@ func _test_full_run_flow() -> void:
 	# 推进到第10回合（PVP节点）
 	for i in range(9):
 		var options: Array[Dictionary] = rc.get_current_node_options()
+		var turn: int = rc.get_current_run_summary().get("current_turn", 0)
+		if turn in [5, 15, 25]:
+			rc.select_rescue_partner(1001)
+			rc.close_shop_panel()
+			continue
 		if options.is_empty():
 			push_warning("第%d回合无节点选项" % (i + 1))
 			break
 		rc.select_node(0)
+		var post_summary: Dictionary = rc.get_current_run_summary()
+		if post_summary.get("run_state", 0) == 3:
+			rc.select_training_attr(1)
+			rc.close_shop_panel()
 		rc.advance_turn()
 
 	summary = rc.get_current_run_summary()
@@ -57,7 +66,7 @@ func _test_full_run_flow() -> void:
 	# 检查第10回合PVP选项
 	var pvp_options: Array[Dictionary] = rc.get_current_node_options()
 	if pvp_options.size() > 0:
-		_assert(pvp_options[0].get("node_type", 0) == 6, "第10回合应有PVP节点")
+		_assert(pvp_options[0].get("node_type", 0) == 7, "第10回合应有PVP节点")
 		# 选择PVP节点
 		rc.select_node(0)
 		# PVP结果已处理（由NodeResolver → PvpDirector执行真实战斗）
@@ -68,9 +77,18 @@ func _test_full_run_flow() -> void:
 	# 推进到第20回合（第二次PVP）
 	for i in range(9):
 		var options: Array[Dictionary] = rc.get_current_node_options()
+		var turn: int = rc.get_current_run_summary().get("current_turn", 0)
+		if turn in [5, 15, 25]:
+			rc.select_rescue_partner(1001)
+			rc.close_shop_panel()
+			continue
 		if options.is_empty():
 			break
 		rc.select_node(0)
+		var post_summary: Dictionary = rc.get_current_run_summary()
+		if post_summary.get("run_state", 0) == 3:
+			rc.select_training_attr(1)
+			rc.close_shop_panel()
 		rc.advance_turn()
 
 	summary = rc.get_current_run_summary()
@@ -79,7 +97,7 @@ func _test_full_run_flow() -> void:
 	# 检查第20回合PVP选项
 	var pvp_options2: Array[Dictionary] = rc.get_current_node_options()
 	if pvp_options2.size() > 0:
-		_assert(pvp_options2[0].get("node_type", 0) == 6, "第20回合应有PVP节点")
+		_assert(pvp_options2[0].get("node_type", 0) == 7, "第20回合应有PVP节点")
 		rc.select_node(0)
 		rc.advance_turn()
 	else:
@@ -88,9 +106,18 @@ func _test_full_run_flow() -> void:
 	# 推进到第30回合（终局战）
 	for i in range(9):
 		var options: Array[Dictionary] = rc.get_current_node_options()
+		var turn: int = rc.get_current_run_summary().get("current_turn", 0)
+		if turn in [5, 15, 25]:
+			rc.select_rescue_partner(1001)
+			rc.close_shop_panel()
+			continue
 		if options.is_empty():
 			break
 		rc.select_node(0)
+		var post_summary: Dictionary = rc.get_current_run_summary()
+		if post_summary.get("run_state", 0) == 3:
+			rc.select_training_attr(1)
+			rc.close_shop_panel()
 		rc.advance_turn()
 
 	summary = rc.get_current_run_summary()
@@ -116,7 +143,7 @@ func _test_pvp_integration() -> void:
 		"player_hero": team.hero,
 		"player_partners": team.partners,
 		"player_gold": 100,
-		"player_hp": team.hero.hp,
+		"player_hp": team.hero.current_hp,
 		"player_max_hp": team.hero.max_hp,
 		"run_seed": 12345,
 	}
@@ -128,15 +155,8 @@ func _test_pvp_integration() -> void:
 	_assert(result.combat_summary.turns > 0, "PVP战斗应有至少1回合")
 	_assert(result.combat_summary.turns <= 20, "PVP战斗不应超过20回合")
 
-	# 验证惩罚逻辑
-	if not result.won:
-		var penalty_tier: String = result.get("penalty_tier", "none")
-		if result.pvp_turn == 10:
-			_assert(penalty_tier == "gold_50", "第10回合失败惩罚 = gold_50")
-		elif result.pvp_turn == 20:
-			_assert(penalty_tier == "hp_30", "第20回合失败惩罚 = hp_30")
-	else:
-		_assert(result.get("penalty_tier", "") == "none", "胜利无惩罚")
+	# v2.0取消PVP失败惩罚，penalty_tier始终为"none"
+	_assert(result.get("penalty_tier", "") == "none", "v2.0 PVP无惩罚，penalty_tier = none")
 
 	cm.queue_free()
 	pvp_director.queue_free()
@@ -154,6 +174,7 @@ func _test_settlement_integration() -> void:
 	run.current_turn = 30
 	run.gold_earned_total = 300
 	run.gold_spent = 200
+	run.gold_owned = 200
 	run.elite_win_count = 3
 	run.elite_total_count = 5
 	run.pvp_10th_result = 1
@@ -163,6 +184,7 @@ func _test_settlement_integration() -> void:
 	run.total_aid_trigger_count = 8
 
 	var hero := RuntimeHero.new()
+	hero.hero_config_id = 1
 	hero.current_vit = 25
 	hero.current_str = 30
 	hero.current_agi = 20
@@ -177,7 +199,11 @@ func _test_settlement_integration() -> void:
 	fb.damage_dealt_to_enemy = 300
 	fb.enemy_max_hp = 350
 
-	var partners: Array[RuntimePartner] = []
+	var p1 := RuntimePartner.new()
+	p1.current_level = 3
+	var p2 := RuntimePartner.new()
+	p2.current_level = 3
+	var partners: Array[RuntimePartner] = [p1, p2]
 	var score: FighterArchiveScore = ss.calculate_score(run, hero, fb, partners)
 	_assert(score.total_score >= 0, "总分 >= 0")
 	_assert(score.grade in ["S", "A", "B", "C", "D"], "评级合法")

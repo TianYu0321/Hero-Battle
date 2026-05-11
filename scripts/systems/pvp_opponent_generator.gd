@@ -13,7 +13,27 @@ func generate_opponent(player_state: Dictionary, turn_number: int) -> Dictionary
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = player_state.get("run_seed", 0) + turn_number
 
-	var player_hero: Dictionary = player_state.get("player_hero", {})
+	var raw_hero = player_state.get("player_hero", {})
+	var player_hero: Dictionary
+	if raw_hero is RuntimeHero:
+		var hero_id: String = ConfigManager.get_hero_id_by_config_id(raw_hero.hero_config_id)
+		if hero_id.is_empty():
+			hero_id = "hero_warrior"
+		player_hero = {
+			"hero_id": hero_id,
+			"stats": {
+				"physique": raw_hero.current_vit,
+				"strength": raw_hero.current_str,
+				"agility": raw_hero.current_agi,
+				"technique": raw_hero.current_tec,
+				"spirit": raw_hero.current_mnd,
+			},
+			"max_hp": raw_hero.max_hp,
+			"hp": raw_hero.current_hp,
+			"buff_list": raw_hero.buff_list.duplicate(),
+		}
+	else:
+		player_hero = raw_hero
 	var ai_hero: Dictionary = _generate_ai_hero(player_hero, template, rng)
 	var ai_partners: Array = _generate_ai_partners(template, rng)
 	var player_battle_unit: Dictionary = _generate_player_enemy(player_hero)
@@ -104,6 +124,9 @@ func _generate_player_enemy(player_hero: Dictionary) -> Dictionary:
 	unit["unit_type"] = "ENEMY"
 	unit["name"] = "玩家镜像"
 	unit["special_mechanic"] = ""
+	unit["is_alive"] = true
+	if not unit.has("buffs"):
+		unit["buffs"] = []
 	return unit
 
 

@@ -51,6 +51,33 @@ func _progress_turn() -> void:
 		_quit()
 		return
 	
+	# 处理训练面板
+	if _run_main.training_panel.visible:
+		print("  [Turn %d] Training panel visible, selecting attr 1" % current_turn)
+		_run_main._on_training_attr_selected(1)
+		await get_tree().process_frame
+		_progress_turn.call_deferred()
+		return
+	
+	# 处理救援面板
+	if _run_main.rescue_panel.visible:
+		print("  [Turn %d] Rescue panel visible, selecting partner 0" % current_turn)
+		_run_main._on_rescue_partner_selected(0)
+		await get_tree().process_frame
+		if _run_main.shop_panel.visible:
+			_run_main._on_shop_close_pressed()
+			await get_tree().process_frame
+		_progress_turn.call_deferred()
+		return
+	
+	# 处理商店面板
+	if _run_main.shop_panel.visible:
+		print("  [Turn %d] Shop panel visible, closing" % current_turn)
+		_run_main._on_shop_close_pressed()
+		await get_tree().process_frame
+		_progress_turn.call_deferred()
+		return
+	
 	if state != 2:  # Not RUNNING_NODE_SELECT
 		print("  [Turn %d] State=%d, waiting..." % [current_turn, state])
 		await get_tree().process_frame

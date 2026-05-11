@@ -59,6 +59,11 @@ func _ready() -> void:
 
 		var options: Array[Dictionary] = _rc.get_current_node_options()
 		if options.is_empty():
+			if turn in [5, 15, 25]:
+				_mechanics.rescue_triggered = true
+				_rc.select_rescue_partner(1001)
+				_rc.close_shop_panel()
+				continue
 			push_warning("[Test] Turn %d: Empty options, forcing advance" % turn)
 			_rc.call("_finish_node_execution", {"success": true})
 			_rc.advance_turn()
