@@ -88,6 +88,18 @@ enum UISceneState {
 var _current_ui_state: UISceneState = UISceneState.LOADING
 
 
+func _process(_delta: float) -> void:
+	# 安全检测：UIModalBlocker 不应该在没有任何面板打开时保持 visible
+	if ui_modal_blocker.visible:
+		var any_modal_visible: bool = shop_panel.visible or battle_summary_panel.visible or rescue_panel.visible or training_panel.visible
+		if not any_modal_visible:
+			print("[RunMain] 安全检测：UIModalBlocker 异常可见，自动隐藏")
+			ui_modal_blocker.visible = false
+			# 同时恢复选项状态
+			if _current_ui_state == UISceneState.LOADING:
+				_transition_ui_state(UISceneState.OPTION_SELECT)
+
+
 func _ready() -> void:
 	print("[RunMain] _ready 开始")
 	# --- 按钮点击绑定 ---
@@ -216,6 +228,13 @@ func _update_hud() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		print("[RunMain] 全局点击检测: pos=%s, blocker=%s, shop=%s, option=%s" % [
+			event.position,
+			ui_modal_blocker.visible,
+			shop_panel.visible,
+			option_container.visible
+		])
 	if event.is_action_pressed("ui_cancel"):
 		if pause_menu.visible:
 			pause_menu.hide_menu()
@@ -223,6 +242,7 @@ func _input(event: InputEvent) -> void:
 			pause_menu.show_menu()
 
 func _on_node_button_pressed(index: int) -> void:
+	print("[RunMain] 按钮被点击: index=%d, RunController=%s" % [index, _run_controller != null])
 	if _run_controller == null:
 		push_warning("[RunMain] RunController not available")
 		return
@@ -248,7 +268,7 @@ func _on_run_started(run_config: Dictionary) -> void:
 
 
 func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
-	print("[RunMain] _on_node_options_presented: 选项数=%d" % node_options.size())
+	print("[RunMain] _on_node_options_presented: 选项数=%d, 当前blocker=%s" % [node_options.size(), ui_modal_blocker.visible])
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 	
 	# 更新按钮内容
@@ -261,6 +281,18 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 		else:
 			option_buttons[i].visible = false
 			option_buttons[i].disabled = true
+	
+	# 强制确保 OptionContainer 和按钮可见且可交互
+	option_container.visible = true
+	for btn in option_buttons:
+		btn.visible = true
+		btn.disabled = false
+	
+	print("[RunMain] 按钮状态: option_container=%s, 按钮1disabled=%s, 按钮2disabled=%s" % [
+		option_container.visible,
+		option_buttons[0].disabled,
+		option_buttons[1].disabled
+	])
 	
 	_update_monster_info(node_options)
 
@@ -397,6 +429,7 @@ func _refresh_shop_buttons_affordability(current_gold: int) -> void:
 
 
 func _show_modal_panel(panel: Control) -> void:
+	print("[RunMain] _show_modal_panel 开始: panel=%s, blocker当前visible=%s" % [panel.name, ui_modal_blocker.visible])
 	ui_modal_blocker.visible = true
 	ui_modal_blocker.z_index = panel.z_index - 1 if panel.z_index > 0 else 50
 	_current_ui_state = UISceneState.LOADING
@@ -406,14 +439,15 @@ func _show_modal_panel(panel: Control) -> void:
 	enemy_info_panel.visible = false
 	panel.visible = true
 	panel.z_index = 100
-	print("[RunMain] 模态面板显示: %s" % panel.name)
+	print("[RunMain] _show_modal_panel 完成: blocker=%s, panel=%s" % [ui_modal_blocker.visible, panel.visible])
 
 
 func _hide_modal_panel(panel: Control) -> void:
+	print("[RunMain] _hide_modal_panel 开始: panel=%s" % panel.name)
 	panel.visible = false
 	ui_modal_blocker.visible = false
 	_transition_ui_state(UISceneState.OPTION_SELECT)
-	print("[RunMain] 模态面板关闭: %s" % panel.name)
+	print("[RunMain] _hide_modal_panel 完成: blocker=%s, option_container=%s" % [ui_modal_blocker.visible, option_container.visible])
 
 
 func _on_battle_ended(battle_result: Dictionary) -> void:

@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/run_main/run_main.tscn" id="1_runmain"]
+[ext_resource type="Script" path="res://scripts/test/auto_screenshot.gd" id="2_script"]
+
+[node name="AutoScreenshot" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("2_script")
+
+[node name="RunMain" parent="." instance=ExtResource("1_runmain")]
