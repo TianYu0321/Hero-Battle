@@ -15,6 +15,10 @@ func initialize(cm: CharacterManager) -> void:
 	_character_manager = cm
 
 
+func generate_items(turn: int) -> Array[Dictionary]:
+	return generate_shop_inventory(turn, 999999)
+
+
 func generate_shop_inventory(turn: int, current_gold: int) -> Array[Dictionary]:
 	var inventory: Array[Dictionary] = []
 	var hero: RuntimeHero = _character_manager.get_hero()

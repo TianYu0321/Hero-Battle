@@ -80,13 +80,8 @@ func _generate_rescue_options(floor: int) -> Array[Dictionary]:
 	return [{
 		"node_type": NodeType.RESCUE,
 		"node_name": "救援",
-		"description": "发现遇险伙伴，选择一名加入队伍",
+		"description": "发现遇险伙伴",
 		"node_id": "rescue_%d" % floor,
-	}, {
-		"node_type": NodeType.SHOP,
-		"node_name": "商店",
-		"description": "购买伙伴升级",
-		"node_id": "shop_%d" % floor,
 	}]
 
 func _generate_pvp_options(floor: int) -> Array[Dictionary]:

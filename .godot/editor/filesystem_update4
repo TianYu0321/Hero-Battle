@@ -1,0 +1,7 @@
+res://autoload/save_manager.gd
+res://scenes/run_main/run_main.gd
+res://scripts/systems/character_manager.gd
+res://scripts/systems/node_pool_system.gd
+res://scripts/systems/run_controller.gd
+res://scripts/systems/shop_system.gd
+res://scripts/data/run_snapshot.gd

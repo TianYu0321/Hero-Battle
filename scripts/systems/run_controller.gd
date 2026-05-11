@@ -17,6 +17,13 @@ enum RunState {
 	SETTLEMENT,
 }
 
+enum SpecialFloorPhase {
+	NONE,
+	RESCUE_SELECT,
+	SHOP_BROWSE,
+	COMPLETE,
+}
+
 const _MAX_TURNS: int = 30
 const _RESCUE_TURNS: Array[int] = [5, 15, 25]
 const _PVP_TURNS: Array[int] = [10, 20]
@@ -36,6 +43,8 @@ var _boss_pool: FinalBossPool = null
 var _current_node_options: Array[Dictionary] = []
 var _pending_node_type: int = 0
 var _pending_result: Dictionary = {}
+
+var _special_floor_phase: SpecialFloorPhase = SpecialFloorPhase.NONE
 
 
 func _ready() -> void:
@@ -116,41 +125,50 @@ func start_new_run(hero_config_id: int, starter_partner_ids: Array[int]) -> void
 
 
 func continue_from_save(save_data: Dictionary) -> bool:
-	print("[RunController] 恢复存档, floor=", save_data.get("current_floor", save_data.get("current_turn", 0)))
-	## 从存档恢复完整状态
+	print("[RunController] 恢复存档")
 	if save_data.is_empty():
 		push_error("[RunController] Cannot continue from empty save data")
 		return false
 	
-	# 恢复RuntimeRun
-	_run = RuntimeRun.from_dict(save_data)
+	var snapshot = RunSnapshot.from_dict(save_data)
+	print("[RunController] 存档解析: floor=%d, hero_id=%d, gold=%d" % [snapshot.current_floor, snapshot.hero_config_id, snapshot.gold])
 	
-	# 恢复英雄
-	var hero_data: Dictionary = save_data.get("hero", {})
-	if not hero_data.is_empty():
-		_hero = RuntimeHero.from_dict(hero_data)
-		_character_manager._hero = _hero
+	# 恢复 RuntimeRun
+	_run = RuntimeRun.new()
+	_run.hero_config_id = snapshot.hero_config_id
+	_run.current_turn = snapshot.current_floor
+	_run.gold_owned = snapshot.gold
+	_run.node_history = snapshot.node_history.duplicate()
+	_run.battle_win_count = snapshot.battle_win_count
+	_run.elite_win_count = snapshot.elite_win_count
+	
+	# 恢复英雄（通过 CharacterManager 的公共接口，不直接操作私有字段）
+	if _character_manager != null:
+		_hero = _character_manager.load_hero_from_snapshot(snapshot)
+	else:
+		push_error("[RunController] CharacterManager not initialized")
+		return false
 	
 	# 恢复伙伴
-	var partner_data: Array = save_data.get("partners", [])
-	_character_manager._partners.clear()
-	for p_data in partner_data:
-		if p_data is Dictionary:
-			var partner = RuntimePartner.from_dict(p_data)
-			_character_manager._partners.append(partner)
+	_character_manager.clear_partners()
+	for p in snapshot.partners:
+		var partner = RuntimePartner.from_dict(p)
+		_character_manager.add_partner_runtime(partner)
 	
-	# 恢复金币
-	_run.gold_owned = save_data.get("gold", _run.gold_owned)
+	print("[RunController] 英雄恢复: VIT=%d STR=%d AGI=%d TEC=%d MND=%d HP=%d/%d" % [
+		_hero.current_vit, _hero.current_str, _hero.current_agi,
+		_hero.current_tec, _hero.current_mnd, _hero.current_hp, _hero.max_hp
+	])
 	
 	# 重置节点池
 	_node_pool_system.reset()
 	
-	# 恢复状态并生成当前层选项
+	# 恢复状态
 	_state = RunState.RUNNING_NODE_SELECT
 	_change_state(RunState.RUNNING_NODE_SELECT)
 	
-	EventBus.emit_signal("run_continued", save_data)
-	print("[RunController] 存档恢复完成，当前层=", _run.current_floor if _run != null else "?")
+	EventBus.emit_signal("run_continued", _run.current_turn)
+	print("[RunController] 存档恢复完成，当前层=%d" % _run.current_turn)
 	return true
 
 
@@ -196,6 +214,18 @@ func select_rescue_partner(partner_config_id: int) -> void:
 	var rescue_system: RescueSystem = get_node_or_null("RescueSystem")
 	if rescue_system != null:
 		rescue_system.rescue_partner(partner_config_id, _run.current_turn)
+	
+	# 如果当前是救援层的救援阶段，进入商店阶段
+	if _special_floor_phase == SpecialFloorPhase.RESCUE_SELECT:
+		_special_floor_phase = SpecialFloorPhase.SHOP_BROWSE
+		print("[RunController] 特殊层阶段: SHOP_BROWSE")
+		var shop_system = get_node_or_null("ShopSystem")
+		var shop_items = []
+		if shop_system != null:
+			shop_items = shop_system.generate_items(_run.current_turn)
+		EventBus.emit_signal("panel_opened", "SHOP_PANEL", {"items": shop_items})
+	else:
+		# 非救援层的普通救援（如果有的话），直接完成
 		_finish_node_execution(_pending_result)
 
 
@@ -250,7 +280,6 @@ func _change_state(new_state: int) -> void:
 	match new_state:
 		RunState.RUNNING_NODE_SELECT:
 			_generate_node_options()
-			EventBus.emit_signal("node_options_presented", _current_node_options)
 			EventBus.emit_signal("floor_changed", _run.current_turn, _MAX_TURNS, _get_phase_name())
 
 		RunState.RUNNING_NODE_EXECUTE:
@@ -268,28 +297,18 @@ func _change_state(new_state: int) -> void:
 
 func _generate_node_options() -> void:
 	var turn: int = _run.current_turn
+	print("[RunController] 生成节点选项: 层=%d, 类型=%s" % [turn, _get_phase_name()])
 
 	# 固定节点检查
 	if turn in _RESCUE_TURNS:
-		# 救援+商店特殊层：显示两个按钮
+		_special_floor_phase = SpecialFloorPhase.RESCUE_SELECT
+		print("[RunController] 特殊层阶段: RESCUE_SELECT")
 		var rescue_system: RescueSystem = get_node_or_null("RescueSystem")
 		var candidates: Array[Dictionary] = []
 		if rescue_system != null:
 			candidates = rescue_system.generate_candidates()
-		_current_node_options.clear()
-		_current_node_options.append({
-			"node_type": NodePoolSystem.NodeType.RESCUE,
-			"node_name": "救援",
-			"description": "选择一名伙伴加入队伍",
-			"node_id": "rescue_%d" % turn,
-			"candidates": candidates,
-		})
-		_current_node_options.append({
-			"node_type": NodePoolSystem.NodeType.SHOP,
-			"node_name": "商店",
-			"description": "购买道具和装备",
-			"node_id": "shop_%d" % turn,
-		})
+		# 不生成普通选项，直接打开救援面板
+		EventBus.emit_signal("panel_opened", "RESCUE_PANEL", {"candidates": candidates})
 		return
 
 	if turn in _PVP_TURNS:
@@ -299,6 +318,7 @@ func _generate_node_options() -> void:
 			"description": "与其他斗士进行对战检定",
 			"node_id": "pvp_%d" % turn,
 		}]
+		EventBus.emit_signal("node_options_presented", _current_node_options)
 		return
 
 	if turn == _FINAL_TURN:
@@ -308,10 +328,12 @@ func _generate_node_options() -> void:
 			"description": "最终决战",
 			"node_id": "final_%d" % turn,
 		}]
+		EventBus.emit_signal("node_options_presented", _current_node_options)
 		return
 
-	# 普通回合：从节点池生成3个选项
+	# 普通回合：从节点池生成选项
 	_current_node_options = _node_pool_system.generate_options(turn)
+	EventBus.emit_signal("node_options_presented", _current_node_options)
 
 
 func _process_node_result(result: Dictionary) -> void:
@@ -528,7 +550,17 @@ func _end_run() -> void:
 
 func _auto_save() -> void:
 	if SaveManager != null and _run != null:
-		SaveManager.save_run_state(_run.to_dict(), true)
+		var data = _run.to_dict()
+		data["hero"] = _hero.to_dict() if _hero != null else {}
+		data["partners"] = _get_partner_dicts()
+		data["gold"] = _run.gold_owned
+		SaveManager.save_run_state(data, true)
+
+
+func close_shop_panel() -> void:
+	if _special_floor_phase == SpecialFloorPhase.SHOP_BROWSE:
+		_special_floor_phase = SpecialFloorPhase.COMPLETE
+		_finish_node_execution({"success": true, "rewards": []})
 
 
 # --- 辅助方法 ---

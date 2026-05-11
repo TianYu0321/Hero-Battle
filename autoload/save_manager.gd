@@ -31,8 +31,10 @@ func _ensure_save_dir() -> void:
 func save_run_state(run_data: Dictionary, is_auto: bool = true) -> bool:
 	var slot_id: int = 1
 	var file_path: String = ConfigManager.SAVE_DIR + "save_%03d.json" % slot_id
-	var data: Dictionary = run_data.duplicate(true)
-	data["version"] = _current_version
+	
+	# 使用 RunSnapshot 统一存档格式
+	var snapshot = RunSnapshot.from_dict(run_data)
+	var data: Dictionary = snapshot.to_dict()
 	data["timestamp"] = Time.get_unix_time_from_system()
 	data["is_auto_save"] = is_auto
 
@@ -46,7 +48,7 @@ func save_run_state(run_data: Dictionary, is_auto: bool = true) -> bool:
 	file.store_string(json_text)
 	file.close()
 
-	EventBus.game_saved.emit(slot_id, data["timestamp"], data.get("current_round", 0), is_auto)
+	EventBus.game_saved.emit(slot_id, data["timestamp"], data.get("current_floor", 0), is_auto)
 	return true
 
 func has_active_run() -> bool:

@@ -28,6 +28,7 @@ extends Control
 
 @onready var training_panel: VBoxContainer = $TrainingPanel
 @onready var option_container: VBoxContainer = $OptionContainer
+@onready var shop_panel: Panel = $ShopPanel
 
 @onready var rescue_panel: Control = $RescuePanel
 @onready var rescue_candidate_buttons: Array[Button] = [
@@ -67,6 +68,19 @@ extends Control
 ]
 
 var _run_controller: RunController = null
+var _last_rescue_candidates: Array[Dictionary] = []
+
+enum UISceneState {
+	LOADING,		   # 什么都不显示，等待初始化
+	OPTION_SELECT,	 # 显示4个选项按钮
+	TRAINING_SELECT,   # 显示训练属性面板
+	RESCUE_SELECT,	 # 显示3个候选伙伴
+	SHOP_BROWSE,	   # 显示商店（后续实现）
+	EVENT_RESULT,	  # 显示外出事件结果
+	BATTLE_PREVIEW,	# 显示敌人信息+战斗按钮
+}
+
+var _current_ui_state: UISceneState = UISceneState.LOADING
 
 
 func _ready() -> void:
@@ -103,6 +117,10 @@ func _ready() -> void:
 	# --- 救援面板按钮绑定 ---
 	for i in range(rescue_candidate_buttons.size()):
 		rescue_candidate_buttons[i].pressed.connect(_on_rescue_partner_selected.bind(i))
+	
+	# --- 商店关闭按钮 ---
+	var shop_close_button: Button = $ShopPanel/CloseButton
+	shop_close_button.pressed.connect(_on_shop_close_pressed)
 
 	# --- 实例化并启动 RunController ---
 	_run_controller = RunController.new()
@@ -112,9 +130,16 @@ func _ready() -> void:
 	# 检查是否有待加载的存档（继续游戏）
 	var pending_save: Dictionary = GameManager.pending_save_data
 	if not pending_save.is_empty():
-		_run_controller.continue_from_save(pending_save)
-		GameManager.pending_save_data = {}
-		_update_hud()
+		print("[RunMain] 检测到待恢复存档")
+		var success = _run_controller.continue_from_save(pending_save)
+		if success:
+			GameManager.pending_save_data = {}
+			_update_hud()
+			# 不要在这里手动调用 _show_option_container()
+			# 让 _change_state -> _generate_node_options -> node_options_presented 信号来驱动UI显示
+		else:
+			push_error("[RunMain] 存档恢复失败，回到主菜单")
+			get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")
 	else:
 		var hero_config_id: int = GameManager.selected_hero_config_id
 		var partner_config_ids: Array[int] = GameManager.selected_partner_config_ids.duplicate()
@@ -124,6 +149,42 @@ func _ready() -> void:
 			return
 
 		_run_controller.start_new_run(hero_config_id, partner_config_ids)
+
+
+func _transition_ui_state(new_state: UISceneState) -> void:
+	print("[RunMain] UI状态: %s → %s" % [_get_ui_state_name(_current_ui_state), _get_ui_state_name(new_state)])
+	_current_ui_state = new_state
+	
+	# 先全部隐藏
+	option_container.visible = false
+	training_panel.visible = false
+	rescue_panel.visible = false
+	shop_panel.visible = false
+	
+	# 再按需显示
+	match new_state:
+		UISceneState.OPTION_SELECT:
+			option_container.visible = true
+		UISceneState.TRAINING_SELECT:
+			training_panel.visible = true
+		UISceneState.RESCUE_SELECT:
+			rescue_panel.visible = true
+		UISceneState.SHOP_BROWSE:
+			shop_panel.visible = true
+		UISceneState.BATTLE_PREVIEW:
+			pass  # TODO
+
+
+func _get_ui_state_name(state: UISceneState) -> String:
+	match state:
+		UISceneState.LOADING: return "LOADING"
+		UISceneState.OPTION_SELECT: return "OPTION_SELECT"
+		UISceneState.TRAINING_SELECT: return "TRAINING_SELECT"
+		UISceneState.RESCUE_SELECT: return "RESCUE_SELECT"
+		UISceneState.SHOP_BROWSE: return "SHOP_BROWSE"
+		UISceneState.EVENT_RESULT: return "EVENT_RESULT"
+		UISceneState.BATTLE_PREVIEW: return "BATTLE_PREVIEW"
+		_: return "UNKNOWN"
 
 
 func _update_hud() -> void:
@@ -165,29 +226,8 @@ func _on_training_attr_selected(attr_type: int) -> void:
 	## 玩家从训练面板选择了具体属性
 	if _run_controller != null:
 		_run_controller.select_training_attr(attr_type)
-	_show_option_container()
-
-
-func _show_training_panel() -> void:
-	## 显示训练属性选择面板
-	option_container.visible = false
-	training_panel.visible = true
-	# 更新各属性训练等级显示
-	var summary: Dictionary = _run_controller.get_current_run_summary()
-	var hero_data: Dictionary = summary.get("hero", {})
-	var training_counts: Dictionary = hero_data.get("training_counts", {})
-	var attr_names: Array[String] = ["vit", "str", "agi", "tec", "mnd"]
-	for i in range(5):
-		var count: int = training_counts.get(attr_names[i], 0)
-		var level: int = (count / 5) + 1
-		training_lv_labels[i].text = "LV:%d" % level
-
-
-func _show_option_container() -> void:
-	## 恢复显示主选项按钮
-	training_panel.visible = false
-	rescue_panel.visible = false
-	option_container.visible = true
+	# 训练完成后 RunController 会发射 panel_closed 或 node_options_presented
+	# 不要在这里手动切状态，让信号驱动
 
 
 # --- EventBus 信号处理 ---
@@ -201,36 +241,41 @@ func _on_run_started(run_config: Dictionary) -> void:
 
 
 func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
-	# v2: 更新怪物信息和预计损失血量
-	_update_monster_info(node_options)
-
-	# 设置节点选项按钮文本和可见性
-	_show_option_container()
+	print("[RunMain] _on_node_options_presented: 选项数=%d" % node_options.size())
+	_transition_ui_state(UISceneState.OPTION_SELECT)
+	
+	# 更新按钮内容
 	for i in range(option_buttons.size()):
 		if i < node_options.size():
-			var opt: Dictionary = node_options[i]
-			var node_name: String = opt.get("node_name", "未知节点")
-			var desc: String = opt.get("description", "")
-			option_buttons[i].text = "%s\n%s" % [node_name, desc] if not desc.is_empty() else node_name
+			var opt = node_options[i]
+			option_buttons[i].text = opt.get("node_name", "???")
 			option_buttons[i].visible = true
 			option_buttons[i].disabled = false
 		else:
 			option_buttons[i].visible = false
 			option_buttons[i].disabled = true
+	
+	_update_monster_info(node_options)
 
 
 func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
+	print("[RunMain] _on_panel_opened: 面板=%s" % panel_name)
 	match panel_name:
 		"TRAINING_PANEL":
-			_show_training_panel()
-		"SHOP_PANEL":
-			pass  # TODO: 实现商店面板
+			_transition_ui_state(UISceneState.TRAINING_SELECT)
+			_show_training_panel_details(panel_data)
 		"RESCUE_PANEL":
-			_show_rescue_panel(panel_data.get("candidates", []))
+			_transition_ui_state(UISceneState.RESCUE_SELECT)
+			_last_rescue_candidates = panel_data.get("candidates", [])
+			_show_rescue_panel_details(_last_rescue_candidates)
+		"SHOP_PANEL":
+			_transition_ui_state(UISceneState.SHOP_BROWSE)
+			# TODO: 显示商店
 
 
-func _on_panel_closed(panel_name: String, close_reason: String) -> void:
-	_show_option_container()
+func _on_panel_closed(_panel_name: String, _close_reason: String) -> void:
+	# 面板关闭后回到选项状态
+	_transition_ui_state(UISceneState.OPTION_SELECT)
 
 
 func _on_training_completed(attr_code: int, attr_name: String, gain_value: int, new_total: int, proficiency_stage: String, bonus_applied: int) -> void:
@@ -245,9 +290,20 @@ func _on_floor_advanced(new_floor: int, floor_type: String, is_special: bool) ->
 		btn.disabled = true
 
 
-func _show_rescue_panel(candidates: Array[Dictionary]) -> void:
-	rescue_panel.visible = true
-	option_container.visible = false
+func _show_training_panel_details(_panel_data: Dictionary) -> void:
+	## 显示训练属性选择面板
+	# 更新各属性训练等级显示
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var hero_data: Dictionary = summary.get("hero", {})
+	var training_counts: Dictionary = hero_data.get("training_counts", {})
+	var attr_names: Array[String] = ["vit", "str", "agi", "tec", "mnd"]
+	for i in range(5):
+		var count: int = training_counts.get(attr_names[i], 0)
+		var level: int = (count / 5) + 1
+		training_lv_labels[i].text = "LV:%d" % level
+
+
+func _show_rescue_panel_details(candidates: Array[Dictionary]) -> void:
 	for i in range(rescue_candidate_buttons.size()):
 		if i < candidates.size():
 			rescue_candidate_buttons[i].visible = true
@@ -259,16 +315,16 @@ func _show_rescue_panel(candidates: Array[Dictionary]) -> void:
 			rescue_candidate_buttons[i].disabled = true
 
 func _on_rescue_partner_selected(index: int) -> void:
-	rescue_panel.visible = false
-	var summary = _run_controller.get_current_run_summary()
-	var node_options = summary.get("node_options", [])
-	var candidates = []
-	if node_options.size() > 0 and node_options[0].get("node_type") == NodePoolSystem.NodeType.RESCUE:
-		candidates = node_options[0].get("candidates", [])
-	if index < candidates.size():
-		var partner_config_id = int(candidates[index].get("partner_config_id", candidates[index].get("partner_id", 0)))
+	if index < _last_rescue_candidates.size():
+		var partner_config_id = int(_last_rescue_candidates[index].get("partner_id", 0))
 		if partner_config_id > 0:
 			_run_controller.select_rescue_partner(partner_config_id)
+			# UI状态切换由 RunController 的下一个 panel_opened 信号驱动
+
+func _on_shop_close_pressed() -> void:
+	print("[RunMain] 商店关闭")
+	if _run_controller != null:
+		_run_controller.close_shop_panel()
 
 func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	if node_type == "OUTING":
