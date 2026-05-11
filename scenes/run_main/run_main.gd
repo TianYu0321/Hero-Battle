@@ -29,8 +29,8 @@ extends Control
 @onready var training_panel: VBoxContainer = $TrainingPanel
 @onready var option_container: VBoxContainer = $OptionContainer
 @onready var shop_panel: Panel = $ShopPanel
-@onready var shop_item_container: VBoxContainer = $ShopPanel/ShopItemContainer
-@onready var shop_gold_label: Label = $ShopPanel/GoldDisplayLabel
+@onready var shop_item_container: VBoxContainer = $ShopPanel/ContentVBox/ShopItemContainer
+@onready var shop_gold_label: Label = $ShopPanel/ContentVBox/GoldDisplayLabel
 @onready var battle_summary_panel = $BattleSummaryPanel
 @onready var ui_modal_blocker: ColorRect = $UIModalBlocker
 
@@ -125,7 +125,7 @@ func _ready() -> void:
 		rescue_candidate_buttons[i].pressed.connect(_on_rescue_partner_selected.bind(i))
 	
 	# --- 商店关闭按钮 ---
-	var shop_close_button: Button = $ShopPanel/CloseButton
+	var shop_close_button: Button = $ShopPanel/ContentVBox/CloseButton
 	shop_close_button.pressed.connect(_on_shop_close_pressed)
 
 	# --- 实例化并启动 RunController ---
@@ -403,7 +403,6 @@ func _show_modal_panel(panel: Control) -> void:
 	option_container.visible = false
 	training_panel.visible = false
 	rescue_panel.visible = false
-	shop_panel.visible = false
 	enemy_info_panel.visible = false
 	panel.visible = true
 	panel.z_index = 100
