@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
+[ext_resource type="PackedScene" uid="uid://battlesummary01" path="res://scenes/run_main/battle_summary_panel.tscn" id="3_bsp"]
 
 [node name="RunMain" type="Control"]
 layout_mode = 3
@@ -471,6 +472,26 @@ text = "商店"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="GoldDisplayLabel" type="Label" parent="ShopPanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 45.0
+offset_bottom = 75.0
+grow_horizontal = 2
+text = "持有金币: 0"
+horizontal_alignment = 1
+
+[node name="ShopItemContainer" type="VBoxContainer" parent="ShopPanel"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 85.0
+offset_right = -20.0
+offset_bottom = -70.0
+grow_horizontal = 2
+
 [node name="CloseButton" type="Button" parent="ShopPanel"]
 layout_mode = 1
 anchors_preset = 7
@@ -485,3 +506,6 @@ offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 0
 text = "关闭"
+
+[node name="BattleSummaryPanel" parent="." instance=ExtResource("3_bsp")]
+visible = false

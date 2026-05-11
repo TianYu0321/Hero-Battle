@@ -222,7 +222,7 @@ func select_rescue_partner(partner_config_id: int) -> void:
 		var shop_system = get_node_or_null("ShopSystem")
 		var shop_items = []
 		if shop_system != null:
-			shop_items = shop_system.generate_items(_run.current_turn)
+			shop_items = shop_system.generate_shop_inventory(_run.current_turn, _run.gold_owned)
 		EventBus.emit_signal("panel_opened", "SHOP_PANEL", {"items": shop_items})
 	else:
 		# 非救援层的普通救援（如果有的话），直接完成
@@ -363,8 +363,13 @@ func _process_node_result(result: Dictionary) -> void:
 			_run.run_status = 3  # LOSE
 			_end_run()
 			return
-		# 战斗胜利奖励金币
-		var gold_reward: int = randi() % 20 + 10
+		# 战斗胜利奖励金币（从敌人配置读取）
+		var enemy_cfg2: Dictionary = ConfigManager.get_enemy_config(str(enemy_config_id))
+		var gold_reward: int = enemy_cfg2.get("reward_gold_min", 20)
+		if enemy_cfg2.has("reward_gold_max"):
+			var gold_max: int = enemy_cfg2.get("reward_gold_max", gold_reward)
+			if gold_max > gold_reward:
+				gold_reward = randi() % (gold_max - gold_reward + 1) + gold_reward
 		_process_reward({"type": "gold", "amount": gold_reward})
 	elif _pending_node_type == NodePoolSystem.NodeType.PVP_CHECK:
 		# PVP检定节点
@@ -433,16 +438,6 @@ func _process_reward(reward: Dictionary) -> void:
 					_run.pvp_10th_result = 1 if pvp_data.get("won", false) else 2
 				elif _run.current_turn == 20:
 					_run.pvp_20th_result = 1 if pvp_data.get("won", false) else 2
-		"level_up":
-			var attr: int = randi() % 5 + 1
-			if _character_manager != null:
-				_character_manager.modify_hero_stats({attr: 1})
-		"train_lv5":
-			var attr: int = reward.get("attr", -1)
-			if attr < 1 or attr > 5:
-				attr = randi() % 5 + 1
-			if _character_manager != null:
-				_character_manager.modify_hero_stats({attr: 5})
 		"debuff":
 			# 简化：记录debuff日志，实际效果待Buff系统完善
 			var effect: String = reward.get("effect", "")
@@ -524,6 +519,18 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 	_hero.is_alive = battle_hero.get("is_alive", true)
 	# 确保result包含hero_remaining_hp供调用方使用
 	result["hero_remaining_hp"] = battle_hero.get("hp", 0)
+	
+	# 补充 battle_result 字段供 BattleSummaryPanel 使用
+	if not result.has("gold_reward"):
+		result["gold_reward"] = enemy_cfg.get("reward_gold_min", 20)
+	if not result.has("hero_max_hp"):
+		result["hero_max_hp"] = _hero.max_hp
+	if not result.has("enemies"):
+		result["enemies"] = [enemy]
+	if not result.has("max_chain_count"):
+		var chain_stats = result.get("chain_stats", {})
+		result["max_chain_count"] = chain_stats.get("max_chain", 0)
+	
 	return result
 
 

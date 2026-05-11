@@ -29,6 +29,9 @@ extends Control
 @onready var training_panel: VBoxContainer = $TrainingPanel
 @onready var option_container: VBoxContainer = $OptionContainer
 @onready var shop_panel: Panel = $ShopPanel
+@onready var shop_item_container: VBoxContainer = $ShopPanel/ShopItemContainer
+@onready var shop_gold_label: Label = $ShopPanel/GoldDisplayLabel
+@onready var battle_summary_panel = $BattleSummaryPanel
 
 @onready var rescue_panel: Control = $RescuePanel
 @onready var rescue_candidate_buttons: Array[Button] = [
@@ -69,6 +72,7 @@ extends Control
 
 var _run_controller: RunController = null
 var _last_rescue_candidates: Array[Dictionary] = []
+var _shop_item_buttons: Array = []
 
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
@@ -106,6 +110,7 @@ func _ready() -> void:
 	EventBus.training_completed.connect(_on_training_completed)
 	EventBus.enemy_encountered.connect(_on_enemy_encountered)
 	EventBus.node_resolved.connect(_on_node_resolved)
+	EventBus.battle_ended.connect(_on_battle_ended)
 
 	# --- 暂停菜单信号 ---
 	pause_menu.resume_requested.connect(_on_resume_game)
@@ -270,7 +275,7 @@ func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
 			_show_rescue_panel_details(_last_rescue_candidates)
 		"SHOP_PANEL":
 			_transition_ui_state(UISceneState.SHOP_BROWSE)
-			# TODO: 显示商店
+			_show_shop_panel(panel_data.get("items", []))
 
 
 func _on_panel_closed(_panel_name: String, _close_reason: String) -> void:
@@ -325,6 +330,82 @@ func _on_shop_close_pressed() -> void:
 	print("[RunMain] 商店关闭")
 	if _run_controller != null:
 		_run_controller.close_shop_panel()
+
+
+func _show_shop_panel(items: Array[Dictionary]) -> void:
+	# 清空旧按钮
+	for btn in _shop_item_buttons:
+		btn.queue_free()
+	_shop_item_buttons.clear()
+	
+	# 刷新金币显示
+	var summary = _run_controller.get_current_run_summary()
+	var gold = summary.get("gold", 0)
+	shop_gold_label.text = "持有金币: %d" % gold
+	
+	# 只生成伙伴升级按钮
+	for item in items:
+		if item.get("item_type", "") != "partner_upgrade":
+			continue
+		var btn = preload("res://scenes/run_main/shop_item_button.tscn").instantiate()
+		shop_item_container.add_child(btn)
+		btn.setup(item)
+		btn.pressed.connect(_on_shop_item_purchased.bind(item))
+		_shop_item_buttons.append(btn)
+	
+	if _shop_item_buttons.is_empty():
+		var label = Label.new()
+		label.text = "暂无可升级伙伴"
+		shop_item_container.add_child(label)
+
+
+func _on_shop_item_purchased(item_data: Dictionary) -> void:
+	print("[RunMain] 购买商品: %s" % item_data.get("name", "???"))
+	if _run_controller == null:
+		return
+	
+	var result = _run_controller.purchase_shop_item(item_data)
+	if result.get("success", false):
+		var new_gold = result.get("new_gold", 0)
+		shop_gold_label.text = "持有金币: %d" % new_gold
+		gold_label.text = "金币: %d" % new_gold
+		
+		# 标记已售出
+		for btn in _shop_item_buttons:
+			if btn.item_data.get("item_id", "") == item_data.get("item_id", ""):
+				btn.mark_sold_out()
+				break
+		
+		# 刷新其他按钮可购买状态
+		_refresh_shop_buttons_affordability(new_gold)
+	else:
+		print("[RunMain] 购买失败: %s" % result.get("error", "???"))
+
+
+func _refresh_shop_buttons_affordability(current_gold: int) -> void:
+	for btn in _shop_item_buttons:
+		if btn.is_sold_out:
+			continue
+		var price = btn.item_data.get("price", 0)
+		btn.disabled = current_gold < price
+		btn.modulate = Color(0.5, 0.5, 0.5) if current_gold < price else Color(1, 1, 1)
+
+
+func _on_battle_ended(battle_result: Dictionary) -> void:
+	print("[RunMain] 战斗结束: winner=%s, turns=%d" % [
+		battle_result.get("winner", "???"),
+		battle_result.get("turns_elapsed", 0)
+	])
+	_update_hud()
+	battle_summary_panel.show_result(battle_result)
+	if not battle_summary_panel.confirmed.is_connected(_on_battle_summary_confirmed):
+		battle_summary_panel.confirmed.connect(_on_battle_summary_confirmed, CONNECT_ONE_SHOT)
+
+
+func _on_battle_summary_confirmed() -> void:
+	print("[RunMain] 战斗摘要关闭")
+	# 英雄存活则回到选项状态，阵亡则 RunController 已触发游戏结束
+	_transition_ui_state(UISceneState.OPTION_SELECT)
 
 func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	if node_type == "OUTING":

@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://c0175lpl105yy"]
+
+[ext_resource type="Script" path="res://scenes/run_main/shop_item_button.gd" id="1_shopitem"]
+
+[node name="ShopItemButton" type="Button"]
+custom_minimum_size = Vector2(360, 60)
+script = ExtResource("1_shopitem")
+
+[node name="InfoContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 10.0
+offset_top = -22.0
+offset_right = 200.0
+offset_bottom = 22.0
+grow_vertical = 2
+
+[node name="NameLabel" type="Label" parent="InfoContainer"]
+layout_mode = 2
+text = "???升级"
+
+[node name="LevelLabel" type="Label" parent="InfoContainer"]
+layout_mode = 2
+text = "LV1 → LV2"
+
+[node name="PriceLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -11.0
+offset_right = -10.0
+offset_bottom = 11.0
+grow_horizontal = 0
+grow_vertical = 2
+text = "30金币"
+horizontal_alignment = 2

@@ -21,24 +21,7 @@ func generate_items(turn: int) -> Array[Dictionary]:
 
 func generate_shop_inventory(turn: int, current_gold: int) -> Array[Dictionary]:
 	var inventory: Array[Dictionary] = []
-	var hero: RuntimeHero = _character_manager.get_hero()
 	var partners: Array[RuntimePartner] = _character_manager.get_partners()
-
-	# 主角升级选项（5属性各一个）
-	for attr in range(1, 6):
-		var item_id: String = "hero_attr_%d" % attr
-		var base_cost: int = _get_item_base_cost(item_id)
-		var cost: int = _calculate_current_cost(item_id, base_cost)
-		inventory.append({
-			"item_id": item_id,
-			"item_type": "hero_upgrade",
-			"name": _attr_name(attr) + "强化",
-			"price": cost,
-			"effect_desc": "主角%s+3" % _attr_name(attr),
-			"can_afford": current_gold >= cost,
-			"target_id": "hero",
-			"target_attr": attr,
-		})
 
 	# 伙伴升级选项（最多显示3个活跃伙伴）
 	var shown: int = 0
@@ -80,11 +63,6 @@ func process_purchase(item_data: Dictionary, current_gold: int) -> Dictionary:
 
 	var item_type: String = item_data.get("item_type", "")
 	match item_type:
-		"hero_upgrade":
-			var attr: int = item_data.get("target_attr", 0)
-			if attr >= 1 and attr <= 5:
-				_character_manager.modify_hero_stats({attr: 3})
-				result["applied_effects"].append({"type": "hero_attr", "attr": attr, "delta": 3})
 		"partner_upgrade":
 			var target_id: String = item_data.get("target_id", "")
 			var pid: int = int(target_id) if target_id.is_valid_int() else 0
@@ -119,12 +97,10 @@ func _get_item_base_cost(item_id: String) -> int:
 		var item: Dictionary = shop_cfg[k]
 		if str(item.get("id", "")) == item_id:
 			return item.get("cost_base", 20)
-	# Fallback：按类型推断
-	if item_id.begins_with("hero_attr_"):
-		return 20
-	elif item_id.begins_with("partner_"):
+	# Fallback：伙伴升级
+	if item_id.begins_with("partner_"):
 		return 30
-	return 20
+	return 30
 
 
 func _calculate_current_cost(item_id: String, base_cost: int) -> int:
@@ -140,11 +116,3 @@ func _calculate_current_cost(item_id: String, base_cost: int) -> int:
 	return base_cost + count * step
 
 
-func _attr_name(attr_type: int) -> String:
-	match attr_type:
-		1: return "体魄"
-		2: return "力量"
-		3: return "敏捷"
-		4: return "技巧"
-		5: return "精神"
-		_: return "未知"

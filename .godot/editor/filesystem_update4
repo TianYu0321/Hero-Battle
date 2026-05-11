@@ -16,3 +16,5 @@ res://scripts/core/test_battle_engine.gd
 res://autoload/config_manager.gd
 res://scripts/models/runtime_run.gd
 res://scripts/systems/pvp_opponent_generator.gd
+res://scenes/run_main/shop_item_button.tscn
+res://scenes/run_main/battle_summary_panel.gd
