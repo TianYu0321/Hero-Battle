@@ -32,6 +32,7 @@ extends Control
 @onready var shop_item_container: VBoxContainer = $ShopPanel/ShopItemContainer
 @onready var shop_gold_label: Label = $ShopPanel/GoldDisplayLabel
 @onready var battle_summary_panel = $BattleSummaryPanel
+@onready var ui_modal_blocker: ColorRect = $UIModalBlocker
 
 @onready var rescue_panel: Control = $RescuePanel
 @onready var rescue_candidate_buttons: Array[Button] = [
@@ -165,6 +166,7 @@ func _transition_ui_state(new_state: UISceneState) -> void:
 	training_panel.visible = false
 	rescue_panel.visible = false
 	shop_panel.visible = false
+	enemy_info_panel.visible = false
 	
 	# 再按需显示
 	match new_state:
@@ -265,6 +267,7 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 
 func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
 	print("[RunMain] _on_panel_opened: 面板=%s" % panel_name)
+	enemy_info_panel.visible = false
 	match panel_name:
 		"TRAINING_PANEL":
 			_transition_ui_state(UISceneState.TRAINING_SELECT)
@@ -276,6 +279,7 @@ func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
 		"SHOP_PANEL":
 			_transition_ui_state(UISceneState.SHOP_BROWSE)
 			_show_shop_panel(panel_data.get("items", []))
+			_show_modal_panel(shop_panel)
 
 
 func _on_panel_closed(_panel_name: String, _close_reason: String) -> void:
@@ -328,6 +332,7 @@ func _on_rescue_partner_selected(index: int) -> void:
 
 func _on_shop_close_pressed() -> void:
 	print("[RunMain] 商店关闭")
+	_hide_modal_panel(shop_panel)
 	if _run_controller != null:
 		_run_controller.close_shop_panel()
 
@@ -391,6 +396,27 @@ func _refresh_shop_buttons_affordability(current_gold: int) -> void:
 		btn.modulate = Color(0.5, 0.5, 0.5) if current_gold < price else Color(1, 1, 1)
 
 
+func _show_modal_panel(panel: Control) -> void:
+	ui_modal_blocker.visible = true
+	ui_modal_blocker.z_index = panel.z_index - 1 if panel.z_index > 0 else 50
+	_current_ui_state = UISceneState.LOADING
+	option_container.visible = false
+	training_panel.visible = false
+	rescue_panel.visible = false
+	shop_panel.visible = false
+	enemy_info_panel.visible = false
+	panel.visible = true
+	panel.z_index = 100
+	print("[RunMain] 模态面板显示: %s" % panel.name)
+
+
+func _hide_modal_panel(panel: Control) -> void:
+	panel.visible = false
+	ui_modal_blocker.visible = false
+	_transition_ui_state(UISceneState.OPTION_SELECT)
+	print("[RunMain] 模态面板关闭: %s" % panel.name)
+
+
 func _on_battle_ended(battle_result: Dictionary) -> void:
 	print("[RunMain] 战斗结束: winner=%s, turns=%d" % [
 		battle_result.get("winner", "???"),
@@ -398,14 +424,16 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 	])
 	_update_hud()
 	battle_summary_panel.show_result(battle_result)
+	_show_modal_panel(battle_summary_panel)
 	if not battle_summary_panel.confirmed.is_connected(_on_battle_summary_confirmed):
 		battle_summary_panel.confirmed.connect(_on_battle_summary_confirmed, CONNECT_ONE_SHOT)
 
 
 func _on_battle_summary_confirmed() -> void:
-	print("[RunMain] 战斗摘要关闭")
-	# 英雄存活则回到选项状态，阵亡则 RunController 已触发游戏结束
-	_transition_ui_state(UISceneState.OPTION_SELECT)
+	print("[RunMain] 战斗摘要确认关闭")
+	_hide_modal_panel(battle_summary_panel)
+	if _run_controller != null:
+		_run_controller.confirm_battle_result()
 
 func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	if node_type == "OUTING":
@@ -505,7 +533,12 @@ func _update_monster_info(node_options: Array[Dictionary]) -> void:
 	var enemy_stats: Dictionary = {}
 
 	for opt in node_options:
-		var node_type: int = opt.get("node_type", 0)
+		var raw_type = opt.get("node_type", 0)
+		var node_type: int
+		if raw_type is String:
+			node_type = int(raw_type)
+		else:
+			node_type = int(raw_type)
 		## 战斗节点: 普通战斗(2), 精英(3), 终局(7)
 		if node_type == 2 or node_type == 3 or node_type == 7:
 			has_enemy = true

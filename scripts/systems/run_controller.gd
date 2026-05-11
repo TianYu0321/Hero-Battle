@@ -24,6 +24,13 @@ enum SpecialFloorPhase {
 	COMPLETE,
 }
 
+enum BattleResultPhase {
+	NONE,
+	BATTLE_RUNNING,
+	BATTLE_ENDED,
+	BATTLE_CONFIRMED,
+}
+
 const _MAX_TURNS: int = 30
 const _RESCUE_TURNS: Array[int] = [5, 15, 25]
 const _PVP_TURNS: Array[int] = [10, 20]
@@ -45,6 +52,9 @@ var _pending_node_type: int = 0
 var _pending_result: Dictionary = {}
 
 var _special_floor_phase: SpecialFloorPhase = SpecialFloorPhase.NONE
+
+var _battle_result_phase: BattleResultPhase = BattleResultPhase.NONE
+var _pending_battle_result: Dictionary = {}
 
 
 func _ready() -> void:
@@ -355,6 +365,7 @@ func _process_node_result(result: Dictionary) -> void:
 	# 处理需要接入BattleEngine的战斗节点（保留完整战斗引擎路径）
 	if result.get("requires_battle", false):
 		var enemy_config_id: int = result.get("enemy_config_id", 2001)
+		_battle_result_phase = BattleResultPhase.BATTLE_RUNNING
 		var battle_result: Dictionary = _run_battle_engine(enemy_config_id)
 		# 同步战斗后主角HP
 		_hero.current_hp = battle_result.get("hero_remaining_hp", _hero.current_hp)
@@ -362,6 +373,7 @@ func _process_node_result(result: Dictionary) -> void:
 		if not _hero.is_alive:
 			_run.run_status = 3  # LOSE
 			_end_run()
+			_battle_result_phase = BattleResultPhase.NONE
 			return
 		# 战斗胜利奖励金币（从敌人配置读取）
 		var enemy_cfg2: Dictionary = ConfigManager.get_enemy_config(str(enemy_config_id))
@@ -371,6 +383,10 @@ func _process_node_result(result: Dictionary) -> void:
 			if gold_max > gold_reward:
 				gold_reward = randi() % (gold_max - gold_reward + 1) + gold_reward
 		_process_reward({"type": "gold", "amount": gold_reward})
+		_battle_result_phase = BattleResultPhase.BATTLE_ENDED
+		_pending_battle_result = battle_result
+		EventBus.emit_signal("battle_ended", battle_result)
+		return
 	elif _pending_node_type == NodePoolSystem.NodeType.PVP_CHECK:
 		# PVP检定节点
 		var pvp_director: PvpDirector = get_node_or_null("PvpDirector")
@@ -563,6 +579,14 @@ func _auto_save() -> void:
 		data["partners"] = _get_partner_dicts()
 		data["gold"] = _run.gold_owned
 		SaveManager.save_run_state(data, true)
+
+
+func confirm_battle_result() -> void:
+	if _battle_result_phase == BattleResultPhase.BATTLE_ENDED:
+		_battle_result_phase = BattleResultPhase.BATTLE_CONFIRMED
+		_finish_node_execution(_pending_battle_result)
+		_battle_result_phase = BattleResultPhase.NONE
+		_pending_battle_result = {}
 
 
 func close_shop_panel() -> void:

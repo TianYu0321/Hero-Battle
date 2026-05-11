@@ -172,6 +172,21 @@ func upgrade_partner(partner_config_id: int) -> bool:
 	return false
 
 
+func upgrade_partner_by_instance_id(instance_id: int) -> bool:
+	for p in _partners:
+		if p.instance_id == instance_id:
+			if p.current_level >= 5:
+				return false
+			var old_level: int = p.current_level
+			p.current_level += 1
+			var config: Dictionary = ConfigManager.get_partner_config(str(p.partner_config_id))
+			EventBus.emit_signal("partner_level_changed", str(p.partner_config_id), old_level, p.current_level)
+			if p.current_level == 3:
+				EventBus.emit_signal("partner_evolved", str(p.partner_config_id), config.get("name", ""), p.current_level, "", "LV3_QUALITATIVE")
+			return true
+	return false
+
+
 func apply_buff(buff: RuntimeBuff) -> void:
 	_buffs.append(buff)
 	EventBus.emit_signal("buff_applied", buff.target_id, buff.id, buff.buff_name, buff.duration_total, "", "BUFF")

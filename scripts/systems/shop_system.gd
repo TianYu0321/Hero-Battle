@@ -22,14 +22,18 @@ func generate_items(turn: int) -> Array[Dictionary]:
 func generate_shop_inventory(turn: int, current_gold: int) -> Array[Dictionary]:
 	var inventory: Array[Dictionary] = []
 	var partners: Array[RuntimePartner] = _character_manager.get_partners()
+	var seen_instance_ids: Array[int] = []
 
 	# 伙伴升级选项（最多显示3个活跃伙伴）
 	var shown: int = 0
 	for p in partners:
 		if not p.is_active or shown >= 3:
 			continue
-		var item_id: String = "partner_%d" % p.partner_config_id
-		var base_cost: int = _get_item_base_cost(item_id)
+		if p.instance_id in seen_instance_ids:
+			continue
+		seen_instance_ids.append(p.instance_id)
+		var item_id: String = "partner_%d_%d" % [p.partner_config_id, p.instance_id]
+		var base_cost: int = _get_item_base_cost("partner_%d" % p.partner_config_id)
 		var cost: int = _calculate_current_cost(item_id, base_cost)
 		var config: Dictionary = ConfigManager.get_partner_config(str(p.partner_config_id))
 		var p_name: String = config.get("name", "伙伴")
@@ -37,11 +41,13 @@ func generate_shop_inventory(turn: int, current_gold: int) -> Array[Dictionary]:
 		inventory.append({
 			"item_id": item_id,
 			"item_type": "partner_upgrade",
-			"name": p_name + "升级",
+			"name": p_name + " Lv%d→%d" % [p.current_level, mini(5, p.current_level + 1)],
 			"price": cost if not max_level_reached else 999999,
+			"current_level": p.current_level,
 			"effect_desc": "等级%d→%d" % [p.current_level, mini(5, p.current_level + 1)] if not max_level_reached else "已达最高等级",
 			"can_afford": current_gold >= cost and not max_level_reached,
-			"target_id": str(p.partner_config_id),
+			"target_id": str(p.instance_id),
+			"target_config_id": str(p.partner_config_id),
 			"target_attr": 0,
 		})
 		shown += 1
@@ -66,8 +72,9 @@ func process_purchase(item_data: Dictionary, current_gold: int) -> Dictionary:
 		"partner_upgrade":
 			var target_id: String = item_data.get("target_id", "")
 			var pid: int = int(target_id) if target_id.is_valid_int() else 0
-			if _character_manager.upgrade_partner(pid):
-				result["applied_effects"].append({"type": "partner_level", "partner_id": pid, "delta": 1})
+			var target_config_id: int = int(item_data.get("target_config_id", "0"))
+			if _character_manager.upgrade_partner_by_instance_id(pid):
+				result["applied_effects"].append({"type": "partner_level", "instance_id": pid, "config_id": target_config_id, "delta": 1})
 			else:
 				result["error"] = "升级失败（已达最高等级或伙伴不存在）"
 				return result

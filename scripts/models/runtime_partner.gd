@@ -10,6 +10,7 @@ extends RefCounted
 var id: String = ""
 var run_id: String = ""
 var partner_config_id: int = 0
+var instance_id: int = 0
 var position: int = 1
 var recruit_turn: int = 0
 var current_level: int = 1
@@ -22,12 +23,19 @@ var is_active: bool = true
 var created_at: int = 0
 var updated_at: int = 0
 
+static var _next_instance_id: int = 1
+
+func _init() -> void:
+	instance_id = RuntimePartner._next_instance_id
+	RuntimePartner._next_instance_id += 1
+
 
 func to_dict() -> Dictionary:
 	return {
 		"id": id,
 		"run_id": run_id,
 		"partner_config_id": partner_config_id,
+		"instance_id": instance_id,
 		"position": position,
 		"recruit_turn": recruit_turn,
 		"current_level": current_level,
@@ -47,6 +55,9 @@ static func from_dict(data: Dictionary) -> RuntimePartner:
 	partner.id = data.get("id", "")
 	partner.run_id = data.get("run_id", "")
 	partner.partner_config_id = data.get("partner_config_id", 0)
+	partner.instance_id = data.get("instance_id", 0)
+	if partner.instance_id >= RuntimePartner._next_instance_id:
+		RuntimePartner._next_instance_id = partner.instance_id + 1
 	partner.position = data.get("position", 1)
 	partner.recruit_turn = data.get("recruit_turn", 0)
 	partner.current_level = data.get("current_level", 1)
