@@ -10,3 +10,4 @@ res://scripts/systems/leaderboard_system.gd
 res://scenes/run_main/run_main.gd
 res://scripts/systems/node_pool_system.gd
 res://scripts/systems/node_resolver.gd
+res://scenes/run_main/battle_animation_panel.gd

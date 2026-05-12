@@ -497,6 +497,10 @@ func _show_modal_panel(panel: Control) -> void:
 	training_panel.visible = false
 	rescue_panel.visible = false
 	enemy_info_panel.visible = false
+	$HudContainer.visible = false
+	$PlayerInfoPanel.visible = false
+	$PartnerContainer.visible = false
+	$MenuButton.visible = false
 	panel.visible = true
 	panel.z_index = 100
 	print("[RunMain] _show_modal_panel 完成: blocker=%s, panel=%s" % [ui_modal_blocker.visible, panel.visible])
@@ -506,6 +510,10 @@ func _hide_modal_panel(panel: Control) -> void:
 	print("[RunMain] _hide_modal_panel 开始: panel=%s" % panel.name)
 	panel.visible = false
 	ui_modal_blocker.visible = false
+	$HudContainer.visible = true
+	$PlayerInfoPanel.visible = true
+	$PartnerContainer.visible = true
+	$MenuButton.visible = true
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 	print("[RunMain] _hide_modal_panel 完成: blocker=%s, option_container=%s" % [ui_modal_blocker.visible, option_container.visible])
 

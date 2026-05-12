@@ -58,7 +58,8 @@ func _play_turn() -> void:
 	
 	var turn: int = _turn_keys[_current_turn_index]
 	var events: Array = _events_by_turn[turn]
-	turn_label.text = "回合 %d" % turn
+	turn_label.text = "回合 %d" % (turn + 1)
+	bottom_hint.text = ""
 	
 	var partner_events: int = 0
 	for evt in events:
@@ -82,7 +83,7 @@ func _process_event(evt: Dictionary) -> void:
 			var order: Array = data.get("order", [])
 			if order.size() > 0:
 				var actor: String = order[0].get("name", "???")
-				bottom_hint.append_text("[color=yellow]%s 的行动[/color]\n" % actor)
+				bottom_hint.append_text("[color=yellow]%s 的行动[/color]  " % actor)
 		
 		"action_executed":
 			var actor: String = data.get("actor_name", "???")
@@ -93,11 +94,11 @@ func _process_event(evt: Dictionary) -> void:
 			var value: int = summary.get("value", 0)
 			
 			if is_miss:
-				bottom_hint.append_text("[color=gray]%s → %s miss[/color]\n" % [actor, target])
+				bottom_hint.append_text("[color=gray]%s → %s miss[/color]  " % [actor, target])
 			elif is_crit:
-				bottom_hint.append_text("[color=red]%s → %s 暴击 %d！[/color]\n" % [actor, target, value])
+				bottom_hint.append_text("[color=red]%s → %s 暴击 %d！[/color]  " % [actor, target, value])
 			else:
-				bottom_hint.append_text("%s → %s %d\n" % [actor, target, value])
+				bottom_hint.append_text("%s → %s %d  " % [actor, target, value])
 		
 		"unit_damaged":
 			var unit_id: String = data.get("unit_id", "")
@@ -118,22 +119,22 @@ func _process_event(evt: Dictionary) -> void:
 		
 		"unit_died":
 			var uname: String = data.get("name", "???")
-			bottom_hint.append_text("[color=red]%s 被击败！[/color]\n" % uname)
+			bottom_hint.append_text("[color=red]%s 被击败！[/color]  " % uname)
 		
 		"partner_assist":
 			var pname: String = data.get("partner_name", "???")
-			bottom_hint.append_text("[color=cyan]%s 援助！[/color]\n" % pname)
+			bottom_hint.append_text("[color=cyan]%s 援助！[/color]  " % pname)
 			_flash_partner_icon(pname)
 		
 		"chain_triggered":
 			var chain_count: int = data.get("chain_count", 0)
 			var pname: String = data.get("partner_name", "???")
 			var dmg: int = data.get("damage", 0)
-			bottom_hint.append_text("[color=purple]CHAIN x%d! %s %d[/color]\n" % [chain_count, pname, dmg])
+			bottom_hint.append_text("[color=purple]CHAIN x%d! %s %d[/color]  " % [chain_count, pname, dmg])
 		
 		"ultimate_triggered":
 			var log_text: String = data.get("log", "")
-			bottom_hint.append_text("[color=gold]%s[/color]\n" % log_text)
+			bottom_hint.append_text("[color=gold]%s[/color]  " % log_text)
 			_screen_shake()
 
 func _update_hp_display() -> void:
@@ -146,12 +147,17 @@ func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool) -> voi
 	label.add_theme_font_size_override("font_size", 32 if is_crit else 24)
 	label.modulate = Color(1, 0.2, 0.2) if is_crit else Color(1, 1, 1)
 	
-	var base_x: float = 450 if is_enemy_side else 150
-	label.position = Vector2(base_x, 300)
+	var target_sprite: Control = enemy_sprite if is_enemy_side else hero_sprite
+	var sprite_pos: Vector2 = target_sprite.global_position
+	var sprite_size: Vector2 = target_sprite.size
+	label.position = Vector2(
+		sprite_pos.x + sprite_size.x / 2 - 20,
+		sprite_pos.y - 10
+	)
 	damage_container.add_child(label)
 	
 	var tween := create_tween()
-	tween.tween_property(label, "position:y", label.position.y - 80, 0.6)
+	tween.tween_property(label, "position:y", label.position.y - 60, 0.6)
 	tween.tween_property(label, "modulate:a", 0, 0.3)
 	tween.tween_callback(label.queue_free)
 
