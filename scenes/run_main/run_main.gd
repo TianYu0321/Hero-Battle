@@ -300,7 +300,6 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 				var node_id: String = opt.get("node_id", "")
 				var tag: Dictionary = forecast_system.get_event_tag(node_id)
 				if not tag["text"].is_empty():
-					btn_text += "\n%s" % tag["text"]
 					_apply_event_tag_style(btn, tag)
 			
 			btn.text = btn_text
