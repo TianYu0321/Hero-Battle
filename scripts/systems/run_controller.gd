@@ -279,7 +279,9 @@ func advance_turn() -> void:
 	# 事件透视消耗1次
 	var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
 	if forecast_system != null:
+		print("[RunController] 透视消耗前: %d" % forecast_system.get_charges())
 		forecast_system.consume_charge()
+		print("[RunController] 透视消耗后: %d" % forecast_system.get_charges())
 
 	# 自动存档
 	_auto_save()

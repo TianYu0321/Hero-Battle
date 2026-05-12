@@ -281,33 +281,42 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 	
 	# 更新按钮内容
 	for i in range(option_buttons.size()):
+		var btn: Button = option_buttons[i]
+		
+		# **强制清理按钮上的旧透视标注**
+		var old_tag = btn.get_node_or_null("EventTagLabel")
+		if old_tag != null:
+			old_tag.queue_free()
+		
+		# 恢复按钮默认颜色
+		btn.remove_theme_color_override("font_color")
+		
 		if i < node_options.size():
 			var opt = node_options[i]
-			var btn: Button = option_buttons[i]
-			btn.text = opt.get("node_name", "???")
-			btn.visible = true
-			btn.disabled = false
+			var btn_text: String = opt.get("node_name", "???")
 			
-			# 清除旧的透视标注
-			var existing_label = btn.get_node_or_null("EventTagLabel")
-			if existing_label != null:
-				existing_label.queue_free()
-			
-			# 如果有事件透视，添加标注
+			# 检查透视标注
 			if forecast_system != null and forecast_system.is_active():
 				var node_id: String = opt.get("node_id", "")
 				var tag: Dictionary = forecast_system.get_event_tag(node_id)
 				if not tag["text"].is_empty():
+					btn_text += "\n%s" % tag["text"]
 					_apply_event_tag_style(btn, tag)
+			
+			btn.text = btn_text
+			btn.visible = true
+			btn.disabled = false
 		else:
-			option_buttons[i].visible = false
-			option_buttons[i].disabled = true
+			btn.text = ""
+			btn.visible = false
+			btn.disabled = true
 	
 	# 强制确保 OptionContainer 和按钮可见且可交互
 	option_container.visible = true
-	for btn in option_buttons:
-		btn.visible = true
-		btn.disabled = false
+	for i in range(option_buttons.size()):
+		if i < node_options.size():
+			option_buttons[i].visible = true
+			option_buttons[i].disabled = false
 	
 	print("[RunMain] 按钮状态: option_container=%s, 按钮1disabled=%s, 按钮2disabled=%s" % [
 		option_container.visible,
@@ -318,14 +327,19 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 	_update_monster_info(node_options)
 
 func _apply_event_tag_style(btn: Button, tag: Dictionary) -> void:
+	# 删除已有的标注
+	var existing_label = btn.get_node_or_null("EventTagLabel")
+	if existing_label != null:
+		existing_label.queue_free()
+	
 	var tag_label := Label.new()
 	tag_label.name = "EventTagLabel"
 	tag_label.text = tag["text"]
 	tag_label.modulate = tag["color"]
 	tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tag_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tag_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	tag_label.position = Vector2(0, btn.size.y - 24)
-	tag_label.custom_minimum_size = Vector2(btn.size.x, 20)
+	tag_label.custom_minimum_size = Vector2(btn.size.x, 24)
 	btn.add_child(tag_label)
 
 

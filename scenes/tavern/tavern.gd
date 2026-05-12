@@ -59,8 +59,15 @@ func _populate_partner_slots() -> void:
 		lv_label.text = "Lv.1"
 		check_box.text = "加入队伍"
 		check_box.toggled.connect(_on_partner_toggled.bind(partner_id))
+		slot.visible = true
 
 		slot_index += 1
+	
+	# 隐藏多余的伙伴槽位
+	for i in range(slot_index, _partner_grid.get_child_count()):
+		var slot: Control = _partner_grid.get_child(i)
+		if slot != null:
+			slot.visible = false
 
 func _on_partner_toggled(pressed: bool, partner_id: String) -> void:
 	if pressed:
