@@ -46,8 +46,8 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	var combat_log: Array[String] = battle_engine.get_combat_log()
 	battle_engine.queue_free()
 
-	# 3. 判断胜负（AI是hero，所以battle_result.winner=="player"表示AI赢）
-	var player_won: bool = (battle_result.winner == "enemy")
+	# 3. 判断胜负（"player"=玩家获胜，"enemy"=敌人获胜）
+	var player_won: bool = (battle_result.winner == "player")
 
 	# 4. 计算惩罚（策略模式 -- v2.0无惩罚）
 	var penalty_result: Dictionary = _penalty_strategy.calculate_penalty(pvp_config, turn_number, player_won)
