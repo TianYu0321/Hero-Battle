@@ -317,7 +317,6 @@ func get_current_node_options() -> Array[Dictionary]:
 # --- 状态机处理 ---
 
 func _change_state(new_state: int) -> void:
-	var old_state: int = _state
 	_state = new_state
 
 	match new_state:

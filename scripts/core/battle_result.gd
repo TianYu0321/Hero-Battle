@@ -49,7 +49,7 @@ func determine_winner(hero: Dictionary, enemies: Array, turn_count: int, max_tur
 	winner = ""
 	return winner
 
-func finalize(hero: Dictionary, enemies: Array, partners: Array) -> Dictionary:
+func finalize(hero: Dictionary, enemies: Array, _partners: Array) -> Dictionary:
 	# 计算 MVP 伙伴（援助次数最多）
 	var max_assists: int = 0
 	for pid in partner_assist_count:

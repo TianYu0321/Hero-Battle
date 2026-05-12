@@ -1,7 +1,6 @@
 class_name TrainingPopup
 extends Control
 
-@onready var overlay: ColorRect = $Overlay
 @onready var attr_buttons: Array[Button] = [
 	$Overlay/Content/AttrButton1,
 	$Overlay/Content/AttrButton2,
@@ -9,7 +8,6 @@ extends Control
 	$Overlay/Content/AttrButton4,
 	$Overlay/Content/AttrButton5,
 ]
-@onready var preview_label: Label = $Overlay/Content/PreviewLabel
 @onready var close_button: Button = $Overlay/Content/CloseButton
 
 func _ready() -> void:

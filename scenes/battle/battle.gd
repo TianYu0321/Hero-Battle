@@ -1,13 +1,10 @@
 class_name Battle
 extends Control
 
-@onready var hero_rect: ColorRect = $BattleField/HeroRect
-@onready var enemy_rect: ColorRect = $BattleField/EnemyRect
 @onready var hero_hp_bar: ProgressBar = $BattleField/HeroHpBar
 @onready var enemy_hp_bar: ProgressBar = $BattleField/EnemyHpBar
 @onready var round_label: Label = $BattleField/RoundLabel
 @onready var battle_log: RichTextLabel = $BattleLog
-@onready var speed_button: Button = $SpeedButton
 
 func _ready() -> void:
 	hero_hp_bar.value = 100.0

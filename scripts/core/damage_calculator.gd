@@ -136,7 +136,7 @@ func compute_counter_damage(original_damage: int, attacker: Dictionary, defender
 	return pkt
 
 ## 计算治疗量
-func compute_heal(caster: Dictionary, target: Dictionary, heal_scale: float, base_attr: String = "spirit") -> int:
+func compute_heal(caster: Dictionary, _target: Dictionary, heal_scale: float, base_attr: String = "spirit") -> int:
 	var caster_stats: Dictionary = caster.get("stats", {})
 	var base_val: int = caster_stats.get(base_attr, 0)
 	var heal_val: float = base_val * heal_scale * _rng.randf_range(0.9, 1.1)

@@ -54,7 +54,7 @@ func _populate_hero_cards() -> void:
 func _set_stat_label(label: Label, attr_name: String, value: int, is_star: bool) -> void:
 	label.text = "%s: %d %s" % [attr_name, value, "★" if is_star else ""]
 
-func _on_select_hero(hero_id: String, config: Dictionary) -> void:
+func _on_select_hero(hero_id: String, _config: Dictionary) -> void:
 	_selected_hero_id = hero_id
 	EventBus.hero_selected.emit(hero_id)
 

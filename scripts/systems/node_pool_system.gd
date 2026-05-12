@@ -62,7 +62,7 @@ func generate_options(floor: int) -> Array[Dictionary]:
 		_:
 			return _generate_normal_options(floor)
 
-func record_selection(node_type: int) -> void:
+func record_selection(_node_type: int) -> void:
 	pass
 
 func _generate_normal_options(floor: int) -> Array[Dictionary]:

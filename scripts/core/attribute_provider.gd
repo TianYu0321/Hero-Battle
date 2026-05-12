@@ -10,12 +10,12 @@ extends RefCounted
 ## v2.0: 速度 = 基础值(10) + 敏捷x系数 + 招式加成 + BUFF加成
 ## @param unit: 战斗单位数据
 ## @return: 速度值
-func get_speed(unit: Dictionary) -> float:
+func get_speed(_unit: Dictionary) -> float:
     push_error("IAttributeProvider.get_speed: must override")
     return 0.0
 
 ## 获取敏捷值
-func get_agility(unit: Dictionary) -> int:
+func get_agility(_unit: Dictionary) -> int:
     push_error("IAttributeProvider.get_agility: must override")
     return 0
 

@@ -96,10 +96,10 @@ func _on_menu_button_pressed() -> void:
 	else:
 		_pause_menu.show_menu()
 
-func _on_save_loaded(save_data: Dictionary) -> void:
+func _on_save_loaded(_save_data: Dictionary) -> void:
 	_btn_continue.visible = true
 
-func _on_load_failed(error_code: int, error_message: String, save_slot: int) -> void:
+func _on_load_failed(_error_code: int, _error_message: String, _save_slot: int) -> void:
 	_btn_continue.visible = false
 
 func _enter_tree() -> void:

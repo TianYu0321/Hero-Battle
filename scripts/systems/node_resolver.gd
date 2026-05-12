@@ -63,7 +63,7 @@ func resolve(node_option: Dictionary, context: Dictionary) -> Dictionary:
 
 
 ## v1 兼容接口：直接按节点类型解析
-func resolve_node(node_type: int, node_option: Dictionary, context: Dictionary) -> Dictionary:
+func resolve_node(_node_type: int, node_option: Dictionary, context: Dictionary) -> Dictionary:
 	return resolve(node_option, context)
 
 
@@ -352,11 +352,11 @@ func _select_enemy_for_turn(turn: int) -> int:
 
 
 ## 商店购买处理（由ShopSystem处理具体逻辑，这里只保留接口兼容）
-func process_shop_purchase(item_data: Dictionary, run_data: RuntimeRun) -> Dictionary:
+func process_shop_purchase(_item_data: Dictionary, _run_data: RuntimeRun) -> Dictionary:
 	push_warning("[NodeResolver] process_shop_purchase is deprecated, use ShopSystem directly")
 	return {"success": false, "error": "deprecated"}
 
 
 ## 救援选择处理（由RescueSystem处理具体逻辑，这里只保留接口兼容）
-func process_rescue_selection(partner_config_id: int, turn: int, run_data: RuntimeRun) -> void:
+func process_rescue_selection(_partner_config_id: int, _turn: int, _run_data: RuntimeRun) -> void:
 	push_warning("[NodeResolver] process_rescue_selection is deprecated, use RescueSystem directly")

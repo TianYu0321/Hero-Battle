@@ -11,7 +11,7 @@ extends RefCounted
 ## @param turn_number: PVP层数(10或20)
 ## @param player_won: 玩家是否胜利
 ## @return: {penalty_tier, penalty_value, penalty_desc}
-func calculate_penalty(pvp_config: Dictionary, turn_number: int, player_won: bool) -> Dictionary:
+func calculate_penalty(_pvp_config: Dictionary, _turn_number: int, _player_won: bool) -> Dictionary:
     push_error("IPVPPenaltyStrategy.calculate_penalty: must override")
     return {"penalty_tier": "none", "penalty_value": 0, "penalty_desc": ""}
 

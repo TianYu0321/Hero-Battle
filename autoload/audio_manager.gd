@@ -25,18 +25,18 @@ func _ready() -> void:
 
 	EventBus.audio_play_requested.connect(_on_audio_play_requested)
 
-func play_bgm(track: String, fade_in: float = 0.5) -> void:
+func play_bgm(track: String, _fade_in: float = 0.5) -> void:
 	_current_bgm = track
 	push_warning("[AudioManager] play_bgm called with track: %s (placeholder)" % track)
 
-func play_sfx(name: String, volume: float = 1.0) -> void:
+func play_sfx(name: String, _volume: float = 1.0) -> void:
 	push_warning("[AudioManager] play_sfx called with name: %s (placeholder)" % name)
 
 func set_volume(bus: String, value: float) -> void:
 	var db: float = linear_to_db(clampf(value, 0.0, 1.0))
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index(bus), db)
 
-func stop_bgm(fade_out: float = 0.5) -> void:
+func stop_bgm(_fade_out: float = 0.5) -> void:
 	_current_bgm = ""
 
 func _on_audio_play_requested(audio_type: String, audio_name: String, volume: float) -> void:

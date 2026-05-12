@@ -17,7 +17,7 @@ func _init(dc: DamageCalculator, rng: RandomNumberGenerator):
 
 ## 尝试触发连锁
 ## 返回 {triggered: bool, packet: Dictionary, partner_id: String, partner_name: String}
-func try_trigger_chain(hero: Dictionary, enemies: Array, partners: Array, turn_chain_count: int) -> Dictionary:
+func try_trigger_chain(_hero: Dictionary, enemies: Array, partners: Array, turn_chain_count: int) -> Dictionary:
 	## v2.0: 不限制段数，不限制伙伴触发次数
 	
 	# 找所有存活的伙伴

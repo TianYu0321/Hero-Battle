@@ -21,14 +21,6 @@ const BattleAnimationPanel = preload("res://scenes/run_main/battle_animation_pan
 	$OptionContainer/OutingButton,
 ]
 
-@onready var partner_slots: Array[ColorRect] = [
-	$PartnerContainer/PartnerSlot1,
-	$PartnerContainer/PartnerSlot2,
-	$PartnerContainer/PartnerSlot3,
-	$PartnerContainer/PartnerSlot4,
-	$PartnerContainer/PartnerSlot5,
-]
-
 @onready var training_panel: VBoxContainer = $TrainingPanel
 @onready var option_container: VBoxContainer = $OptionContainer
 @onready var shop_panel: Panel = $ShopPanel
@@ -366,12 +358,12 @@ func _on_panel_closed(_panel_name: String, _close_reason: String) -> void:
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 
 
-func _on_training_completed(attr_code: int, attr_name: String, gain_value: int, new_total: int, proficiency_stage: String, bonus_applied: int) -> void:
+func _on_training_completed(_attr_code: int, attr_name: String, gain_value: int, new_total: int, proficiency_stage: String, bonus_applied: int) -> void:
 	_update_hud()
 	print("[RunMain] 训练完成: %s +%d (当前%d, %s, 伙伴加成%d)" % [attr_name, gain_value, new_total, proficiency_stage, bonus_applied])
 
 
-func _on_floor_advanced(new_floor: int, floor_type: String, is_special: bool) -> void:
+func _on_floor_advanced(_new_floor: int, _floor_type: String, _is_special: bool) -> void:
 	# 楼层推进后清空按钮（等待下一轮选项）
 	for btn in option_buttons:
 		btn.text = "..."
@@ -567,7 +559,7 @@ func _show_event_result(logs: Array, _rewards: Array) -> void:
 	if not msg.is_empty():
 		print("[RunMain Event] %s" % msg)
 
-func _on_gold_changed(new_amount: int, delta: int, _reason: String) -> void:
+func _on_gold_changed(new_amount: int, _delta: int, _reason: String) -> void:
 	gold_label.text = "金币: %d" % new_amount
 
 

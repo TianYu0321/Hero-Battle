@@ -10,7 +10,7 @@ extends Node
 # Phase 1占位：模拟精英战结果
 # 真实战斗由任务4的BattleEngine实现，此处提供接口占位
 
-func execute_elite_battle(run: RuntimeRun, hero: RuntimeHero, enemy_config_id: int) -> Dictionary:
+func execute_elite_battle(_run: RuntimeRun, hero: RuntimeHero, enemy_config_id: int) -> Dictionary:
 	var result := {
 		"success": true,
 		"winner": "player",

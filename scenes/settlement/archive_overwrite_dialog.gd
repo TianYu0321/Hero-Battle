@@ -4,7 +4,6 @@ extends Control
 @onready var archive_list: VBoxContainer = $DialogPanel/ArchiveList
 @onready var confirm_panel: HBoxContainer = $DialogPanel/ConfirmPanel
 @onready var cancel_button: Button = $DialogPanel/CancelButton
-@onready var dialog_panel: Panel = $DialogPanel
 
 var _archives: Array[Dictionary] = []
 var _selected_index: int = -1
