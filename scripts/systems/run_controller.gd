@@ -8,6 +8,7 @@ class_name RunController
 extends Node
 
 const EventForecastSystem = preload("res://scripts/systems/event_forecast_system.gd")
+const BattlePlaybackRecorder = preload("res://scripts/systems/battle_playback_recorder.gd")
 
 enum RunState {
 	HERO_SELECT,
@@ -580,6 +581,47 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 
 	var battle_engine: BattleEngine = BattleEngine.new()
 	add_child(battle_engine)
+	
+	# --- 创建回放记录器 ---
+	var recorder := BattlePlaybackRecorder.new()
+	recorder.name = "PlaybackRecorder"
+	add_child(recorder)
+	recorder.start_recording()
+	
+	# 订阅所有战斗信号
+	var _on_turn_started = func(turn, _order, _mode):
+		recorder.record_event("turn_started", {"turn": turn, "order": []})
+	EventBus.battle_turn_started.connect(_on_turn_started)
+	
+	var _on_action_executed = func(action_data):
+		recorder.record_event("action_executed", action_data)
+	EventBus.action_executed.connect(_on_action_executed)
+	
+	var _on_unit_damaged = func(unit_id, amount, hp, max_hp, _dmg_type, is_crit, is_miss, attacker_id):
+		recorder.record_event("unit_damaged", {
+			"unit_id": unit_id, "damage": amount, "hp": hp, "max_hp": max_hp,
+			"is_crit": is_crit, "is_miss": is_miss, "attacker_id": attacker_id,
+		})
+	EventBus.unit_damaged.connect(_on_unit_damaged)
+	
+	var _on_unit_died = func(unit_id, uname, _unit_type, killer_id):
+		recorder.record_event("unit_died", {"unit_id": unit_id, "name": uname, "killer_id": killer_id})
+	EventBus.unit_died.connect(_on_unit_died)
+	
+	var _on_partner_assist = func(_pid, pname, _trigger_type, _assist_data, _assist_count):
+		recorder.record_event("partner_assist", {"partner_name": pname})
+	EventBus.partner_assist_triggered.connect(_on_partner_assist)
+	
+	var _on_chain_triggered = func(chain_count, _partner_id, partner_name, damage, _multiplier, _total_chains):
+		recorder.record_event("chain_triggered", {
+			"chain_count": chain_count, "partner_name": partner_name, "damage": damage,
+		})
+	EventBus.chain_triggered.connect(_on_chain_triggered)
+	
+	var _on_ultimate_triggered = func(_hero_class, hero_name, trigger_turn, _condition, ultimate_name):
+		recorder.record_event("ultimate_triggered", {"hero_name": hero_name, "turn": trigger_turn, "log": ultimate_name})
+	EventBus.ultimate_triggered.connect(_on_ultimate_triggered)
+	
 	var config: Dictionary = {
 		"hero": battle_hero,
 		"enemies": [enemy],
@@ -588,6 +630,19 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 		"playback_mode": "standard",
 	}
 	var result: Dictionary = battle_engine.execute_battle(config)
+	
+	# 断开信号
+	EventBus.battle_turn_started.disconnect(_on_turn_started)
+	EventBus.action_executed.disconnect(_on_action_executed)
+	EventBus.unit_damaged.disconnect(_on_unit_damaged)
+	EventBus.unit_died.disconnect(_on_unit_died)
+	EventBus.partner_assist_triggered.disconnect(_on_partner_assist)
+	EventBus.chain_triggered.disconnect(_on_chain_triggered)
+	EventBus.ultimate_triggered.disconnect(_on_ultimate_triggered)
+	
+	recorder.stop_recording()
+	result["playback_recorder"] = recorder
+	
 	battle_engine.queue_free()
 
 	# 同步战斗后的 HP 回写到 RuntimeHero

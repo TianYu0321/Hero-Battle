@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 [ext_resource type="PackedScene" uid="uid://battlesummary01" path="res://scenes/run_main/battle_summary_panel.tscn" id="3_bsp"]
+[ext_resource type="PackedScene" path="res://scenes/run_main/battle_animation_panel.tscn" id="4_bap"]
 
 [node name="RunMain" type="Control"]
 layout_mode = 3
@@ -509,4 +510,7 @@ layout_mode = 2
 text = "关闭"
 
 [node name="BattleSummaryPanel" parent="." instance=ExtResource("3_bsp")]
+visible = false
+
+[node name="BattleAnimationPanel" parent="." instance=ExtResource("4_bap")]
 visible = false

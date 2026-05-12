@@ -1,0 +1,134 @@
+[gd_scene load_steps=2 format=3 uid="uid://battle_anim_panel01"]
+
+[ext_resource type="Script" path="res://scenes/run_main/battle_animation_panel.gd" id="1_bap"]
+
+[node name="BattleAnimationPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bap")
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="HeroPanel" type="VBoxContainer" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HeroNameLabel" type="Label" parent="TopBar/HeroPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "英雄"
+horizontal_alignment = 1
+
+[node name="HeroHPBar" type="ProgressBar" parent="TopBar/HeroPanel"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+
+[node name="HeroPartnersContainer" type="HBoxContainer" parent="TopBar/HeroPanel"]
+layout_mode = 2
+alignment = 1
+
+[node name="CenterInfo" type="VBoxContainer" parent="TopBar"]
+layout_mode = 2
+
+[node name="TurnLabel" type="Label" parent="TopBar/CenterInfo"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "回合 1"
+horizontal_alignment = 1
+
+[node name="VsLabel" type="Label" parent="TopBar/CenterInfo"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.9, 0.8, 0.5, 1)
+text = "VS"
+horizontal_alignment = 1
+
+[node name="EnemyPanel" type="VBoxContainer" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EnemyNameLabel" type="Label" parent="TopBar/EnemyPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "敌人"
+horizontal_alignment = 1
+
+[node name="EnemyHPBar" type="ProgressBar" parent="TopBar/EnemyPanel"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+
+[node name="EnemyPartnersContainer" type="HBoxContainer" parent="TopBar/EnemyPanel"]
+layout_mode = 2
+alignment = 1
+
+[node name="EffectArea" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 130.0
+offset_bottom = 240.0
+grow_horizontal = 2
+
+[node name="BattleArea" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 250.0
+offset_bottom = 420.0
+grow_horizontal = 2
+theme_override_constants/separation = 80
+alignment = 1
+
+[node name="HeroSprite" type="ColorRect" parent="BattleArea"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+color = Color(0.2, 0.5, 0.9, 1)
+
+[node name="EnemySprite" type="ColorRect" parent="BattleArea"]
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+color = Color(0.9, 0.2, 0.2, 1)
+
+[node name="DamageContainer" type="Node" parent="."]
+
+[node name="BottomHint" type="RichTextLabel" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -120.0
+offset_right = -20.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+bbcode_enabled = true
+
+[node name="SkipButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -110.0
+offset_top = -50.0
+offset_right = -20.0
+offset_bottom = -15.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "跳过"

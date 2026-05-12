@@ -2,6 +2,7 @@ class_name RunMain
 extends Control
 
 const EventForecastSystem = preload("res://scripts/systems/event_forecast_system.gd")
+const BattleAnimationPanel = preload("res://scenes/run_main/battle_animation_panel.gd")
 
 @onready var floor_label: Label = $HudContainer/FloorLabel
 @onready var gold_label: Label = $HudContainer/GoldLabel
@@ -34,6 +35,7 @@ const EventForecastSystem = preload("res://scripts/systems/event_forecast_system
 @onready var shop_item_container: VBoxContainer = $ShopPanel/ContentVBox/Scroll/ShopItemContainer
 @onready var shop_gold_label: Label = $ShopPanel/ContentVBox/GoldDisplayLabel
 @onready var battle_summary_panel = $BattleSummaryPanel
+@onready var battle_animation_panel: BattleAnimationPanel = $BattleAnimationPanel
 @onready var ui_modal_blocker: ColorRect = $UIModalBlocker
 
 @onready var rescue_panel: Control = $RescuePanel
@@ -514,11 +516,31 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		battle_result.get("turns_elapsed", 0)
 	])
 	_update_hud()
-	battle_summary_panel.show_result(battle_result)
-	_show_modal_panel(battle_summary_panel)
-	if not battle_summary_panel.confirmed.is_connected(_on_battle_summary_confirmed):
-		battle_summary_panel.confirmed.connect(_on_battle_summary_confirmed, CONNECT_ONE_SHOT)
+	
+	var recorder = battle_result.get("playback_recorder", null)
+	if recorder != null and recorder.get_events().size() > 0:
+		var hero_data: Dictionary = battle_result.get("hero", {})
+		var enemy_data: Dictionary = battle_result.get("enemies", [{}])[0]
+		var hero_name: String = hero_data.get("name", "英雄")
+		var enemy_name: String = enemy_data.get("name", "敌人")
+		var hero_max_hp: int = hero_data.get("max_hp", 100)
+		var enemy_max_hp: int = enemy_data.get("max_hp", 100)
+		
+		_show_modal_panel(battle_animation_panel)
+		battle_animation_panel.start_playback(recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [])
+		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_confirmed):
+			battle_animation_panel.confirmed.connect(_on_battle_animation_confirmed, CONNECT_ONE_SHOT)
+	else:
+		battle_summary_panel.show_result(battle_result)
+		_show_modal_panel(battle_summary_panel)
+		if not battle_summary_panel.confirmed.is_connected(_on_battle_summary_confirmed):
+			battle_summary_panel.confirmed.connect(_on_battle_summary_confirmed, CONNECT_ONE_SHOT)
 
+func _on_battle_animation_confirmed() -> void:
+	print("[RunMain] 战斗动画确认关闭")
+	_hide_modal_panel(battle_animation_panel)
+	if _run_controller != null:
+		_run_controller.confirm_battle_result()
 
 func _on_battle_summary_confirmed() -> void:
 	print("[RunMain] 战斗摘要确认关闭")
