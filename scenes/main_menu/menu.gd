@@ -41,6 +41,16 @@ func _ready() -> void:
 	else:
 		push_warning("[MainMenu] BtnPVP 未找到")
 
+	# 启用商店按钮
+	var btn_shop: Button = get_node_or_null("%BtnShop")
+	if btn_shop != null:
+		btn_shop.visible = true
+		btn_shop.disabled = false
+		btn_shop.pressed.connect(_on_shop_pressed)
+		print("[MainMenu] 商店按钮已启用")
+	else:
+		push_warning("[MainMenu] BtnShop 未找到")
+
 	# 主菜单中隐藏PauseMenu的"返回主菜单"按钮
 	_pause_menu.set_is_main_menu(true)
 
@@ -74,6 +84,10 @@ func _on_archive_button_pressed() -> void:
 func _on_pvp_pressed() -> void:
 	print("[MainMenu] PVP对战按钮点击")
 	EventBus.pvp_lobby_requested.emit()
+
+func _on_shop_pressed() -> void:
+	print("[MainMenu] 商店按钮点击")
+	EventBus.shop_requested.emit()
 
 func _on_menu_button_pressed() -> void:
 	print("[MainMenu] 菜单按钮点击")

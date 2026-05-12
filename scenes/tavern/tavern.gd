@@ -19,9 +19,22 @@ var _selected_partners: Array[String] = []
 func _ready() -> void:
 	_confirm_btn.pressed.connect(_on_confirm_pressed)
 	_back_btn.pressed.connect(_on_back_pressed)
-	_partner_ids = ConfigManager.get_all_partner_ids()
+	_partner_ids = _get_available_partner_ids()
 	_update_confirm_button()
 	_populate_partner_slots()
+
+func _get_available_partner_ids() -> Array[String]:
+	var player_data: Dictionary = SaveManager.load_player_data()
+	var unlocked: Array = player_data.get("unlocked_partners", [])
+	var all_ids: Array[String] = ConfigManager.get_all_partner_ids()
+	var result: Array[String] = []
+	for pid in all_ids:
+		var cfg: Dictionary = ConfigManager.get_partner_config(pid)
+		var is_default: bool = cfg.get("is_default_unlock", false)
+		var pid_str: String = str(cfg.get("id", ""))
+		if is_default or (pid_str in unlocked):
+			result.append(pid)
+	return result
 
 func _populate_partner_slots() -> void:
 	var slot_index: int = 0

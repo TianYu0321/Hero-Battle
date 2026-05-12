@@ -25,6 +25,7 @@ const _SCENE_PATHS: Dictionary = {
 	"SETTLEMENT": "res://scenes/settlement/settlement.tscn",
 	"ARCHIVE_VIEW": "res://scenes/archive_view/archive_view.tscn",
 	"PVP_LOBBY": "res://scenes/pvp_lobby/pvp_lobby.tscn",
+	"SHOP": "res://scenes/shop/shop.tscn",
 }
 
 # 字符串ID → 数字ID 映射（供RunMain启动RunController时使用）
@@ -77,6 +78,7 @@ func _ready() -> void:
 	EventBus.back_to_hero_select.connect(_on_back_to_hero_select)
 	EventBus.archive_view_requested.connect(_on_archive_view_requested)
 	EventBus.pvp_lobby_requested.connect(_on_pvp_lobby_requested)
+	EventBus.shop_requested.connect(_on_shop_requested)
 
 func change_scene(to_state: String, transition_type: String = "fade") -> void:
 	if _is_transitioning:
@@ -183,3 +185,6 @@ func _on_archive_view_requested(_archive_id: String = "") -> void:
 
 func _on_pvp_lobby_requested() -> void:
 	change_scene("PVP_LOBBY", "fade")
+
+func _on_shop_requested() -> void:
+	change_scene("SHOP", "fade")

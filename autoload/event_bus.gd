@@ -102,6 +102,7 @@ signal back_to_hero_select
 signal hero_selected(hero_id: String)
 signal team_confirmed(partner_ids: Array[String])
 signal archive_view_requested(archive_id: String)
+signal shop_requested
 signal rescue_partner_selected(candidate_index: int, partner_id: String)
 signal shop_purchase_requested(item_index: int, item_id: String, target_id: String)
 signal shop_exit_requested

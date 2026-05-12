@@ -57,7 +57,8 @@
       "favored_attr": 5,
       "aid_trigger_type": 2,
       "linked_hero_id": 0,
-      "is_default_unlock": true,
+      "is_default_unlock": false,
+      "unlock_price_mocheng": 100,
       "unlock_condition_text": "",
       "sort_order": 4
     },
@@ -71,7 +72,8 @@
       "favored_attr": 4,
       "aid_trigger_type": 3,
       "linked_hero_id": 0,
-      "is_default_unlock": true,
+      "is_default_unlock": false,
+      "unlock_price_mocheng": 150,
       "unlock_condition_text": "",
       "sort_order": 5
     },
@@ -85,7 +87,8 @@
       "favored_attr": 4,
       "aid_trigger_type": 2,
       "linked_hero_id": 1,
-      "is_default_unlock": true,
+      "is_default_unlock": false,
+      "unlock_price_mocheng": 100,
       "unlock_condition_text": "",
       "sort_order": 6
     }

@@ -81,6 +81,12 @@ layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
 text = "PVP对战"
 
+[node name="BtnShop" type="Button" parent="MenuButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(200, 50)
+text = "商店"
+
 [node name="MenuButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 1
