@@ -1,0 +1,27 @@
+{
+	"archive_id": "VIR_001",
+	"hero_config_id": 1,
+	"hero_name": "剑影",
+	"final_turn": 30,
+	"final_score": 185,
+	"final_grade": "S",
+	"attr_snapshot_vit": 45,
+	"attr_snapshot_str": 50,
+	"attr_snapshot_agi": 38,
+	"attr_snapshot_tec": 42,
+	"attr_snapshot_mnd": 35,
+	"max_hp_reached": 120,
+	"partner_count": 3,
+	"partners": [
+		{"partner_config_id": 1001, "current_level": 4, "favored_attr": 1, "is_active": true},
+		{"partner_config_id": 1002, "current_level": 3, "favored_attr": 3, "is_active": true},
+		{"partner_config_id": 1003, "current_level": 3, "favored_attr": 2, "is_active": true}
+	],
+	"battle_win_count": 15,
+	"elite_win_count": 3,
+	"gold_earned_total": 850,
+	"training_count": 25,
+	"created_at": 1714982400,
+	"is_fixed": true,
+	"is_virtual": true
+}

@@ -139,6 +139,75 @@ func load_latest_run() -> Dictionary:
 	EventBus.game_loaded.emit(data)
 	return data
 
+func get_archive_count() -> int:
+	var file_path: String = ConfigManager.ARCHIVE_FILE
+	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
+	if data.is_empty():
+		return 0
+	var archives: Array = data.get("archives", [])
+	return archives.size()
+
+
+func get_archives_for_overwrite() -> Array[Dictionary]:
+	var file_path: String = ConfigManager.ARCHIVE_FILE
+	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
+	if data.is_empty():
+		return []
+	var archives: Array = data.get("archives", [])
+	var result: Array[Dictionary] = []
+	for i in range(archives.size()):
+		var entry: Dictionary = archives[i]
+		result.append({
+			"index": i,
+			"hero_name": entry.get("hero_name", "???"),
+			"final_grade": entry.get("final_grade", "?"),
+			"final_score": entry.get("final_score", 0),
+			"final_turn": entry.get("final_turn", 0),
+			"created_at": entry.get("created_at", 0),
+		})
+	return result
+
+
+func overwrite_archive(index: int, new_archive: Dictionary) -> bool:
+	var file_path: String = ConfigManager.ARCHIVE_FILE
+	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
+	if data.is_empty():
+		return false
+	var archives: Array = data.get("archives", [])
+	if index < 0 or index >= archives.size():
+		push_error("[SaveManager] 覆盖索引越界: %d, 总数: %d" % [index, archives.size()])
+		return false
+
+	new_archive["archive_id"] = archives[index].get("archive_id", _generate_archive_id())
+	new_archive["created_at"] = Time.get_unix_time_from_system()
+	new_archive["is_fixed"] = true
+	archives[index] = new_archive
+	data["last_updated"] = Time.get_unix_time_from_system()
+
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(data, "\t"))
+		file.close()
+		EventBus.archive_generated.emit(new_archive)
+		EventBus.archive_saved.emit(new_archive)
+		print("[SaveManager] 覆盖档案成功, index=%d" % index)
+		return true
+	else:
+		push_error("[SaveManager] 覆盖档案失败: 无法写入文件")
+		return false
+
+
+func clear_all_archives() -> void:
+	var file_path: String = ConfigManager.ARCHIVE_FILE
+	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify({"version": _current_version, "archives": [], "last_updated": 0}, "\t"))
+		file.close()
+		print("[SaveManager] 已清空所有档案")
+	else:
+		push_error("[SaveManager] 清空档案失败: 无法写入文件")
+
+
 func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 	var archive: Dictionary = archive_data.duplicate(true)
 	if not archive.has("archive_id") or archive.get("archive_id", "").is_empty():
@@ -153,20 +222,35 @@ func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 		existing = {"version": _current_version, "archives": [], "last_updated": 0}
 	if not existing.has("archives"):
 		existing["archives"] = []
-	existing["archives"].append(archive)
-	existing["last_updated"] = Time.get_unix_time_from_system()
-	existing["version"] = _current_version
 
-	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify(existing, "\t"))
-		file.close()
+	var archives: Array = existing["archives"]
+
+	# 清理：如果超过5个（旧数据/异常），保留最新的5个
+	if archives.size() > 5:
+		archives.sort_custom(func(a, b): return a.get("created_at", 0) > b.get("created_at", 0))
+		archives.resize(5)
+		print("[SaveManager] 档案数量超过5，已清理至最新的5个")
+
+	# 如果未满5个，直接追加
+	if archives.size() < 5:
+		archives.append(archive)
+		existing["last_updated"] = Time.get_unix_time_from_system()
+		existing["version"] = _current_version
+
+		var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+		if file != null:
+			file.store_string(JSON.stringify(existing, "\t"))
+			file.close()
+		else:
+			push_error("[SaveManager] Failed to write archive file")
+
+		EventBus.archive_generated.emit(archive)
+		EventBus.archive_saved.emit(archive)
+		return archive
 	else:
-		push_error("[SaveManager] Failed to write archive file")
-
-	EventBus.archive_generated.emit(archive)
-	EventBus.archive_saved.emit(archive)
-	return archive
+		# 已满5个，不直接保存，返回特殊标记通知上层处理覆盖
+		print("[SaveManager] 档案已满(5/5)，需要覆盖")
+		return {"_needs_overwrite": true, "archive_data": archive}
 
 func load_archives(sort_by: String = "date", limit: int = 100, filter_hero: String = "") -> Array[Dictionary]:
 	var file_path: String = ConfigManager.ARCHIVE_FILE

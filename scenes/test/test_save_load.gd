@@ -189,8 +189,14 @@ func _test_archive_save_load() -> void:
 
 	# 保存档案
 	var saved: Dictionary = SaveManager.generate_fighter_archive(archive_data)
-	_assert(saved.has("archive_id"), "保存后应有 archive_id")
-	_assert(saved.is_fixed == true, "档案标记为固定")
+	if saved.has("_needs_overwrite"):
+		# 档案已满，覆盖第一个
+		SaveManager.overwrite_archive(0, archive_data)
+		saved = archive_data
+		_assert(saved.has("archive_id"), "保存后应有 archive_id")
+	else:
+		_assert(saved.has("archive_id"), "保存后应有 archive_id")
+		_assert(saved.is_fixed == true, "档案标记为固定")
 
 	# 读取档案
 	var archives: Array[Dictionary] = SaveManager.load_archives("score", 100, "")

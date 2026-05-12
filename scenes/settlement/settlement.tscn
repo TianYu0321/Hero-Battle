@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scenes/settlement/settlement.gd" id="1_pqr12"]
+[ext_resource type="PackedScene" path="res://scenes/settlement/archive_overwrite_dialog.tscn" id="2_dialog"]
 
 [node name="Settlement" type="Control"]
 layout_mode = 3
@@ -97,3 +98,6 @@ offset_top = 600.0
 offset_right = 640.0
 offset_bottom = 640.0
 text = "返回主菜单"
+
+[node name="ArchiveOverwriteDialog" parent="." instance=ExtResource("2_dialog")]
+visible = false

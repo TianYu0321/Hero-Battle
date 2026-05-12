@@ -13,6 +13,7 @@ extends Control
 @onready var menu_button: Button = $MenuButton
 @onready var view_archive_button: Button = $ViewArchiveButton
 @onready var saved_hint_label: Label = $SavedHintLabel
+@onready var overwrite_dialog: ArchiveOverwriteDialog = $ArchiveOverwriteDialog
 
 var _archive_data: Dictionary = {}
 var _archive_saved: bool = false
@@ -25,6 +26,9 @@ func _ready() -> void:
 		view_archive_button.visible = false
 	if saved_hint_label != null:
 		saved_hint_label.visible = false
+	if overwrite_dialog != null:
+		overwrite_dialog.archive_overwritten.connect(_on_archive_overwritten)
+		overwrite_dialog.cancelled.connect(_on_overwrite_cancelled)
 
 	# --- EventBus 信号订阅 ---
 	EventBus.archive_saved.connect(_on_archive_saved)
@@ -109,7 +113,33 @@ func _on_archive_button_pressed() -> void:
 	if _archive_data.is_empty():
 		push_warning("[Settlement] No archive data available")
 		return
-	var saved: Dictionary = SaveManager.generate_fighter_archive(_archive_data)
+
+	# 检查档案数量
+	var count: int = SaveManager.get_archive_count()
+	print("[Settlement] 当前档案数: %d" % count)
+
+	if count < 5:
+		# 未满5个，直接保存
+		var saved: Dictionary = SaveManager.generate_fighter_archive(_archive_data)
+		if saved.has("_needs_overwrite"):
+			# 虽然get_archive_count返回<5，但实际保存时可能已满了（并发情况）， fallback到覆盖流程
+			var archives: Array[Dictionary] = SaveManager.get_archives_for_overwrite()
+			overwrite_dialog.show_dialog(archives, _archive_data)
+		else:
+			_update_saved_ui()
+	else:
+		# 已满5个，弹出覆盖选择窗口
+		var archives: Array[Dictionary] = SaveManager.get_archives_for_overwrite()
+		overwrite_dialog.show_dialog(archives, _archive_data)
+
+func _on_archive_overwritten() -> void:
+	_update_saved_ui()
+	print("[Settlement] 档案覆盖完成")
+
+func _on_overwrite_cancelled() -> void:
+	print("[Settlement] 用户取消覆盖")
+
+func _update_saved_ui() -> void:
 	_archive_saved = true
 	if saved_hint_label != null:
 		saved_hint_label.text = "档案已保存"
@@ -131,12 +161,5 @@ func _on_menu_button_pressed() -> void:
 func _on_archive_saved(archive_data: Dictionary) -> void:
 	if _archive_saved:
 		return
-	_archive_saved = true
-	if saved_hint_label != null:
-		saved_hint_label.text = "档案已保存"
-		saved_hint_label.visible = true
-	if view_archive_button != null:
-		view_archive_button.visible = true
-	if archive_button != null:
-		archive_button.disabled = true
+	_update_saved_ui()
 	print("[Settlement] 收到 archive_saved 信号，档案ID: %s" % archive_data.get("archive_id", "unknown"))

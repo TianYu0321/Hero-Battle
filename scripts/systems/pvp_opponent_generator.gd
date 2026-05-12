@@ -8,7 +8,14 @@ class_name PvpOpponentGenerator
 extends RefCounted
 
 
-func generate_opponent(player_state: Dictionary, turn_number: int) -> Dictionary:
+func generate_opponent(player_state: Dictionary, turn_number: int, use_archive: bool = true, archive_pool: VirtualArchivePool = null) -> Dictionary:
+	if use_archive and archive_pool != null:
+		var opponent_archive: Dictionary = archive_pool.find_opponent_for_floor(turn_number)
+		if not opponent_archive.is_empty():
+			return generate_opponent_from_archive(opponent_archive, turn_number, player_state)
+		print("[PvpOpponentGenerator] 无档案匹配，fallback到AI生成")
+
+	# fallback：原来的AI生成逻辑
 	var template: Dictionary = _select_template(turn_number)
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = player_state.get("run_seed", 0) + turn_number
@@ -44,6 +51,88 @@ func generate_opponent(player_state: Dictionary, turn_number: int) -> Dictionary
 		"partners": ai_partners,
 		"battle_seed": player_state.get("run_seed", 0) + turn_number,
 		"playback_mode": "fast_forward",
+		"opponent_name": ai_hero.get("name", "AI挑战者"),
+		"opponent_source": "ai",
+	}
+
+
+func generate_opponent_from_archive(archive_data: Dictionary, turn_number: int, player_state: Dictionary) -> Dictionary:
+	print("[PvpOpponentGenerator] 从档案生成对手: %s" % archive_data.get("hero_name", "???"))
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = archive_data.get("archive_id", "").hash() + turn_number
+
+	# 从档案提取英雄属性
+	var hero_stats: Dictionary = {
+		"physique": archive_data.get("attr_snapshot_vit", 10),
+		"strength": archive_data.get("attr_snapshot_str", 10),
+		"agility": archive_data.get("attr_snapshot_agi", 10),
+		"technique": archive_data.get("attr_snapshot_tec", 10),
+		"spirit": archive_data.get("attr_snapshot_mnd", 10),
+	}
+	var hero_config_id: int = archive_data.get("hero_config_id", 1)
+	var hero_id: String = ConfigManager.get_hero_id_by_config_id(hero_config_id)
+	if hero_id.is_empty():
+		hero_id = "hero_warrior"
+
+	var ai_hero: Dictionary = DamageCalculator.spawn_hero(hero_id, hero_stats)
+	ai_hero.hp = ai_hero.max_hp
+	ai_hero.name = archive_data.get("hero_name", "影子斗士")
+
+	# 从档案提取伙伴
+	var archive_partners: Array = archive_data.get("partners", [])
+	var ai_partners: Array = []
+	for p_data in archive_partners:
+		var pid: int = p_data.get("partner_config_id", 1001)
+		var pcfg: Dictionary = ConfigManager.get_partner_config(str(pid))
+		var p_name: String = pcfg.get("name", "伙伴")
+		var p_level: int = p_data.get("current_level", 1)
+		# 伙伴属性按等级缩放（Lv1基准 × 等级系数）
+		var assist_cfg: Dictionary = ConfigManager.get_partner_assist_by_partner_id(str(pid))
+		var base_stats: Dictionary = {
+			"physique": assist_cfg.get("base_physique", 10),
+			"strength": assist_cfg.get("base_strength", 10),
+			"agility": assist_cfg.get("base_agility", 10),
+			"technique": assist_cfg.get("base_technique", 10),
+			"spirit": assist_cfg.get("base_spirit", 10),
+		}
+		var level_multiplier: float = 1.0 + (p_level - 1) * 0.2
+		for key in base_stats.keys():
+			base_stats[key] = int(base_stats[key] * level_multiplier)
+		ai_partners.append(PartnerAssist.make_partner_battle_unit(str(pid), p_name, base_stats))
+
+	# 生成玩家镜像
+	var raw_hero = player_state.get("player_hero", {})
+	var player_hero: Dictionary
+	if raw_hero is RuntimeHero:
+		var ph_id: String = ConfigManager.get_hero_id_by_config_id(raw_hero.hero_config_id)
+		if ph_id.is_empty():
+			ph_id = "hero_warrior"
+		player_hero = {
+			"hero_id": ph_id,
+			"stats": {
+				"physique": raw_hero.current_vit,
+				"strength": raw_hero.current_str,
+				"agility": raw_hero.current_agi,
+				"technique": raw_hero.current_tec,
+				"spirit": raw_hero.current_mnd,
+			},
+			"max_hp": raw_hero.max_hp,
+			"hp": raw_hero.current_hp,
+			"buff_list": raw_hero.buff_list.duplicate(),
+		}
+	else:
+		player_hero = raw_hero
+	var player_battle_unit: Dictionary = _generate_player_enemy(player_hero)
+
+	return {
+		"hero": ai_hero,
+		"enemies": [player_battle_unit],
+		"partners": ai_partners,
+		"battle_seed": rng.seed,
+		"playback_mode": "fast_forward",
+		"opponent_name": archive_data.get("hero_name", "影子斗士"),
+		"opponent_source": "archive",
 	}
 
 

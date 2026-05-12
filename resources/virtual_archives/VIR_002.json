@@ -1,0 +1,26 @@
+{
+	"archive_id": "VIR_002",
+	"hero_config_id": 2,
+	"hero_name": "风行者",
+	"final_turn": 30,
+	"final_score": 162,
+	"final_grade": "A",
+	"attr_snapshot_vit": 38,
+	"attr_snapshot_str": 42,
+	"attr_snapshot_agi": 50,
+	"attr_snapshot_tec": 35,
+	"attr_snapshot_mnd": 30,
+	"max_hp_reached": 110,
+	"partner_count": 2,
+	"partners": [
+		{"partner_config_id": 1004, "current_level": 3, "favored_attr": 4, "is_active": true},
+		{"partner_config_id": 1001, "current_level": 2, "favored_attr": 1, "is_active": true}
+	],
+	"battle_win_count": 12,
+	"elite_win_count": 2,
+	"gold_earned_total": 720,
+	"training_count": 22,
+	"created_at": 1715328000,
+	"is_fixed": true,
+	"is_virtual": true
+}

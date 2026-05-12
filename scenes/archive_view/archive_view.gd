@@ -8,6 +8,7 @@ extends Control
 
 @onready var _title_label: Label = $VBox/Header/TitleLabel
 @onready var _back_button: Button = $VBox/Header/BackButton
+@onready var _clear_button: Button = $VBox/Header/ClearButton
 @onready var _tab_buttons: HBoxContainer = $VBox/TabButtons
 @onready var _btn_archives: Button = $VBox/TabButtons/BtnArchives
 @onready var _btn_leaderboard: Button = $VBox/TabButtons/BtnLeaderboard
@@ -20,6 +21,7 @@ var _item_scene: PackedScene = preload("res://scenes/archive_view/archive_list_i
 
 func _ready() -> void:
 	_back_button.pressed.connect(_on_back_pressed)
+	_clear_button.pressed.connect(_on_clear_pressed)
 	_btn_archives.pressed.connect(_on_show_archives)
 	_btn_leaderboard.pressed.connect(_on_show_leaderboard)
 	_archive_detail.back_requested.connect(_on_detail_back)
@@ -67,6 +69,10 @@ func _on_show_archives() -> void:
 
 func _on_show_leaderboard() -> void:
 	_show_leaderboard()
+
+func _on_clear_pressed() -> void:
+	SaveManager.clear_all_archives()
+	_refresh_list()
 
 func _on_back_pressed() -> void:
 	EventBus.back_to_menu_requested.emit()

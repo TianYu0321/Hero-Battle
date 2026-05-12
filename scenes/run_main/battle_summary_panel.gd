@@ -24,7 +24,9 @@ func show_result(battle_result: Dictionary) -> void:
 	var enemy_name = "???"
 	if enemies.size() > 0:
 		enemy_name = enemies[0].get("name", "???")
-	enemy_name_label.text = "敌人: %s" % enemy_name
+	var opponent_source = battle_result.get("opponent_source", "ai")
+	var source_text = "(档案影子)" if opponent_source == "archive" else "(AI)"
+	enemy_name_label.text = "对手: %s %s" % [enemy_name, source_text]
 	
 	var turns = battle_result.get("turns_elapsed", 0)
 	rounds_label.text = "经过%d回合" % turns

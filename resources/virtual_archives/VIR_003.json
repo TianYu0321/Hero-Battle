@@ -1,0 +1,27 @@
+{
+	"archive_id": "VIR_003",
+	"hero_config_id": 3,
+	"hero_name": "暗影刺客",
+	"final_turn": 30,
+	"final_score": 145,
+	"final_grade": "A",
+	"attr_snapshot_vit": 30,
+	"attr_snapshot_str": 48,
+	"attr_snapshot_agi": 45,
+	"attr_snapshot_tec": 40,
+	"attr_snapshot_mnd": 25,
+	"max_hp_reached": 100,
+	"partner_count": 3,
+	"partners": [
+		{"partner_config_id": 1002, "current_level": 4, "favored_attr": 3, "is_active": true},
+		{"partner_config_id": 1005, "current_level": 2, "favored_attr": 5, "is_active": true},
+		{"partner_config_id": 1003, "current_level": 2, "favored_attr": 2, "is_active": true}
+	],
+	"battle_win_count": 14,
+	"elite_win_count": 4,
+	"gold_earned_total": 680,
+	"training_count": 20,
+	"created_at": 1715500800,
+	"is_fixed": true,
+	"is_virtual": true
+}

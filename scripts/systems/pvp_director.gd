@@ -13,10 +13,16 @@ var _penalty_strategy: IPVPPenaltyStrategy = NullPenaltyStrategy.new()
 
 func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	var turn_number: int = pvp_config.get("turn_number", 0)
+	var use_archive: bool = pvp_config.get("use_archive", true)
 
-	# 1. 生成AI对手
+	# 1. 生成对手
 	var opponent_generator: PvpOpponentGenerator = PvpOpponentGenerator.new()
-	var battle_config: Dictionary = opponent_generator.generate_opponent(pvp_config, turn_number)
+	var archive_pool: VirtualArchivePool = get_node_or_null("/root/RunController/VirtualArchivePool")
+	var battle_config: Dictionary
+	if use_archive:
+		battle_config = opponent_generator.generate_opponent(pvp_config, turn_number, true, archive_pool)
+	else:
+		battle_config = opponent_generator.generate_opponent(pvp_config, turn_number, false, archive_pool)
 
 	# 2. 执行真实战斗
 	var battle_engine: BattleEngine = BattleEngine.new()
@@ -55,8 +61,9 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	var pvp_result_data: Dictionary = {
 		"won": player_won,
 		"pvp_turn": turn_number,
-		"opponent_name": battle_config.hero.name,
+		"opponent_name": battle_config.get("opponent_name", "AI挑战者"),
 		"opponent_hero_id": battle_config.hero.get("hero_id", ""),
+		"opponent_source": battle_config.get("opponent_source", "ai"),
 		"combat_summary": {
 			"turns": battle_result.get("turns_elapsed", 0),
 			"player_damage_dealt": battle_result.get("total_damage_dealt", 0),
@@ -76,7 +83,8 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 		"won": player_won,
 		"pvp_turn": turn_number,
 		"rating_change": 0,
-		"opponent_name": battle_config.hero.name,
+		"opponent_name": battle_config.get("opponent_name", "AI挑战者"),
+		"opponent_source": battle_config.get("opponent_source", "ai"),
 		"combat_log_summary": combat_log,
 		"penalty_tier": penalty_tier,
 		"penalty_value": penalty_value,

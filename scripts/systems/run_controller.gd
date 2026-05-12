@@ -101,6 +101,10 @@ func _ready() -> void:
 	pvp_director.name = "PvpDirector"
 	add_child(pvp_director)
 
+	var virtual_archive_pool := VirtualArchivePool.new()
+	virtual_archive_pool.name = "VirtualArchivePool"
+	add_child(virtual_archive_pool)
+
 	_node_resolver = NodeResolver.new()
 	_node_resolver.name = "NodeResolver"
 	add_child(_node_resolver)
@@ -217,7 +221,11 @@ func purchase_shop_item(item_data: Dictionary) -> Dictionary:
 	if shop_system == null:
 		push_error("[RunController] ShopSystem not found")
 		return {"success": false, "error": "ShopSystem not found"}
-	return shop_system.process_purchase(item_data, _run.gold_owned)
+	var result = shop_system.process_purchase(item_data, _run.gold_owned)
+	if result.get("success", false):
+		_run.gold_owned = result.get("new_gold", _run.gold_owned)
+		print("[RunController] 购买成功，扣除金币，剩余: %d" % _run.gold_owned)
+	return result
 
 
 func select_rescue_partner(partner_config_id: int) -> void:
@@ -406,6 +414,7 @@ func _process_node_result(result: Dictionary) -> void:
 				"player_hp": _hero.current_hp,
 				"player_hero": _hero_to_battle_dict(),
 				"run_seed": _run.seed,
+				"use_archive": true,
 			}
 			var pvp_result: Dictionary = pvp_director.execute_pvp(pvp_config)
 			var pvp_reward: Dictionary = {"type": "pvp_result", "data": pvp_result}
@@ -458,11 +467,26 @@ func _process_reward(reward: Dictionary) -> void:
 		"pvp_result":
 			var pvp_data: Dictionary = reward.get("data", {})
 			if pvp_data != null and not pvp_data.is_empty():
-				# v2: PVP失败仅影响奖励，无HP/金币惩罚
+				var won: bool = pvp_data.get("won", false)
+				# 记录胜负标记
 				if _run.current_turn == 10:
-					_run.pvp_10th_result = 1 if pvp_data.get("won", false) else 2
+					_run.pvp_10th_result = 1 if won else 2
 				elif _run.current_turn == 20:
-					_run.pvp_20th_result = 1 if pvp_data.get("won", false) else 2
+					_run.pvp_20th_result = 1 if won else 2
+				
+				# 局内PVP奖励（v2.0规格）
+				if won:
+					# 胜利：150金币 + 15全属性
+					_run.gold_owned += 150
+					_run.gold_earned_total += 150
+					_character_manager.modify_hero_stats({1: 15, 2: 15, 3: 15, 4: 15, 5: 15})
+					print("[RunController] 局内PVP胜利：金币+150，全属性+15")
+				else:
+					# 失败：50金币 + 5全属性
+					_run.gold_owned += 50
+					_run.gold_earned_total += 50
+					_character_manager.modify_hero_stats({1: 5, 2: 5, 3: 5, 4: 5, 5: 5})
+					print("[RunController] 局内PVP失败：金币+50，全属性+5")
 		"debuff":
 			# 简化：记录debuff日志，实际效果待Buff系统完善
 			var effect: String = reward.get("effect", "")
