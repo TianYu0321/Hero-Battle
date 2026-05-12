@@ -49,6 +49,21 @@ var selected_hero_config_id: int = 0
 var selected_partner_config_ids: Array[int] = []
 var pending_save_data: Dictionary = {}
 
+# 当前PVP出战档案
+var current_pvp_archive: Dictionary = {}
+
+func set_pvp_archive(archive: Dictionary) -> void:
+	current_pvp_archive = archive.duplicate(true)
+	print("[GameManager] 设置PVP出战档案: %s" % archive.get("hero_name", "???"))
+
+func get_pvp_archive() -> Dictionary:
+	if current_pvp_archive.is_empty():
+		# 如果没有设置，自动取最新档案
+		var archives: Array[Dictionary] = SaveManager.load_archives("date", 1, "")
+		if not archives.is_empty() and archives[0].get("is_fixed", false):
+			current_pvp_archive = archives[0]
+	return current_pvp_archive
+
 var _current_state: String = "MENU"
 var _is_transitioning: bool = false
 

@@ -1,6 +1,7 @@
 class_name PvpLobby
 extends Control
 
+@onready var hero_name_label: Label = $HeroNameLabel
 @onready var net_wins_label: Label = $NetWinsDisplay
 @onready var coin_label: Label = $MochengCoinDisplay
 @onready var match_button: Button = $MatchButton
@@ -11,13 +12,16 @@ extends Control
 @onready var start_battle_button: Button = $MatchResultPanel/StartBattleButton
 @onready var cancel_button: Button = $MatchResultPanel/CancelButton
 @onready var battle_summary_panel = $BattleSummaryPanel
+@onready var no_archive_warning: Label = $NoArchiveWarning
 
 var _current_opponent: Dictionary = {}
 var _player_data: Dictionary = {}
+var _selected_archive: Dictionary = {}
 var _virtual_pool: VirtualArchivePool = null
 
 func _ready() -> void:
 	_load_player_data()
+	_load_selected_archive()
 	_update_ui()
 
 	match_button.pressed.connect(_on_match_pressed)
@@ -45,14 +49,52 @@ func _load_player_data() -> void:
 			"last_pvp_date": "",
 		}
 
+func _load_selected_archive() -> void:
+	_selected_archive = GameManager.get_pvp_archive()
+	if _selected_archive.is_empty():
+		print("[PvpLobby] 没有出战档案")
+		return
+
+	# 补全字段（兼容旧档案）
+	if not _selected_archive.has("net_wins"):
+		_selected_archive["net_wins"] = 0
+	if not _selected_archive.has("total_wins"):
+		_selected_archive["total_wins"] = 0
+	if not _selected_archive.has("total_losses"):
+		_selected_archive["total_losses"] = 0
+
+	print("[PvpLobby] 出战档案: %s, 净胜场=%d" % [
+		_selected_archive.get("hero_name", "???"),
+		_selected_archive.get("net_wins", 0)
+	])
+
 func _update_ui() -> void:
-	net_wins_label.text = "当前净胜场: %d" % _player_data.get("net_wins", 0)
 	coin_label.text = "魔城币: %d" % _player_data.get("mocheng_coin", 0)
 
+	if _selected_archive.is_empty():
+		hero_name_label.visible = false
+		net_wins_label.visible = false
+		no_archive_warning.visible = true
+		match_button.disabled = true
+	else:
+		hero_name_label.visible = true
+		net_wins_label.visible = true
+		no_archive_warning.visible = false
+		match_button.disabled = false
+		hero_name_label.text = "出战: %s (%s级)" % [
+			_selected_archive.get("hero_name", "???"),
+			_selected_archive.get("final_grade", "?")
+		]
+		net_wins_label.text = "净胜场: %d" % _selected_archive.get("net_wins", 0)
+
 func _on_match_pressed() -> void:
+	if _selected_archive.is_empty():
+		push_warning("[PvpLobby] 未选择出战档案")
+		return
+
 	print("[PvpLobby] 开始匹配")
 
-	var net_wins: int = _player_data.get("net_wins", 0)
+	var net_wins: int = _selected_archive.get("net_wins", 0)
 	var opponent: Dictionary = _find_opponent_by_net_wins(net_wins)
 
 	if opponent.is_empty():
@@ -113,12 +155,11 @@ func _on_start_battle() -> void:
 	var pvp_director := PvpDirector.new()
 	add_child(pvp_director)
 
-	var player_archive := _get_current_player_archive()
 	var pvp_config: Dictionary = {
 		"turn_number": 30,
 		"player_gold": 0,
-		"player_hp": player_archive.get("max_hp_reached", 100),
-		"player_hero": _archive_to_battle_dict(player_archive),
+		"player_hp": _selected_archive.get("max_hp_reached", 100),
+		"player_hero": _archive_to_battle_dict(_selected_archive),
 		"run_seed": randi(),
 		"use_archive": true,
 		"opponent_archive": _current_opponent,
@@ -134,8 +175,8 @@ func _on_start_battle() -> void:
 		"winner": "player" if result.get("won", false) else "enemy",
 		"enemies": [{"name": result.get("opponent_name", "???")}],
 		"turns_elapsed": result.get("combat_summary", {}).get("turns", 0),
-		"hero_remaining_hp": int(player_archive.get("max_hp_reached", 100) * result.get("combat_summary", {}).get("player_hp_ratio", 1.0)),
-		"hero_max_hp": player_archive.get("max_hp_reached", 100),
+		"hero_remaining_hp": int(_selected_archive.get("max_hp_reached", 100) * result.get("combat_summary", {}).get("player_hp_ratio", 1.0)),
+		"hero_max_hp": _selected_archive.get("max_hp_reached", 100),
 		"gold_reward": 0,
 		"max_chain_count": result.get("combat_summary", {}).get("max_chain", 0),
 		"opponent_source": _current_opponent.get("_source", result.get("opponent_source", "ai")),
@@ -145,8 +186,8 @@ func _on_start_battle() -> void:
 
 func _process_pvp_result(result: Dictionary) -> void:
 	var won: bool = result.get("won", false)
-	var total_wins: int = _player_data.get("total_wins", 0)
-	var total_losses: int = _player_data.get("total_losses", 0)
+	var archive_total_wins: int = _selected_archive.get("total_wins", 0)
+	var archive_total_losses: int = _selected_archive.get("total_losses", 0)
 	var current_coin: int = _player_data.get("mocheng_coin", 0)
 	var today_wins: int = _player_data.get("pvp_wins_today", 0)
 	var last_date: String = _player_data.get("last_pvp_date", "")
@@ -157,8 +198,8 @@ func _process_pvp_result(result: Dictionary) -> void:
 		last_date = today_str
 
 	if won:
-		total_wins += 1
-		_player_data["total_wins"] = total_wins
+		archive_total_wins += 1
+		_selected_archive["total_wins"] = archive_total_wins
 
 		if today_wins < 5:
 			current_coin += 20
@@ -168,35 +209,37 @@ func _process_pvp_result(result: Dictionary) -> void:
 		else:
 			print("[PvpLobby] 今日PVP已达上限，不再发放魔城币")
 	else:
-		total_losses += 1
-		_player_data["total_losses"] = total_losses
+		archive_total_losses += 1
+		_selected_archive["total_losses"] = archive_total_losses
 		print("[PvpLobby] PVP失败")
 
-	var net_wins: int = maxi(0, total_wins - total_losses)
-	_player_data["net_wins"] = net_wins
+	var net_wins: int = maxi(0, archive_total_wins - archive_total_losses)
+	_selected_archive["net_wins"] = net_wins
+
+	# 保存档案更新
+	_save_archive_update()
+
+	# 更新账号数据
 	_player_data["mocheng_coin"] = current_coin
 	_player_data["pvp_wins_today"] = today_wins
 	_player_data["last_pvp_date"] = last_date
+	# 同时更新全局统计
+	_player_data["total_wins"] = _player_data.get("total_wins", 0) + (1 if won else 0)
+	_player_data["total_losses"] = _player_data.get("total_losses", 0) + (0 if won else 1)
+	_player_data["net_wins"] = maxi(0, _player_data.get("total_wins", 0) - _player_data.get("total_losses", 0))
 
 	SaveManager.save_player_data(_player_data)
 	_update_ui()
 
-	print("[PvpLobby] PVP结算完成: 净胜场=%d, 魔城币=%d" % [net_wins, current_coin])
+	print("[PvpLobby] PVP结算完成: 档案净胜场=%d, 魔城币=%d" % [net_wins, current_coin])
 
-func _get_current_player_archive() -> Dictionary:
-	var archives: Array[Dictionary] = SaveManager.load_archives("date", 1, "")
-	if not archives.is_empty():
-		return archives[0]
-	return {
-		"hero_config_id": 1,
-		"attr_snapshot_vit": 20,
-		"attr_snapshot_str": 20,
-		"attr_snapshot_agi": 20,
-		"attr_snapshot_tec": 20,
-		"attr_snapshot_mnd": 20,
-		"max_hp_reached": 100,
-		"partners": [],
-	}
+func _save_archive_update() -> void:
+	var archive_id: String = _selected_archive.get("archive_id", "")
+	if archive_id.is_empty():
+		push_warning("[PvpLobby] 档案没有 archive_id，无法保存更新")
+		return
+	SaveManager.update_archive(archive_id, _selected_archive)
+	GameManager.set_pvp_archive(_selected_archive)
 
 func _archive_to_battle_dict(archive: Dictionary) -> Dictionary:
 	return {

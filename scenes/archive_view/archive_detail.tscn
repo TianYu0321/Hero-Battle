@@ -100,6 +100,11 @@ text = "战斗统计"
 layout_mode = 2
 theme_override_constants/separation = 4
 
+[node name="SetPVPButton" type="Button" parent="VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "设为出战档案"
+
 [node name="BackButton" type="Button" parent="VBox"]
 layout_mode = 2
 size_flags_horizontal = 4

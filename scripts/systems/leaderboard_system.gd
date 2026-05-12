@@ -13,7 +13,9 @@ var _prev_leaderboard: Array[Dictionary] = []
 var _prev_archive_ids: Dictionary = {}
 
 func get_leaderboard(limit: int = _DEFAULT_LIMIT, filter_hero: String = "") -> Array[Dictionary]:
-	var archives: Array[Dictionary] = SaveManager.load_archives("score", 9999, filter_hero)
+	var archives: Array[Dictionary] = SaveManager.load_archives("date", 9999, filter_hero)
+	# 按档案级净胜场降序排序
+	archives.sort_custom(func(a, b): return a.get("net_wins", 0) > b.get("net_wins", 0))
 	var result: Array[Dictionary] = []
 
 	# 构建当前排名映射

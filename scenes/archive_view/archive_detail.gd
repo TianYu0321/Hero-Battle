@@ -7,6 +7,7 @@ class_name ArchiveDetail
 extends PanelContainer
 
 signal back_requested
+signal pvp_archive_set(archive_data: Dictionary)
 
 @onready var _title_label: Label = $VBox/TitleRow/TitleLabel
 @onready var _close_button: Button = $VBox/TitleRow/CloseButton
@@ -18,6 +19,9 @@ signal back_requested
 @onready var _score_container: VBoxContainer = $VBox/ScoreSection/ScoreContainer
 @onready var _stat_container: VBoxContainer = $VBox/StatSection/StatContainer
 @onready var _back_button: Button = $VBox/BackButton
+@onready var _set_pvp_button: Button = $VBox/SetPVPButton
+
+var _current_archive: Dictionary = {}
 
 const _ATTR_NAMES: Array[String] = ["体魄", "力量", "敏捷", "技巧", "精神"]
 const _ATTR_KEYS: Array[String] = ["attr_snapshot_vit", "attr_snapshot_str", "attr_snapshot_agi", "attr_snapshot_tec", "attr_snapshot_mnd"]
@@ -34,9 +38,11 @@ const _SCORE_ITEMS: Array[Dictionary] = [
 func _ready() -> void:
 	_back_button.pressed.connect(func(): back_requested.emit())
 	_close_button.pressed.connect(func(): back_requested.emit())
+	_set_pvp_button.pressed.connect(_on_set_pvp_pressed)
 
 func show_archive(data: Dictionary) -> void:
 	visible = true
+	_current_archive = data.duplicate(true)
 	var hero_name: String = data.get("hero_name", "未知")
 	var rating: String = data.get("final_grade", data.get("grade", "D"))
 	var total_score: float = data.get("total_score", data.get("final_score", 0))
@@ -50,6 +56,15 @@ func show_archive(data: Dictionary) -> void:
 	_populate_partners(data)
 	_populate_score(data, total_score)
 	_populate_stats(data)
+
+func _on_set_pvp_pressed() -> void:
+	if _current_archive.is_empty():
+		return
+	GameManager.set_pvp_archive(_current_archive)
+	pvp_archive_set.emit(_current_archive)
+	_set_pvp_button.text = "已设为出战档案"
+	_set_pvp_button.disabled = true
+	print("[ArchiveDetail] 已设为PVP出战档案: %s" % _current_archive.get("hero_name", "???"))
 
 func _populate_attrs(data: Dictionary) -> void:
 	# 清空旧节点

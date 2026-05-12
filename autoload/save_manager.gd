@@ -215,6 +215,13 @@ func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 	if not archive.has("created_at"):
 		archive["created_at"] = Time.get_unix_time_from_system()
 	archive["is_fixed"] = true
+	# 初始化PVP字段（兼容旧档案）
+	if not archive.has("net_wins"):
+		archive["net_wins"] = 0
+	if not archive.has("total_wins"):
+		archive["total_wins"] = 0
+	if not archive.has("total_losses"):
+		archive["total_losses"] = 0
 
 	var file_path: String = ConfigManager.ARCHIVE_FILE
 	var existing: Dictionary = ModelsSerializer.load_json_file(file_path)
@@ -325,6 +332,36 @@ func save_player_data(data: Dictionary) -> void:
 	if file != null:
 		file.store_string(JSON.stringify(data, "\t"))
 		file.close()
+
+func update_archive(archive_id: String, new_data: Dictionary) -> bool:
+	var file_path: String = ConfigManager.ARCHIVE_FILE
+	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
+	if data.is_empty():
+		push_warning("[SaveManager] update_archive: archive file not found")
+		return false
+	var archives: Array = data.get("archives", [])
+	for i in range(archives.size()):
+		var entry: Dictionary = archives[i]
+		if entry.get("archive_id", "") == archive_id:
+			# 合并更新，保留不可变字段
+			var updated: Dictionary = entry.duplicate(true)
+			for key in new_data.keys():
+				if key in ["archive_id", "created_at"]:
+					continue
+				updated[key] = new_data[key]
+			archives[i] = updated
+			data["last_updated"] = Time.get_unix_time_from_system()
+			var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
+			if file != null:
+				file.store_string(JSON.stringify(data, "\t"))
+				file.close()
+				print("[SaveManager] 更新档案成功: %s" % archive_id)
+				return true
+			else:
+				push_error("[SaveManager] 更新档案失败: 无法写入文件")
+				return false
+	push_warning("[SaveManager] update_archive: archive_id not found: %s" % archive_id)
+	return false
 
 # 兼容旧调用
 func _load_player_data() -> Dictionary:

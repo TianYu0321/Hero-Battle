@@ -5,3 +5,5 @@ res://autoload/event_bus.gd
 res://autoload/game_manager.gd
 res://autoload/save_manager.gd
 res://scenes/main_menu/menu.gd
+res://scenes/pvp_lobby/pvp_lobby.gd
+res://scripts/systems/leaderboard_system.gd

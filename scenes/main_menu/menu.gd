@@ -48,6 +48,8 @@ func _ready() -> void:
 	_btn_continue.visible = has_save
 	print("[MainMenu] 继续游戏按钮显隐: ", has_save)
 
+	_update_pvp_archive_display()
+
 	EventBus.save_loaded.connect(_on_save_loaded)
 	EventBus.load_failed.connect(_on_load_failed)
 
@@ -91,6 +93,21 @@ func _enter_tree() -> void:
 		var has_save = SaveManager.has_active_run()
 		_btn_continue.visible = has_save
 		print("[MainMenu] _enter_tree 重新检查存档: ", has_save)
+
+func _update_pvp_archive_display() -> void:
+	var archive := GameManager.get_pvp_archive()
+	var hint_label: Label = get_node_or_null("PVPHintLabel")
+	if hint_label == null:
+		return
+	if not archive.is_empty():
+		hint_label.text = "PVP出战: %s (净胜场:%d)" % [
+			archive.get("hero_name", "???"),
+			archive.get("net_wins", 0)
+		]
+		hint_label.visible = true
+	else:
+		hint_label.text = "PVP出战: 未选择档案"
+		hint_label.visible = true
 
 ## v2.0: 排行榜系统（净胜场制）
 func show_leaderboard() -> void:
