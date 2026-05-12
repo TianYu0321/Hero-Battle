@@ -44,6 +44,7 @@ func resolve(node_option: Dictionary, context: Dictionary) -> Dictionary:
 		NodePoolSystem.NodeType.REST:
 			result = _resolve_rest(context)
 		NodePoolSystem.NodeType.OUTING:
+			context["node_option"] = node_option
 			result = _resolve_outing(context)
 		NodePoolSystem.NodeType.RESCUE:
 			result = _resolve_rescue(node_option, context)
@@ -193,7 +194,20 @@ func _resolve_outing(context: Dictionary) -> Dictionary:
 	var result := {"success": true, "node_type": NodePoolSystem.NodeType.OUTING, "rewards": [], "logs": []}
 	var hero = context.get("hero")
 	var run = context.get("run")
-	var roll = randi() % 10
+	
+	## 使用预生成的事件类型（事件透视一致性）
+	var node_option: Dictionary = context.get("node_option", {})
+	var preset_type: String = node_option.get("pool_type", "")
+	
+	var roll: int
+	if preset_type.is_empty():
+		roll = randi() % 10
+	else:
+		match preset_type:
+			"reward": roll = 0
+			"penalty": roll = 4
+			"elite": roll = 7
+			_: roll = randi() % 10
 
 	if roll < 4:  ## 40% 奖励事件
 		var reward_events = [

@@ -1,6 +1,8 @@
 class_name RunMain
 extends Control
 
+const EventForecastSystem = preload("res://scripts/systems/event_forecast_system.gd")
+
 @onready var floor_label: Label = $HudContainer/FloorLabel
 @onready var gold_label: Label = $HudContainer/GoldLabel
 @onready var hp_label: Label = $HudContainer/HpLabel
@@ -274,13 +276,29 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 	print("[RunMain] _on_node_options_presented: 选项数=%d, 当前blocker=%s" % [node_options.size(), ui_modal_blocker.visible])
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 	
+	# 获取事件透视系统
+	var forecast_system: EventForecastSystem = get_node_or_null("RunController/EventForecastSystem")
+	
 	# 更新按钮内容
 	for i in range(option_buttons.size()):
 		if i < node_options.size():
 			var opt = node_options[i]
-			option_buttons[i].text = opt.get("node_name", "???")
-			option_buttons[i].visible = true
-			option_buttons[i].disabled = false
+			var btn: Button = option_buttons[i]
+			btn.text = opt.get("node_name", "???")
+			btn.visible = true
+			btn.disabled = false
+			
+			# 清除旧的透视标注
+			var existing_label = btn.get_node_or_null("EventTagLabel")
+			if existing_label != null:
+				existing_label.queue_free()
+			
+			# 如果有事件透视，添加标注
+			if forecast_system != null and forecast_system.is_active():
+				var node_id: String = opt.get("node_id", "")
+				var tag: Dictionary = forecast_system.get_event_tag(node_id)
+				if not tag["text"].is_empty():
+					_apply_event_tag_style(btn, tag)
 		else:
 			option_buttons[i].visible = false
 			option_buttons[i].disabled = true
@@ -298,6 +316,17 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 	])
 	
 	_update_monster_info(node_options)
+
+func _apply_event_tag_style(btn: Button, tag: Dictionary) -> void:
+	var tag_label := Label.new()
+	tag_label.name = "EventTagLabel"
+	tag_label.text = tag["text"]
+	tag_label.modulate = tag["color"]
+	tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tag_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tag_label.position = Vector2(0, btn.size.y - 24)
+	tag_label.custom_minimum_size = Vector2(btn.size.x, 20)
+	btn.add_child(tag_label)
 
 
 func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:

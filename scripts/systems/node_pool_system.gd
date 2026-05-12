@@ -68,12 +68,22 @@ func record_selection(node_type: int) -> void:
 func _generate_normal_options(floor: int) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []
 	for ntype in [NodeType.TRAINING, NodeType.BATTLE, NodeType.REST, NodeType.OUTING]:
-		options.append({
+		var option: Dictionary = {
 			"node_type": ntype,
 			"node_name": _NORMAL_OPTION_NAMES.get(ntype, "未知"),
 			"description": _NORMAL_OPTION_DESC.get(ntype, ""),
 			"node_id": "%s_%d" % [_node_id_prefix(ntype), floor],
-		})
+		}
+		# 为外出节点预生成事件类型（用于事件透视）
+		if ntype == NodeType.OUTING:
+			var roll: int = randi() % 10
+			if roll < 4:
+				option["pool_type"] = "reward"
+			elif roll < 7:
+				option["pool_type"] = "penalty"
+			else:
+				option["pool_type"] = "elite"
+		options.append(option)
 	return options
 
 func _generate_rescue_options(floor: int) -> Array[Dictionary]:

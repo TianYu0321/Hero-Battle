@@ -7,6 +7,8 @@
 class_name RunController
 extends Node
 
+const EventForecastSystem = preload("res://scripts/systems/event_forecast_system.gd")
+
 enum RunState {
 	HERO_SELECT,
 	TAVERN,
@@ -71,6 +73,12 @@ func _ready() -> void:
 	_node_pool_system = NodePoolSystem.new()
 	_node_pool_system.name = "NodePoolSystem"
 	add_child(_node_pool_system)
+
+	# 初始化事件透视系统
+	var forecast_system := EventForecastSystem.new()
+	forecast_system.name = "EventForecastSystem"
+	add_child(forecast_system)
+	print("[RunController] EventForecastSystem 已初始化")
 
 	_training_system = TrainingSystem.new()
 	_training_system.name = "TrainingSystem"
@@ -268,6 +276,11 @@ func advance_turn() -> void:
 
 	_run.current_turn += 1
 
+	# 事件透视消耗1次
+	var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+	if forecast_system != null:
+		forecast_system.consume_charge()
+
 	# 自动存档
 	_auto_save()
 
@@ -361,6 +374,12 @@ func _generate_node_options() -> void:
 
 	# 普通回合：从节点池生成选项
 	_current_node_options = _node_pool_system.generate_options(turn)
+	
+	# 缓存外出事件到事件透视系统
+	var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+	if forecast_system != null:
+		forecast_system.cache_outgoing_events(_current_node_options)
+	
 	EventBus.emit_signal("node_options_presented", _current_node_options)
 
 
@@ -482,11 +501,17 @@ func _process_reward(reward: Dictionary) -> void:
 					_character_manager.modify_hero_stats({1: 15, 2: 15, 3: 15, 4: 15, 5: 15})
 					print("[RunController] 局内PVP胜利：金币+150，全属性+15")
 				else:
-					# 失败：50金币 + 5全属性
+					# 失败：50金币 + 5全属性 + 事件透视+5
 					_run.gold_owned += 50
 					_run.gold_earned_total += 50
 					_character_manager.modify_hero_stats({1: 5, 2: 5, 3: 5, 4: 5, 5: 5})
-					print("[RunController] 局内PVP失败：金币+50，全属性+5")
+					
+					var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+					if forecast_system != null:
+						forecast_system.add_charges(5)
+						print("[RunController] 局内PVP失败：金币+50，全属性+5，事件透视+5")
+					else:
+						print("[RunController] 局内PVP失败：金币+50，全属性+5（事件透视系统未初始化）")
 		"debuff":
 			# 简化：记录debuff日志，实际效果待Buff系统完善
 			var effect: String = reward.get("effect", "")
