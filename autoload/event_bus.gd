@@ -44,6 +44,8 @@ signal outgame_shop_closed
 signal pvp_match_found(opponent_data: Dictionary)
 signal pvp_battle_started(allies: Array, enemies: Array, playback_mode: String)
 signal pvp_result(result: Dictionary)
+signal pvp_lobby_requested
+signal mocheng_coin_changed(current: int, delta: int, reason: String)
 
 # --- 战斗信号 (Battle Lifecycle) ---
 signal battle_started(allies: Array, enemies: Array, battle_config: Dictionary)

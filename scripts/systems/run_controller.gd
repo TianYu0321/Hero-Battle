@@ -604,13 +604,26 @@ func _end_run() -> void:
 	## 游戏结束：生成档案数据并传递
 	var partners: Array[RuntimePartner] = _character_manager.get_partners()
 	
+	# --- 计算真实评分（新增）---
+	var fb := RuntimeFinalBattle.new()
+	fb.result = 0
+	fb.hero_remaining_hp = _hero.current_hp
+	fb.hero_max_hp = _hero.max_hp
+	fb.damage_dealt_to_enemy = 0
+	fb.enemy_max_hp = 100
+	
+	var score: FighterArchiveScore = _settlement_system.calculate_score(_run, _hero, fb, partners)
+	var real_grade: String = score.grade
+	var real_score: int = int(score.total_score)
+	print("[RunController] _end_run 计算评分: grade=%s, score=%d" % [real_grade, real_score])
+	
 	# --- 生成档案数据 ---
 	var final_battle_data: Dictionary = _pending_battle_result if _pending_battle_result != null else {}
 	var archive_data: Dictionary = {
 		"hero_config_id": _run.hero_config_id,
 		"final_turn": _run.current_turn,
-		"final_score": _run.total_score,
-		"final_grade": "S",
+		"final_score": real_score,
+		"final_grade": real_grade,
 		"attr_snapshot_vit": _hero.current_vit,
 		"attr_snapshot_str": _hero.current_str,
 		"attr_snapshot_agi": _hero.current_agi,

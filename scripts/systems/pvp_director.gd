@@ -20,9 +20,16 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	var archive_pool: VirtualArchivePool = get_node_or_null("/root/RunController/VirtualArchivePool")
 	var battle_config: Dictionary
 	if use_archive:
-		battle_config = opponent_generator.generate_opponent(pvp_config, turn_number, true, archive_pool)
+		# 优先使用传入的 opponent_archive（局外PVP大厅传入）
+		var opponent_archive: Dictionary = pvp_config.get("opponent_archive", {})
+		if not opponent_archive.is_empty():
+			battle_config = opponent_generator.generate_opponent_from_archive(opponent_archive, turn_number, pvp_config)
+		elif archive_pool != null:
+			battle_config = opponent_generator.generate_opponent(pvp_config, turn_number, true, archive_pool)
+		else:
+			battle_config = opponent_generator.generate_opponent(pvp_config, turn_number, false, null)
 	else:
-		battle_config = opponent_generator.generate_opponent(pvp_config, turn_number, false, archive_pool)
+		battle_config = opponent_generator.generate_opponent(pvp_config, turn_number, false, null)
 
 	# 2. 执行真实战斗
 	var battle_engine: BattleEngine = BattleEngine.new()

@@ -31,6 +31,16 @@ func _ready() -> void:
 	else:
 		push_warning("[MainMenu] BtnArchive 未找到")
 
+	# 启用PVP对战按钮
+	var btn_pvp: Button = get_node_or_null("%BtnPVP")
+	if btn_pvp != null:
+		btn_pvp.visible = true
+		btn_pvp.disabled = false
+		btn_pvp.pressed.connect(_on_pvp_pressed)
+		print("[MainMenu] PVP按钮已启用")
+	else:
+		push_warning("[MainMenu] BtnPVP 未找到")
+
 	# 主菜单中隐藏PauseMenu的"返回主菜单"按钮
 	_pause_menu.set_is_main_menu(true)
 
@@ -58,6 +68,10 @@ func _on_quit_pressed() -> void:
 func _on_archive_button_pressed() -> void:
 	print("[MainMenu] 查看档案按钮点击")
 	EventBus.archive_view_requested.emit()
+
+func _on_pvp_pressed() -> void:
+	print("[MainMenu] PVP对战按钮点击")
+	EventBus.pvp_lobby_requested.emit()
 
 func _on_menu_button_pressed() -> void:
 	print("[MainMenu] 菜单按钮点击")

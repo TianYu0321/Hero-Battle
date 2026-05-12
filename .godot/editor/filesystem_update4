@@ -1,3 +1,7 @@
 res://scripts/systems/pvp_director.gd
 res://scripts/systems/pvp_opponent_generator.gd
 res://scripts/systems/run_controller.gd
+res://autoload/event_bus.gd
+res://autoload/game_manager.gd
+res://autoload/save_manager.gd
+res://scenes/main_menu/menu.gd

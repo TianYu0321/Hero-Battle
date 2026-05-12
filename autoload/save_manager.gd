@@ -312,16 +312,23 @@ func spend_mocheng_coin(amount: int) -> bool:
 	_save_player_data(data)
 	return true
 
-func _load_player_data() -> Dictionary:
+func load_player_data() -> Dictionary:
 	var file_path: String = ConfigManager.SAVE_DIR + "player_data.json"
 	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
 	if data.is_empty():
-		data = {"mocheng_coin": 0, "unlocked_partners": [], "net_wins": 0}
+		data = {"mocheng_coin": 0, "unlocked_partners": [], "net_wins": 0, "total_wins": 0, "total_losses": 0, "pvp_wins_today": 0, "last_pvp_date": ""}
 	return data
 
-func _save_player_data(data: Dictionary) -> void:
+func save_player_data(data: Dictionary) -> void:
 	var file_path: String = ConfigManager.SAVE_DIR + "player_data.json"
 	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(data, "\t"))
 		file.close()
+
+# 兼容旧调用
+func _load_player_data() -> Dictionary:
+	return load_player_data()
+
+func _save_player_data(data: Dictionary) -> void:
+	save_player_data(data)
