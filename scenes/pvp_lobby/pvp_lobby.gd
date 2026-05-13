@@ -287,8 +287,27 @@ func _archive_to_battle_dict(archive: Dictionary) -> Dictionary:
 	}
 
 func _on_record_pressed() -> void:
-	print("[PvpLobby] 查看PVP记录")
-	# TODO: 显示PVP历史记录弹窗
+	print("[PvpLobby] 查看PVP排行榜")
+	# 动态实例化排行榜面板（兼容 .tscn 节点缺失的情况）
+	var existing = get_node_or_null("LeaderboardPanel")
+	if existing != null:
+		existing.queue_free()
+	
+	var panel = preload("res://scenes/leaderboard/leaderboard_panel.tscn").instantiate()
+	panel.name = "LeaderboardPanel"
+	add_child(panel)
+	
+	var leaderboard_system := LeaderboardSystem.new()
+	var rankings := leaderboard_system.get_leaderboard(20)
+	panel.show_rankings(rankings)
+	
+	if not panel.closed.is_connected(_on_leaderboard_closed):
+		panel.closed.connect(_on_leaderboard_closed, CONNECT_ONE_SHOT)
+
+func _on_leaderboard_closed() -> void:
+	var panel = get_node_or_null("LeaderboardPanel")
+	if panel != null:
+		panel.queue_free()
 
 func _on_back_pressed() -> void:
 	EventBus.back_to_menu_requested.emit()
