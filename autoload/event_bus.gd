@@ -74,6 +74,8 @@ signal ultimate_triggered(hero_class: String, hero_name: String, trigger_turn: i
 signal ultimate_executed(hero_class: String, ultimate_name: String, execution_log: Array[Dictionary])
 signal ultimate_condition_checked(hero_class: String, condition_results: Dictionary, was_triggered: bool, already_used: bool)
 
+signal frenzy_triggered(turn_number: int)
+
 signal buff_applied(unit_id: String, buff_id: String, buff_name: String, duration: int, effect_desc: String, buff_type: String)
 signal buff_removed(unit_id: String, buff_id: String, buff_name: String, reason: String)
 signal status_ticked(unit_id: String, tick_type: String, value: int, remaining_duration: int)

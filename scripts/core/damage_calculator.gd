@@ -11,6 +11,14 @@ extends RefCounted
 var _rng: RandomNumberGenerator
 var _formula: Dictionary = {}
 
+## 狂暴阶段倍率
+var _frenzy_multiplier: float = 1.0
+var _heal_multiplier: float = 1.0
+
+func set_frenzy_active(active: bool) -> void:
+	_frenzy_multiplier = 1.5 if active else 1.0
+	_heal_multiplier = 0.5 if active else 1.0
+
 func _init(battle_seed: int):
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = battle_seed
@@ -115,7 +123,8 @@ func compute_damage(attacker: Dictionary, defender: Dictionary, skill_scale: flo
 	if defender.get("special_mechanic", "").begins_with("坚甲"):
 		final_damage *= 0.75
 
-	# 混沌领主成长加成 (在战斗引擎中通过 stats 更新实现，这里只读 stats)
+	# 狂暴阶段伤害加成
+	final_damage *= _frenzy_multiplier
 
 	pkt.value = int(round(final_damage))
 	return pkt
@@ -139,7 +148,7 @@ func compute_counter_damage(original_damage: int, attacker: Dictionary, defender
 func compute_heal(caster: Dictionary, _target: Dictionary, heal_scale: float, base_attr: String = "spirit") -> int:
 	var caster_stats: Dictionary = caster.get("stats", {})
 	var base_val: int = caster_stats.get(base_attr, 0)
-	var heal_val: float = base_val * heal_scale * _rng.randf_range(0.9, 1.1)
+	var heal_val: float = base_val * heal_scale * _rng.randf_range(0.9, 1.1) * _heal_multiplier
 	return max(int(round(heal_val)), 1)
 
 ## 应用伤害到目标

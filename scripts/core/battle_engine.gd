@@ -46,6 +46,8 @@ var _action_sequence: Array = []
 var _current_action_index: int = 0
 var _battle_config: Dictionary = {}
 
+var _is_frenzy_active: bool = false
+
 func execute_battle(battle_config: Dictionary) -> Dictionary:
 	_battle_config = battle_config
 	_hero = battle_config.hero
@@ -56,6 +58,7 @@ func execute_battle(battle_config: Dictionary) -> Dictionary:
 	_rng = RandomNumberGenerator.new()
 	_rng.seed = _battle_seed
 	_dc = DamageCalculator.new(_battle_seed)
+	_dc.set_frenzy_active(false)
 	_action_order = ActionOrder.new(_rng, _attr_provider)
 	_skill_mgr = SkillManager.new(_dc, _rng)
 	_ultimate_mgr = UltimateManager.new(_dc, _rng)
@@ -66,6 +69,7 @@ func execute_battle(battle_config: Dictionary) -> Dictionary:
 
 	_state = BattleState.INIT
 	_turn_number = 0
+	_is_frenzy_active = false
 
 	# v2: 初始化敌人的 spawn_turn 和 base_stats（供混沌领主/元素法师计算使用）
 	for enemy in _enemies:
@@ -120,9 +124,6 @@ func _process_state() -> void:
 			_turn_number += 1
 			_turn_chain_count = 0
 			_current_action_index = 0
-			if _turn_number > 20:
-				_state = BattleState.BATTLE_END
-				return
 			EventBus.battle_turn_started.emit(_turn_number, [], _battle_config.get("playback_mode", "standard"))
 			_result.add_log("=== 回合 %d ===" % _turn_number)
 			# Buff回合减1（通用化）
@@ -255,10 +256,17 @@ func _process_state() -> void:
 
 		BattleState.ROUND_END:
 			EventBus.battle_turn_ended.emit(_turn_number, _turn_chain_count, _result.chain_stats.total_chains)
-			if _turn_number >= 20:
-				_state = BattleState.BATTLE_END
-			else:
-				_state = BattleState.ROUND_START
+			if _turn_number >= 20 and not _is_frenzy_active:
+				# 触发狂暴阶段
+				_is_frenzy_active = true
+				_dc.set_frenzy_active(true)
+				_result.add_log("=== 狂暴阶段触发！伤害增加！恢复减少！===")
+				EventBus.emit_signal("frenzy_triggered", _turn_number)
+				# recorder 记录狂暴事件
+				var recorder = _battle_config.get("playback_recorder", null)
+				if recorder != null:
+					recorder.record_event("frenzy_triggered", {"turn": _turn_number, "message": "狂暴阶段触发！伤害×1.5，恢复×0.5"})
+			_state = BattleState.ROUND_START
 
 		BattleState.BATTLE_END:
 			pass
@@ -320,9 +328,9 @@ func _check_battle_end() -> bool:
 		if e.get("is_alive", false):
 			any_enemy_alive = true
 			break
-	if not hero_alive or not any_enemy_alive or _turn_number >= 20:
-		_result.determine_winner(_hero, _enemies, _turn_number, 20)
-		return true
+	if not hero_alive or not any_enemy_alive:
+			_result.determine_winner(_hero, _enemies, _turn_number, 0)
+			return true
 	return false
 
 func _emit_damage_signals(attacker: Dictionary, defender: Dictionary, pkt: Dictionary, action_type: String) -> void:

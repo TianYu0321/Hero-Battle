@@ -26,6 +26,7 @@ var _enemy_max_hp: int = 0
 var _turn_duration: float = 2.0
 var _playback_generation: int = 0
 var _result_emitted: bool = false
+var _is_frenzy_active: bool = false
 
 signal confirmed
 
@@ -37,6 +38,7 @@ func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_n
 						hero_max_hp: int, enemy_max_hp: int, _hero_partners: Array, _enemy_partners: Array) -> void:
 	_playback_generation += 1
 	_result_emitted = false
+	_is_frenzy_active = false
 	_recorder = recorder
 	_events_by_turn = recorder.get_events_by_turn()
 	_turn_keys = _events_by_turn.keys()
@@ -162,10 +164,25 @@ func _process_event(evt: Dictionary) -> void:
 			var log_text: String = data.get("log", "")
 			bottom_hint.append_text("[color=gold]%s[/color]  " % log_text)
 			_screen_shake()
+		
+		"frenzy_triggered":
+			_is_frenzy_active = true
+			var msg: String = data.get("message", "狂暴阶段触发！")
+			bottom_hint.append_text("\n[color=red]★ %s ★[/color]\n" % msg)
+			_turn_label.modulate = Color(1, 0.2, 0.2)
+			_update_hp_display()
 
 func _update_hp_display() -> void:
 	hero_hp_bar.value = float(_hero_hp) / maxi(1, _hero_max_hp) * 100
 	enemy_hp_bar.value = float(_enemy_hp) / maxi(1, _enemy_max_hp) * 100
+	
+	# 狂暴阶段血条变红提示
+	if _is_frenzy_active:
+		hero_hp_bar.modulate = Color(1, 0.3, 0.3)
+		enemy_hp_bar.modulate = Color(1, 0.3, 0.3)
+	else:
+		hero_hp_bar.modulate = Color(1, 1, 1)
+		enemy_hp_bar.modulate = Color(1, 1, 1)
 
 func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool) -> void:
 	var label := Label.new()
@@ -231,6 +248,8 @@ func reset_panel() -> void:
 	_events_by_turn = {}
 	bottom_hint.text = ""
 	turn_label.text = "回合 1"
+	turn_label.modulate = Color(1, 1, 1)
+	_is_frenzy_active = false
 	_clear_damage_numbers()
 	# 重置血条到满血（由 start_playback 重新设置）
 	_hero_hp = _hero_max_hp
