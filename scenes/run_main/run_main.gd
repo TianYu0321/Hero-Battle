@@ -74,6 +74,7 @@ var _last_rescue_candidates: Array[Dictionary] = []
 var _shop_item_buttons: Array = []
 var _selected_rescue_partner_id: int = -1
 var _combat_selected_index: int = -1
+var _pending_battle_result: Dictionary = {}
 
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
@@ -294,10 +295,15 @@ func _show_combat_preview(opt: Dictionary, index: int) -> void:
 
 
 func _on_combat_confirmed() -> void:
-	# 隐藏预览，进入完整战斗
+	# 隐藏预览
 	combat_confirm_panel.visible = false
 	enemy_info_panel.visible = false
 	
+	# 先进入战斗画面（空状态）
+	battle_animation_panel.reset_panel()
+	_show_modal_panel(battle_animation_panel)
+	
+	# 再执行战斗
 	if _combat_selected_index >= 0:
 		_run_controller.select_node(_combat_selected_index)
 		_combat_selected_index = -1
@@ -574,50 +580,57 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		battle_result.get("winner", "???"),
 		battle_result.get("turns_elapsed", 0)
 	])
-	_update_hud()
+	# ❌ 删除这行：_update_hud()
+	# HUD 在结算确认后再统一更新！
+	_pending_battle_result = battle_result
 	
 	var recorder = battle_result.get("playback_recorder", null)
 	if recorder != null and recorder.get_events().size() > 0:
-		var hero_data: Dictionary = battle_result.get("hero", {})
-		var enemy_data: Dictionary = battle_result.get("enemies", [{}])[0]
-		var hero_name: String = hero_data.get("name", "英雄")
-		var enemy_name: String = enemy_data.get("name", "敌人")
-		var hero_max_hp: int = hero_data.get("max_hp", 100)
-		var enemy_max_hp: int = enemy_data.get("max_hp", 100)
+		var hero_data = battle_result.get("hero", {})
+		var enemy_data = battle_result.get("enemies", [{}])[0]
+		var hero_name = hero_data.get("name", "英雄")
+		var enemy_name = enemy_data.get("name", "敌人")
+		var hero_max_hp = hero_data.get("max_hp", 100)
+		var enemy_max_hp = enemy_data.get("max_hp", 100)
 		
-		# 半覆盖架构：先重置面板状态，再显示模态层
-		battle_animation_panel.reset_panel()
-		_show_modal_panel(battle_animation_panel)
-		battle_animation_panel.start_playback(recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [])
-		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_confirmed):
-			battle_animation_panel.confirmed.connect(_on_battle_animation_confirmed, CONNECT_ONE_SHOT)
+		# battle_animation_panel 已经在 _on_combat_confirmed 里显示了
+		# 直接设置播放参数
+		battle_animation_panel.start_playback(
+			recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], []
+		)
+		
+		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
+			battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)
 	else:
-		battle_summary_panel.show_result(battle_result)
-		_show_modal_panel(battle_summary_panel)
-		if not battle_summary_panel.confirmed.is_connected(_on_battle_summary_confirmed):
-			battle_summary_panel.confirmed.connect(_on_battle_summary_confirmed, CONNECT_ONE_SHOT)
+		# 没有录像，直接显示结算面板
+		_show_battle_summary(battle_result)
 
-func _on_battle_animation_confirmed() -> void:
-	print("[RunMain] 战斗动画确认关闭")
+func _on_battle_animation_finished() -> void:
+	print("[RunMain] 战斗动画播放完毕，显示结算面板")
+	_show_battle_summary(_pending_battle_result)
+
+func _show_battle_summary(battle_result: Dictionary) -> void:
+	battle_summary_panel.show_result(battle_result)
+	_show_modal_panel(battle_summary_panel)
+	if not battle_summary_panel.confirmed.is_connected(_on_battle_summary_confirmed):
+		battle_summary_panel.confirmed.connect(_on_battle_summary_confirmed, CONNECT_ONE_SHOT)
+
+func _on_battle_summary_confirmed() -> void:
+	print("[RunMain] 战斗结算确认关闭")
+	_hide_modal_panel(battle_summary_panel)
 	
-	# 断开信号（保险）
-	if battle_animation_panel.confirmed.is_connected(_on_battle_animation_confirmed):
-		battle_animation_panel.confirmed.disconnect(_on_battle_animation_confirmed)
+	# 在这里统一更新HUD（战斗后的最终状态）
+	_update_hud()
 	
-	# 先推进游戏状态，再隐藏面板，确保 node_options_presented 在面板隐藏前触发
+	# 推进游戏状态
 	if _run_controller != null:
-		# 防御：如果 _pending_battle_result 为空，说明已经处理过了（旧 timer 的误触发）
 		if not _run_controller._pending_battle_result.is_empty():
 			_run_controller.confirm_battle_result()
 		else:
 			print("[RunMain] _pending_battle_result 为空，跳过 confirm_battle_result")
-	_hide_modal_panel(battle_animation_panel)
-
-func _on_battle_summary_confirmed() -> void:
-	print("[RunMain] 战斗摘要确认关闭")
-	_hide_modal_panel(battle_summary_panel)
-	if _run_controller != null:
-		_run_controller.confirm_battle_result()
+	
+	# 清理缓存
+	_pending_battle_result = {}
 
 func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	if node_type == "OUTING":
