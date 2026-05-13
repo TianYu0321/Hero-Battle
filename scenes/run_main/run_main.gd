@@ -73,6 +73,7 @@ var _run_controller: RunController = null
 var _last_rescue_candidates: Array[Dictionary] = []
 var _shop_item_buttons: Array = []
 var _selected_rescue_partner_id: int = -1
+var _combat_selected_index: int = -1
 
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
@@ -90,7 +91,7 @@ var _current_ui_state: UISceneState = UISceneState.LOADING
 func _process(_delta: float) -> void:
 	# 安全检测：UIModalBlocker 不应该在没有任何面板打开时保持 visible
 	if ui_modal_blocker.visible:
-		var any_modal_visible: bool = shop_panel.visible or battle_summary_panel.visible or rescue_panel.visible or training_panel.visible
+	var any_modal_visible: bool = shop_panel.visible or battle_summary_panel.visible or rescue_panel.visible or training_panel.visible or combat_confirm_panel.visible
 		if not any_modal_visible:
 			print("[RunMain] 安全检测：UIModalBlocker 异常可见，自动隐藏")
 			ui_modal_blocker.visible = false
@@ -308,6 +309,7 @@ func _on_combat_cancelled() -> void:
 	enemy_info_panel.visible = false
 	option_container.visible = true
 	_combat_selected_index = -1
+	_current_ui_state = UISceneState.OPTION_SELECT
 	print("[RunMain] 取消战斗，恢复选项")
 
 
@@ -384,7 +386,8 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 		option_buttons[1].disabled
 	])
 	
-	_update_monster_info(node_options)
+	# 默认界面不承载怪物信息，只有点击战斗后 _show_combat_preview 才显示剪影
+	enemy_info_panel.visible = false
 
 func _apply_event_tag_style(btn: Button, tag: Dictionary) -> void:
 	# 删除已有的标注
