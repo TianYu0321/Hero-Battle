@@ -9,3 +9,4 @@ res://scenes/shop/shop.gd
 res://scenes/run_main/run_main.gd
 res://scripts/systems/pvp_opponent_generator.gd
 res://scripts/systems/virtual_archive_pool.gd
+res://scripts/systems/skill_milestone_system.gd

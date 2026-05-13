@@ -679,6 +679,11 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 	for key in score_dict:
 		if not archive_dict.has(key):
 			archive_dict[key] = score_dict[key]
+
+	# 标记存档为已完成并保存，确保"继续游戏"不再加载已通关的局
+	_run.run_status = 2  # COMPLETED
+	_auto_save()
+
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
 	EventBus.emit_signal("archive_generated", archive_dict)
 	_check_hero_unlocks()
