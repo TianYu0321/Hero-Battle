@@ -169,7 +169,7 @@ func _process_event(evt: Dictionary) -> void:
 			_is_frenzy_active = true
 			var msg: String = data.get("message", "狂暴阶段触发！")
 			bottom_hint.append_text("\n[color=red]★ %s ★[/color]\n" % msg)
-			_turn_label.modulate = Color(1, 0.2, 0.2)
+			turn_label.modulate = Color(1, 0.2, 0.2)
 			_update_hp_display()
 
 func _update_hp_display() -> void:
