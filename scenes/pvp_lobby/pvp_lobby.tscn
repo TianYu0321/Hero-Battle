@@ -1,5 +1,216 @@
+[gd_scene load_steps=4 format=3 uid="uid://pvp_lobby_scene01"]
+
+[ext_resource type="Script" path="res://scenes/pvp_lobby/pvp_lobby.gd" id="1_plg"]
+[ext_resource type="PackedScene" uid="uid://vktho61lbwnk" path="res://scenes/run_main/battle_summary_panel.tscn" id="2_bsp"]
+[ext_resource type="PackedScene" uid="uid://battle_anim_panel01" path="res://scenes/run_main/battle_animation_panel.tscn" id="3_bap"]
+
+[node name="PvpLobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_plg")
+
+[node name="BgPanel" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.15, 0.2, 1)
+
+[node name="TitleLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 40.0
+offset_right = 200.0
+offset_bottom = 80.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 28
+text = "PVP 对战大厅"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeroNameLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 100.0
+offset_right = 200.0
+offset_bottom = 130.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 20
+text = "出战: ??? (?级)"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NetWinsDisplay" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 140.0
+offset_right = 200.0
+offset_bottom = 170.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.8, 0.6, 0.3, 1)
+text = "净胜场: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MochengCoinDisplay" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 1
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 200.0
+offset_bottom = 50.0
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(1, 0.84, 0, 1)
+text = "魔城币: 0"
+
+[node name="MatchButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -40.0
+offset_right = 100.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(200, 50)
+text = "匹配对手"
+
+[node name="RecordButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = 30.0
+offset_right = 100.0
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 2
+custom_minimum_size = Vector2(200, 50)
+text = "排行榜"
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -70.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+custom_minimum_size = Vector2(100, 50)
+text = "返回"
+
+[node name="MatchResultPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -150.0
+offset_right = 250.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="OpponentInfoLabel" type="Label" parent="MatchResultPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 30.0
+offset_right = 200.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 18
+text = "匹配中..."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="StartBattleButton" type="Button" parent="MatchResultPanel"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -100.0
+offset_right = 100.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
+custom_minimum_size = Vector2(200, 50)
+text = "开始战斗"
+
+[node name="CancelButton" type="Button" parent="MatchResultPanel"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -40.0
+offset_right = 100.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 0
+custom_minimum_size = Vector2(200, 50)
+text = "取消"
+
 [node name="BattleSummaryPanel" parent="." instance=ExtResource("2_bsp")]
 visible = false
 
 [node name="BattleAnimationPanel" parent="." instance=ExtResource("3_bap")]
 visible = false
+
+[node name="NoArchiveWarning" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -180.0
+offset_right = 250.0
+offset_bottom = -130.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+text = "请先创建档案（通关后自动保存）"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
