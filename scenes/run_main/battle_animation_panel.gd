@@ -31,6 +31,7 @@ signal confirmed
 
 func _ready() -> void:
 	turn_timer.timeout.connect(_on_turn_timer_timeout)
+	turn_timer.one_shot = true # 确保只触发一次，_play_turn()里重新start()
 
 func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_name: String,
 						hero_max_hp: int, enemy_max_hp: int, _hero_partners: Array, _enemy_partners: Array) -> void:
