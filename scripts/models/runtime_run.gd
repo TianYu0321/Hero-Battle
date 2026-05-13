@@ -19,7 +19,7 @@ var node_history: Array = []
 var total_score: int = 0
 var gold_owned: int = 0
 var formula_config_id: int = 1
-var seed: int = 0
+var run_seed: int = 0
 var started_at: int = 0
 var ended_at: int = 0
 var final_enemy_cleared: bool = false
@@ -59,7 +59,7 @@ func to_dict() -> Dictionary:
 		"total_score": total_score,
 		"gold_owned": gold_owned,
 		"formula_config_id": formula_config_id,
-		"seed": seed,
+		"run_seed": run_seed,
 		"started_at": started_at,
 		"ended_at": ended_at,
 		"final_enemy_cleared": final_enemy_cleared,
@@ -100,7 +100,7 @@ static func from_dict(data: Dictionary) -> RuntimeRun:
 	run.total_score = data.get("total_score", 0)
 	run.gold_owned = data.get("gold_owned", 0)
 	run.formula_config_id = data.get("formula_config_id", 1)
-	run.seed = data.get("seed", 0)
+	run.run_seed = data.get("run_seed", data.get("seed", 0))
 	run.started_at = data.get("started_at", 0)
 	run.ended_at = data.get("ended_at", 0)
 	run.final_enemy_cleared = data.get("final_enemy_cleared", false)

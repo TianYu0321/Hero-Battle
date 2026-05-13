@@ -23,7 +23,6 @@ signal close_requested()
 ## 节点引用 (@onready, 通过%UniqueName)
 ## ============================================================
 
-@onready var _title_label: Label = %TitleLabel
 @onready var _mojo_label: Label = %MojoCoinLabel
 @onready var _partner_grid: GridContainer = %PartnerGrid
 @onready var _refresh_btn: Button = %RefreshButton
@@ -92,8 +91,8 @@ func show_purchase_result(result: Dictionary) -> void:
 	if result.success:
 		var pid: String = result.get("partner_id", "")
 		var cfg: Dictionary = ConfigManager.get_partner_config(pid)
-		var name: String = cfg.get("name", pid)
-		print("[OutgameShop] 购买成功: %s" % name)
+		var partner_name: String = cfg.get("name", pid)
+		print("[OutgameShop] 购买成功: %s" % partner_name)
 		## TODO: 播放成功动画/音效
 	else:
 		var error: String = result.get("error", "未知错误")

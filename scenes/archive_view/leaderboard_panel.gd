@@ -11,8 +11,6 @@ extends Control
 @onready var _table_container: VBoxContainer = $VBox/Scroll/TableContainer
 
 var _leaderboard_system: LeaderboardSystem = LeaderboardSystem.new()
-var _row_scene: PackedScene = load("res://scenes/archive_view/leaderboard_row.tscn") if ResourceLoader.exists("res://scenes/archive_view/leaderboard_row.tscn") else null
-
 func _ready() -> void:
 	_refresh_button.pressed.connect(refresh)
 	_filter_option.item_selected.connect(_on_filter_changed)

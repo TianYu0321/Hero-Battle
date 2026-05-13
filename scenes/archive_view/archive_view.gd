@@ -6,10 +6,8 @@
 class_name ArchiveView
 extends Control
 
-@onready var _title_label: Label = $VBox/Header/TitleLabel
 @onready var _back_button: Button = $VBox/Header/BackButton
 @onready var _clear_button: Button = $VBox/Header/ClearButton
-@onready var _tab_buttons: HBoxContainer = $VBox/TabButtons
 @onready var _btn_archives: Button = $VBox/TabButtons/BtnArchives
 @onready var _btn_leaderboard: Button = $VBox/TabButtons/BtnLeaderboard
 @onready var _scroll: ScrollContainer = $VBox/Scroll

@@ -38,41 +38,41 @@ const _NORMAL_OPTION_DESC: Dictionary = {
 func reset() -> void:
 	pass
 
-func get_floor_type(floor: int) -> String:
-	if floor in _RESCUE_FLOORS:
+func get_floor_type(_floor: int) -> String:
+	if _floor in _RESCUE_FLOORS:
 		return "rescue"
-	elif floor in _PVP_FLOORS:
+	elif _floor in _PVP_FLOORS:
 		return "pvp"
-	elif floor == _FINAL_FLOOR:
+	elif _floor == _FINAL_FLOOR:
 		return "final"
 	else:
 		return "normal"
 
-func generate_options(floor: int) -> Array[Dictionary]:
-	var floor_type: String = get_floor_type(floor)
+func generate_options(_floor: int) -> Array[Dictionary]:
+	var floor_type: String = get_floor_type(_floor)
 	match floor_type:
 		"normal":
-			return _generate_normal_options(floor)
+			return _generate_normal_options(_floor)
 		"rescue":
-			return _generate_rescue_options(floor)
+			return _generate_rescue_options(_floor)
 		"pvp":
-			return _generate_pvp_options(floor)
+			return _generate_pvp_options(_floor)
 		"final":
-			return _generate_final_options(floor)
+			return _generate_final_options(_floor)
 		_:
-			return _generate_normal_options(floor)
+			return _generate_normal_options(_floor)
 
 func record_selection(_node_type: int) -> void:
 	pass
 
-func _generate_normal_options(floor: int) -> Array[Dictionary]:
+func _generate_normal_options(_floor: int) -> Array[Dictionary]:
 	var options: Array[Dictionary] = []
 	for ntype in [NodeType.TRAINING, NodeType.BATTLE, NodeType.REST, NodeType.OUTING]:
 		var option: Dictionary = {
 			"node_type": ntype,
 			"node_name": _NORMAL_OPTION_NAMES.get(ntype, "未知"),
 			"description": _NORMAL_OPTION_DESC.get(ntype, ""),
-			"node_id": "%s_%d" % [_node_id_prefix(ntype), floor],
+			"node_id": "%s_%d" % [_node_id_prefix(ntype), _floor],
 		}
 		# 为外出节点预生成事件类型（用于事件透视）
 		if ntype == NodeType.OUTING:
@@ -86,28 +86,28 @@ func _generate_normal_options(floor: int) -> Array[Dictionary]:
 		options.append(option)
 	return options
 
-func _generate_rescue_options(floor: int) -> Array[Dictionary]:
+func _generate_rescue_options(_floor: int) -> Array[Dictionary]:
 	return [{
 		"node_type": NodeType.RESCUE,
 		"node_name": "救援",
 		"description": "发现遇险伙伴",
-		"node_id": "rescue_%d" % floor,
+		"node_id": "rescue_%d" % _floor,
 	}]
 
-func _generate_pvp_options(floor: int) -> Array[Dictionary]:
+func _generate_pvp_options(_floor: int) -> Array[Dictionary]:
 	return [{
 		"node_type": NodeType.PVP_CHECK,
 		"node_name": "PVP检定",
 		"description": "与其他斗士进行对战检定",
-		"node_id": "pvp_%d" % floor,
+		"node_id": "pvp_%d" % _floor,
 	}]
 
-func _generate_final_options(floor: int) -> Array[Dictionary]:
+func _generate_final_options(_floor: int) -> Array[Dictionary]:
 	return [{
 		"node_type": NodeType.FINAL_BOSS,
 		"node_name": "终局Boss战",
 		"description": "最终决战",
-		"node_id": "final_%d" % floor,
+		"node_id": "final_%d" % _floor,
 	}]
 
 func _node_id_prefix(node_type: int) -> String:

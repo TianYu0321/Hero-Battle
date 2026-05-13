@@ -1,8 +1,6 @@
 class_name RunMain
 extends Control
 
-const EventForecastSystem = preload("res://scripts/systems/event_forecast_system.gd")
-const BattleAnimationPanel = preload("res://scenes/run_main/battle_animation_panel.gd")
 
 @onready var floor_label: Label = $HudContainer/FloorLabel
 @onready var gold_label: Label = $HudContainer/GoldLabel
@@ -693,7 +691,6 @@ func _update_monster_info(node_options: Array[Dictionary]) -> void:
 ## 从节点选项获取敌人配置
 func _fetch_enemy_config_for_option(opt: Dictionary) -> Dictionary:
 	var enemy_id: String = ""
-	var result: Dictionary = _run_controller.get_current_run_summary() if _run_controller != null else {}
 	var node_type: int = opt.get("node_type", 0)
 
 	match node_type:

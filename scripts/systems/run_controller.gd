@@ -7,8 +7,6 @@
 class_name RunController
 extends Node
 
-const EventForecastSystem = preload("res://scripts/systems/event_forecast_system.gd")
-const BattlePlaybackRecorder = preload("res://scripts/systems/battle_playback_recorder.gd")
 
 enum RunState {
 	HERO_SELECT,
@@ -141,7 +139,7 @@ func start_new_run(hero_config_id: int, starter_partner_ids: Array[int]) -> void
 	EventBus.emit_signal("run_started", {
 		"hero_id": hero_config_id,
 		"partner_ids": starter_partner_ids,
-		"run_seed": _run.seed,
+		"run_seed": _run.run_seed,
 	})
 
 	_change_state(RunState.RUNNING_NODE_SELECT)
@@ -437,7 +435,7 @@ func _process_node_result(result: Dictionary) -> void:
 				"player_gold": _run.gold_owned,
 				"player_hp": _hero.current_hp,
 				"player_hero": _hero_to_battle_dict(),
-				"run_seed": _run.seed,
+				"run_seed": _run.run_seed,
 				"use_archive": true,
 			}
 			var pvp_result: Dictionary = pvp_director.execute_pvp(pvp_config)
@@ -872,8 +870,8 @@ func _finish_node_execution(result: Dictionary) -> void:
 	})
 
 	# 显示日志
-	for log in result.get("logs", []):
-		EventBus.emit_signal("hud_log_appended", log, "event", int(Time.get_unix_time_from_system()))
+	for _log in result.get("logs", []):
+		EventBus.emit_signal("hud_log_appended", _log, "event", int(Time.get_unix_time_from_system()))
 
 	# 更新计数器
 	match _pending_node_type:

@@ -61,7 +61,7 @@ static func from_dict(data: Dictionary) -> RunSnapshot:
 		snap.hero_config_id = hero_data.get("hero_config_id", 0)
 	snap.current_floor = data.get("current_floor", data.get("current_turn", 1))
 	snap.gold = data.get("gold", data.get("gold_owned", 0))
-	
+
 	var hero_data = data.get("hero", {})
 	snap.hero_vit = hero_data.get("current_vit", 0)
 	snap.hero_str = hero_data.get("current_str", 0)

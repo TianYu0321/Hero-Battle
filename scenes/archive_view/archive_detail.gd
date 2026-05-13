@@ -9,7 +9,6 @@ extends PanelContainer
 signal back_requested
 signal pvp_archive_set(archive_data: Dictionary)
 
-@onready var _title_label: Label = $VBox/TitleRow/TitleLabel
 @onready var _close_button: Button = $VBox/TitleRow/CloseButton
 @onready var _hero_name_label: Label = $VBox/HeroRow/HeroNameLabel
 @onready var _rating_label: Label = $VBox/HeroRow/RatingLabel

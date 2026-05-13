@@ -91,7 +91,7 @@ func _check_trigger_condition(cfg: Dictionary, ctx: Dictionary) -> bool:
 func _execute_assist_action(partner: Dictionary, cfg: Dictionary, hero: Dictionary, enemies: Array) -> Dictionary:
 	var effect_type: int = cfg.get("effect_type", 1)
 	var scale: float = cfg.get("effect_scale_lv1", 0.5)
-	var attr: int = cfg.get("effect_attr", 2)
+	var _attr: int = cfg.get("effect_attr", 2)
 	var result: Dictionary = {"type": "damage", "value": 0, "target": "", "log": ""}
 
 	# v2: 伙伴援助效果基于主角属性，而非伙伴自身属性

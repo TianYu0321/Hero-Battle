@@ -77,7 +77,7 @@ func _resolve_training() -> Dictionary:
 	}
 
 
-func generate_enemy_for_floor(floor: int) -> Dictionary:
+func generate_enemy_for_floor(_floor: int) -> Dictionary:
 	## 根据层数生成敌人信息（供UI预显示和简化战斗）
 	var enemy_cfgs: Dictionary = ConfigManager.get_all_enemy_configs()
 	var candidates: Array[Dictionary] = []
@@ -87,25 +87,25 @@ func generate_enemy_for_floor(floor: int) -> Dictionary:
 			continue
 		var min_turn: int = cfg.get("appear_turn_min", 0)
 		var max_turn: int = cfg.get("appear_turn_max", 999)
-		if floor >= min_turn and floor <= max_turn:
+		if _floor >= min_turn and _floor <= max_turn:
 			candidates.append(cfg)
 
 	if candidates.is_empty():
 		## 默认敌人（层数越高越强）
-		var base_hp: int = 30 + floor * 5
-		var base_atk: int = 5 + floor * 2
+		var base_hp: int = 30 + _floor * 5
+		var base_atk: int = 5 + _floor * 2
 		return {
-			"name": "第%d层怪物" % floor,
+			"name": "第%d层怪物" % _floor,
 			"max_hp": base_hp,
 			"current_hp": base_hp,
 			"attack": base_atk,
-			"gold_drop": 10 + floor,
+			"gold_drop": 10 + _floor,
 			"estimated_damage": maxi(1, int(base_atk * 0.5)),
 		}
 	else:
 		var cfg: Dictionary = candidates[randi() % candidates.size()]
-		var base_hp: int = 50 + floor * 3
-		var base_atk: int = 5 + floor * 2
+		var base_hp: int = 50 + _floor * 3
+		var base_atk: int = 5 + _floor * 2
 		return {
 			"name": cfg.get("name", "???"),
 			"max_hp": base_hp,

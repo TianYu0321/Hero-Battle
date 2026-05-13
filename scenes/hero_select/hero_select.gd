@@ -9,7 +9,6 @@ class_name HeroSelectUI
 extends Control
 
 @onready var _hero_cards: HBoxContainer = %HeroCards
-@onready var _detail_label: Label = %DetailLabel
 @onready var _back_btn: Button = %BackBtn
 
 var _hero_ids: Array[String] = []

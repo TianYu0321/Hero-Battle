@@ -10,3 +10,14 @@ res://scenes/run_main/run_main.gd
 res://scripts/systems/pvp_opponent_generator.gd
 res://scripts/systems/virtual_archive_pool.gd
 res://scripts/systems/skill_milestone_system.gd
+res://scenes/archive_view/archive_detail.gd
+res://scenes/archive_view/archive_view.gd
+res://scenes/archive_view/leaderboard_panel.gd
+res://scenes/run_main/battle_animation_panel.gd
+res://scenes/shop/outgame_shop.gd
+res://scripts/core/partner_assist.gd
+res://scripts/data/run_snapshot.gd
+res://scripts/models/runtime_run.gd
+res://scripts/systems/node_pool_system.gd
+res://scripts/systems/node_resolver.gd
+res://scripts/systems/training_system.gd

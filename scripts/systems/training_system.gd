@@ -39,9 +39,9 @@ func initialize(cm: CharacterManager) -> void:
 
 ## 执行训练
 ## attr_type: 1=体魄, 2=力量, 3=敏捷, 4=技巧, 5=精神
-## floor: 当前层数
+## _floor: 当前层数
 ## partner_bonus: 伙伴支援加成（固定值，不影响副属性）
-func execute_training(attr_type: int, floor: int, partner_bonus: int = 0) -> Dictionary:
+func execute_training(attr_type: int, _floor: int, partner_bonus: int = 0) -> Dictionary:
 	if _character_manager == null:
 		push_error("[TrainingSystem] CharacterManager not initialized")
 		return {}
@@ -88,7 +88,7 @@ func execute_training(attr_type: int, floor: int, partner_bonus: int = 0) -> Dic
 	
 	# 记录日志
 	var log := RuntimeTrainingLog.new()
-	log.turn = floor
+	log.turn = _floor
 	log.attr_type = attr_type
 	log.base_gain = main_gain
 	log.mastery_bonus = partner_bonus

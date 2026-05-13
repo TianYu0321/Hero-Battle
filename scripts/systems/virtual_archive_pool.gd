@@ -34,19 +34,19 @@ func refresh_local_archives() -> void:
 	_local_archives = SaveManager.load_archives("date", 9999, "")
 	print("[VirtualArchivePool] 加载本地档案: %d个" % _local_archives.size())
 
-func find_opponent_for_floor(floor: int) -> Dictionary:
+func find_opponent_for_floor(_floor: int) -> Dictionary:
 	refresh_local_archives()
 
 	var candidates: Array[Dictionary] = []
 
-	# 从本地档案筛选（final_turn >= floor 且完整通关）
+	# 从本地档案筛选（final_turn >= _floor 且完整通关）
 	for archive in _local_archives:
-		if archive is Dictionary and archive.get("final_turn", 0) >= floor and archive.get("is_fixed", false):
+		if archive is Dictionary and archive.get("final_turn", 0) >= _floor and archive.get("is_fixed", false):
 			candidates.append(archive)
 
 	# 从虚拟档案筛选
 	for archive in _virtual_archives:
-		if archive is Dictionary and archive.get("final_turn", 0) >= floor:
+		if archive is Dictionary and archive.get("final_turn", 0) >= _floor:
 			candidates.append(archive)
 
 	if candidates.is_empty():

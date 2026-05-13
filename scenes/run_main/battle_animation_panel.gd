@@ -1,7 +1,6 @@
 class_name BattleAnimationPanel
 extends Control
 
-const BattlePlaybackRecorder = preload("res://scripts/systems/battle_playback_recorder.gd")
 
 @onready var turn_label: Label = $TopBar/CenterInfo/TurnLabel
 @onready var hero_name_label: Label = $TopBar/HeroPanel/HeroNameLabel
@@ -151,7 +150,7 @@ func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool) -> voi
 	var sprite_pos: Vector2 = target_sprite.global_position
 	var sprite_size: Vector2 = target_sprite.size
 	label.position = Vector2(
-		sprite_pos.x + sprite_size.x / 2 - 20,
+		sprite_pos.x + float(sprite_size.x) / 2.0 - 20,
 		sprite_pos.y - 10
 	)
 	damage_container.add_child(label)
