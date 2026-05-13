@@ -9,9 +9,15 @@ extends RefCounted
 
 
 func generate_opponent(player_state: Dictionary, turn_number: int, use_archive: bool = true, archive_pool: VirtualArchivePool = null) -> Dictionary:
+	# 防御性检查
+	if not player_state is Dictionary:
+		push_error("[PvpOpponentGenerator] player_state 不是 Dictionary")
+		player_state = {}
+
 	if use_archive and archive_pool != null:
-		var opponent_archive: Dictionary = archive_pool.find_opponent_for_floor(turn_number)
-		if not opponent_archive.is_empty():
+		var opponent_archive = archive_pool.find_opponent_for_floor(turn_number)
+		# opponent_archive 可能是 {}（空Dictionary）或有效的Dictionary
+		if opponent_archive is Dictionary and not opponent_archive.is_empty():
 			return generate_opponent_from_archive(opponent_archive, turn_number, player_state)
 		print("[PvpOpponentGenerator] 无档案匹配，fallback到AI生成")
 
@@ -57,6 +63,11 @@ func generate_opponent(player_state: Dictionary, turn_number: int, use_archive: 
 
 
 func generate_opponent_from_archive(archive_data: Dictionary, turn_number: int, player_state: Dictionary) -> Dictionary:
+	# 防御性检查
+	if not archive_data is Dictionary:
+		push_error("[PvpOpponentGenerator] archive_data 不是 Dictionary，fallback到AI生成")
+		return generate_opponent(player_state, turn_number, false)
+
 	print("[PvpOpponentGenerator] 从档案生成对手: %s" % archive_data.get("hero_name", "???"))
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -83,6 +94,10 @@ func generate_opponent_from_archive(archive_data: Dictionary, turn_number: int, 
 	var archive_partners: Array = archive_data.get("partners", [])
 	var ai_partners: Array = []
 	for p_data in archive_partners:
+		# 防御性检查：跳过非 Dictionary 的伙伴数据
+		if not p_data is Dictionary:
+			push_warning("[PvpOpponentGenerator] 伙伴数据格式错误（非Dictionary），跳过")
+			continue
 		var pid: int = p_data.get("partner_config_id", 1001)
 		var pcfg: Dictionary = ConfigManager.get_partner_config(str(pid))
 		var p_name: String = pcfg.get("name", "伙伴")

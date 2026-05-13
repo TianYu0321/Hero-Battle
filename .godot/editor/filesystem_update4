@@ -7,3 +7,5 @@ res://scenes/shop/partner_card.gd
 res://scenes/shop/partner_card.tscn
 res://scenes/shop/shop.gd
 res://scenes/run_main/run_main.gd
+res://scripts/systems/pvp_opponent_generator.gd
+res://scripts/systems/virtual_archive_pool.gd
