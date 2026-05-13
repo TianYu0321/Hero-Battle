@@ -291,6 +291,8 @@ func _show_combat_preview(opt: Dictionary, index: int) -> void:
 	
 	# 显示确认按钮（进入战斗 / 返回）
 	combat_confirm_panel.visible = true
+	print("[RunMain] summary_panel.visible=%s" % battle_summary_panel.visible)
+	print("[RunMain] animation_panel.visible=%s" % battle_animation_panel.visible)
 	print("[RunMain] 战斗预览: %s" % enemy_cfg.get("name", "???"))
 
 
@@ -298,6 +300,7 @@ func _on_combat_confirmed() -> void:
 	# 隐藏预览
 	combat_confirm_panel.visible = false
 	enemy_info_panel.visible = false
+	battle_summary_panel.visible = false  # 确保结算面板隐藏
 	
 	# 先进入战斗画面（空状态）
 	battle_animation_panel.reset_panel()

@@ -102,7 +102,7 @@ func execute_battle(battle_config: Dictionary) -> Dictionary:
 	_result.turns_elapsed = _turn_number
 	_result.ultimate_triggered = _hero.get("ultimate_used", false)
 	var final_result: Dictionary = _result.finalize(_hero, _enemies, _partners)
-	EventBus.battle_ended.emit(final_result)
+	# NOTE: battle_ended 信号由调用方（RunController）统一发射，避免重复触发
 	return final_result
 
 

@@ -215,6 +215,9 @@ func _show_result() -> void:
 	if _result_emitted:
 		print("[BattleAnimation] _show_result 已发射过 confirmed，跳过")
 		return
+	# 关键排查：看在哪个回合被调用
+	push_error("[Battle] _show_result at index=%d, total=%d" % [_current_turn_index, _turn_keys.size()])
+	
 	_result_emitted = true
 	bottom_hint.append_text("\n[color=yellow]=== 战斗结束 ===[/color]")
 	print("[BattleAnimation] _show_result 发射 confirmed, gen=%d" % _playback_generation)
