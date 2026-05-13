@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://c0m8q1p2x3y4z"]
+[gd_scene load_steps=4 format=3 uid="uid://c0m8q1p2x3y4z"]
 
 [ext_resource type="Script" path="res://scenes/main_menu/menu.gd" id="1_menu"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
+[ext_resource type="PackedScene" path="res://scenes/leaderboard/leaderboard_panel.tscn" id="3_lbp"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -87,6 +88,12 @@ layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
 text = "商店"
 
+[node name="BtnLeaderboard" type="Button" parent="MenuButtons"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(200, 50)
+text = "排行榜"
+
 [node name="MenuButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 1
@@ -113,6 +120,9 @@ theme_override_colors/font_color = Color(0.8, 0.6, 0.3, 1)
 text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="LeaderboardPanel" parent="." instance=ExtResource("3_lbp")]
+visible = false
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1

@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[node name="RankingRow" type="HBoxContainer"]
+custom_minimum_size = Vector2(600, 40)
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="RankLabel" type="Label" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 0)
+theme_override_font_sizes/font_size = 16
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PlayerNameLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(200, 0)
+theme_override_font_sizes/font_size = 16
+text = "Player"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NetWinsLabel" type="Label" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+theme_override_font_sizes/font_size = 16
+text = "10"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MaxFloorLabel" type="Label" parent="."]
+layout_mode = 2
+custom_minimum_size = Vector2(100, 0)
+theme_override_font_sizes/font_size = 16
+text = "25"
+horizontal_alignment = 1
+vertical_alignment = 1

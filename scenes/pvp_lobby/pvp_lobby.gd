@@ -12,12 +12,14 @@ extends Control
 @onready var start_battle_button: Button = $MatchResultPanel/StartBattleButton
 @onready var cancel_button: Button = $MatchResultPanel/CancelButton
 @onready var battle_summary_panel = $BattleSummaryPanel
+@onready var battle_animation_panel: BattleAnimationPanel = $BattleAnimationPanel
 @onready var no_archive_warning: Label = $NoArchiveWarning
 
 var _current_opponent: Dictionary = {}
 var _player_data: Dictionary = {}
 var _selected_archive: Dictionary = {}
 var _virtual_pool: VirtualArchivePool = null
+var _pending_pvp_result: Dictionary = {}
 
 func _ready() -> void:
 	_load_player_data()
@@ -166,10 +168,39 @@ func _on_start_battle() -> void:
 	}
 
 	var result: Dictionary = pvp_director.execute_pvp(pvp_config)
+	var recorder: BattlePlaybackRecorder = result.get("playback_recorder", null)
 	pvp_director.queue_free()
 
 	_process_pvp_result(result)
+	_pending_pvp_result = result
 
+	# 如果有 recorder，先播放战斗动画
+	if recorder != null and recorder.get_events().size() > 0:
+		var hero_data = result.get("hero", {})
+		var enemy_data = result.get("enemies", [{}])[0]
+		var hero_name = hero_data.get("name", "英雄")
+		var enemy_name = enemy_data.get("name", "???")
+		var hero_max_hp = hero_data.get("max_hp", 100)
+		var enemy_max_hp = enemy_data.get("max_hp", 100)
+		
+		battle_animation_panel.reset_panel()
+		battle_animation_panel.visible = true
+		battle_animation_panel.z_index = 100
+		battle_animation_panel.start_playback(recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [])
+		
+		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
+			battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)
+	else:
+		# 没有 recorder，直接显示结算
+		_show_pvp_summary(result)
+
+
+func _on_battle_animation_finished() -> void:
+	print("[PvpLobby] PVP战斗动画播放完毕，显示结算")
+	battle_animation_panel.visible = false
+	_show_pvp_summary(_pending_pvp_result)
+
+func _show_pvp_summary(result: Dictionary) -> void:
 	# 转换格式给 BattleSummaryPanel
 	var battle_result: Dictionary = {
 		"winner": "player" if result.get("won", false) else "enemy",
