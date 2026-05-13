@@ -23,11 +23,15 @@ var _hero_max_hp: int = 0
 var _enemy_hp: int = 0
 var _enemy_max_hp: int = 0
 var _turn_duration: float = 2.0
+var _playback_generation: int = 0
+var _result_emitted: bool = false
 
 signal confirmed
 
 func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_name: String,
-					hero_max_hp: int, enemy_max_hp: int, _hero_partners: Array, _enemy_partners: Array) -> void:
+						hero_max_hp: int, enemy_max_hp: int, _hero_partners: Array, _enemy_partners: Array) -> void:
+	_playback_generation += 1
+	_result_emitted = false
 	_recorder = recorder
 	_events_by_turn = recorder.get_events_by_turn()
 	_turn_keys = _events_by_turn.keys()
@@ -47,11 +51,16 @@ func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_n
 	if not skip_button.pressed.is_connected(_on_skip):
 		skip_button.pressed.connect(_on_skip)
 	
-	print("[BattleAnimation] 开始回放: %d个回合" % _turn_keys.size())
+	print("[BattleAnimation] 开始回放: gen=%d, %d个回合" % [_playback_generation, _turn_keys.size()])
 	_play_turn()
 
 func _play_turn() -> void:
+	var gen: int = _playback_generation
+	
 	if not _is_playing or _current_turn_index >= _turn_keys.size():
+		print("[BattleAnimation] _play_turn 结束条件触发: gen=%d, _is_playing=%s, _current_turn_index=%d, _turn_keys.size=%d" % [
+			gen, _is_playing, _current_turn_index, _turn_keys.size()
+		])
 		_show_result()
 		return
 	
@@ -66,10 +75,18 @@ func _play_turn() -> void:
 			partner_events += 1
 	var duration: float = _turn_duration + partner_events * 0.5
 	
+	print("[BattleAnimation] gen=%d 播放回合 %d, 事件数=%d, duration=%.1f" % [gen, turn + 1, events.size(), duration])
+	
 	for evt in events:
 		_process_event(evt)
 	
 	await get_tree().create_timer(duration).timeout
+	
+	# 检查 generation 是否变化（防止旧的 timer 干扰新的播放）
+	if gen != _playback_generation:
+		print("[BattleAnimation] gen=%d 的 timer 已过期，当前 gen=%d，忽略" % [gen, _playback_generation])
+		return
+	
 	_current_turn_index += 1
 	_play_turn()
 
@@ -177,10 +194,16 @@ func _screen_shake() -> void:
 	tween.tween_property(self, "position:x", position.x, 0.05)
 
 func _on_skip() -> void:
+	print("[BattleAnimation] 跳过按钮点击, gen=%d" % _playback_generation)
 	_is_playing = false
 	_show_result()
 
 func _show_result() -> void:
 	_is_playing = false
+	if _result_emitted:
+		print("[BattleAnimation] _show_result 已发射过 confirmed，跳过")
+		return
+	_result_emitted = true
 	bottom_hint.append_text("\n[color=yellow]=== 战斗结束 ===[/color]")
+	print("[BattleAnimation] _show_result 发射 confirmed, gen=%d" % _playback_generation)
 	confirmed.emit()

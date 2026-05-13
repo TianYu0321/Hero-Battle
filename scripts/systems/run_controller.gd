@@ -667,6 +667,10 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 		var chain_stats = result.get("chain_stats", {})
 		result["max_chain_count"] = chain_stats.get("max_chain", 0)
 	
+	_pending_battle_result = result
+	print("[RunController] _run_battle_engine 结束, hero_hp=%d, winner=%s" % [
+		battle_hero.get("hp", 0), result.get("winner", "???")
+	])
 	return result
 
 
@@ -812,11 +816,19 @@ func _auto_save() -> void:
 
 
 func confirm_battle_result() -> void:
+	print("[RunController] confirm_battle_result 被调用, phase=%d" % _battle_result_phase)
 	if _battle_result_phase == BattleResultPhase.BATTLE_ENDED:
 		_battle_result_phase = BattleResultPhase.BATTLE_CONFIRMED
+		print("[RunController] confirm_battle_result 执行, _pending_battle_result winner=%s, hero_hp=%d" % [
+			_pending_battle_result.get("winner", "???"),
+			_pending_battle_result.get("hero_remaining_hp", -1)
+		])
 		_finish_node_execution(_pending_battle_result)
 		_battle_result_phase = BattleResultPhase.NONE
 		_pending_battle_result = {}
+		print("[RunController] confirm_battle_result 完成, 状态已重置")
+	else:
+		print("[RunController] confirm_battle_result 跳过, phase 不是 BATTLE_ENDED")
 
 
 func close_shop_panel() -> void:

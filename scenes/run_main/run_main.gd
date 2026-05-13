@@ -541,7 +541,11 @@ func _on_battle_animation_confirmed() -> void:
 	print("[RunMain] 战斗动画确认关闭")
 	# 先推进游戏状态，再隐藏面板，确保 node_options_presented 在面板隐藏前触发
 	if _run_controller != null:
-		_run_controller.confirm_battle_result()
+		# 防御：如果 _pending_battle_result 为空，说明已经处理过了（旧 timer 的误触发）
+		if not _run_controller._pending_battle_result.is_empty():
+			_run_controller.confirm_battle_result()
+		else:
+			print("[RunMain] _pending_battle_result 为空，跳过 confirm_battle_result")
 	_hide_modal_panel(battle_animation_panel)
 
 func _on_battle_summary_confirmed() -> void:
