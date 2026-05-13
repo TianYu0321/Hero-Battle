@@ -49,6 +49,10 @@ extends Control
 @onready var predicted_damage_label: Label = $EnemyInfoPanel/EstimatedDamageLabel
 @onready var risk_label: Label = $EnemyInfoPanel/RiskLabel
 
+@onready var combat_confirm_panel: Panel = $CombatConfirmPanel
+@onready var enter_combat_button: Button = $CombatConfirmPanel/EnterCombatButton
+@onready var return_button: Button = $CombatConfirmPanel/ReturnButton
+
 @onready var training_select_buttons: Array[Button] = [
 	$TrainingPanel/AttrRow1/SelectBtn,
 	$TrainingPanel/AttrRow2/SelectBtn,
@@ -104,6 +108,10 @@ func _ready() -> void:
 	# 训练属性选择按钮绑定
 	for i in range(training_select_buttons.size()):
 		training_select_buttons[i].pressed.connect(_on_training_attr_selected.bind(i + 1))
+
+	# --- CombatConfirmPanel 按钮绑定 ---
+	enter_combat_button.pressed.connect(_on_combat_confirmed)
+	return_button.pressed.connect(_on_combat_cancelled)
 
 	# --- EventBus 信号订阅 ---
 	EventBus.gold_changed.connect(_on_gold_changed)
@@ -243,7 +251,64 @@ func _on_node_button_pressed(index: int) -> void:
 	if _run_controller == null:
 		push_warning("[RunMain] RunController not available")
 		return
-	_run_controller.select_node(index)
+	
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var node_options: Array[Dictionary] = summary.get("node_options", [])
+	
+	if index < 0 or index >= node_options.size():
+		return
+	
+	var opt: Dictionary = node_options[index]
+	var node_type: int = opt.get("node_type", 0)
+	
+	if node_type == NodePoolSystem.NodeType.BATTLE:
+		# 战斗选项特殊处理：先显示预览
+		_show_combat_preview(opt, index)
+	else:
+		# 其他选项直接执行
+		_run_controller.select_node(index)
+
+
+func _show_combat_preview(opt: Dictionary, index: int) -> void:
+	_combat_selected_index = index
+	
+	# 隐藏4选项
+	option_container.visible = false
+	
+	# 显示敌人剪影预览（半透明）
+	var enemy_cfg: Dictionary = opt.get("enemy_config", {})
+	if not enemy_cfg.is_empty():
+		enemy_info_panel.visible = true
+		enemy_info_panel.modulate = Color(1, 1, 1, 0.6)  # 半透明
+		enemy_name_label.text = "敌人: %s" % enemy_cfg.get("name", "???")
+		enemy_hp_label.text = "HP: ???"
+		predicted_damage_label.text = ""
+		risk_label.text = ""
+	else:
+		enemy_info_panel.visible = false
+	
+	# 显示确认按钮（进入战斗 / 返回）
+	combat_confirm_panel.visible = true
+	print("[RunMain] 战斗预览: %s" % enemy_cfg.get("name", "???"))
+
+
+func _on_combat_confirmed() -> void:
+	# 隐藏预览，进入完整战斗
+	combat_confirm_panel.visible = false
+	enemy_info_panel.visible = false
+	
+	if _combat_selected_index >= 0:
+		_run_controller.select_node(_combat_selected_index)
+		_combat_selected_index = -1
+
+
+func _on_combat_cancelled() -> void:
+	# 返回，恢复4选项
+	combat_confirm_panel.visible = false
+	enemy_info_panel.visible = false
+	option_container.visible = true
+	_combat_selected_index = -1
+	print("[RunMain] 取消战斗，恢复选项")
 
 
 func _on_training_attr_selected(attr_type: int) -> void:
@@ -482,28 +547,23 @@ func _refresh_shop_buttons_affordability(current_gold: int) -> void:
 
 
 func _show_modal_panel(panel: Control) -> void:
-	print("[RunMain] _show_modal_panel 开始: panel=%s, blocker当前visible=%s" % [panel.name, ui_modal_blocker.visible])
+	print("[RunMain] _show_modal_panel: panel=%s" % panel.name)
 	ui_modal_blocker.visible = true
 	ui_modal_blocker.z_index = panel.z_index - 1 if panel.z_index > 0 else 50
 	_current_ui_state = UISceneState.LOADING
-	# 半覆盖架构：只隐藏选项按钮和菜单按钮，保留 HUD/属性/伙伴/敌人信息
+	# 只隐藏 option_container，保留 HudContainer / PlayerInfoPanel / PartnerContainer
 	option_container.visible = false
-	training_panel.visible = false
-	rescue_panel.visible = false
-	$MenuButton.visible = false
 	panel.visible = true
 	panel.z_index = 100
-	print("[RunMain] _show_modal_panel 完成: blocker=%s, panel=%s" % [ui_modal_blocker.visible, panel.visible])
 
 
 func _hide_modal_panel(panel: Control) -> void:
-	print("[RunMain] _hide_modal_panel 开始: panel=%s" % panel.name)
+	print("[RunMain] _hide_modal_panel: panel=%s" % panel.name)
 	panel.visible = false
 	ui_modal_blocker.visible = false
-	# 半覆盖架构：只恢复菜单按钮和选项状态
-	$MenuButton.visible = true
-	_transition_ui_state(UISceneState.OPTION_SELECT)
-	print("[RunMain] _hide_modal_panel 完成: blocker=%s, option_container=%s" % [ui_modal_blocker.visible, option_container.visible])
+	# 只恢复选项按钮
+	option_container.visible = true
+	_current_ui_state = UISceneState.OPTION_SELECT
 
 
 func _on_battle_ended(battle_result: Dictionary) -> void:

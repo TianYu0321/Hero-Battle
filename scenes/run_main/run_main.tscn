@@ -514,3 +514,27 @@ visible = false
 
 [node name="BattleAnimationPanel" parent="." instance=ExtResource("4_bap")]
 visible = false
+
+[node name="CombatConfirmPanel" type="Panel" parent="."]
+layout_mode = 0
+offset_left = 440.0
+offset_top = 280.0
+offset_right = 840.0
+offset_bottom = 400.0
+visible = false
+
+[node name="EnterCombatButton" type="Button" parent="CombatConfirmPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 10.0
+offset_right = 380.0
+offset_bottom = 50.0
+text = "进入战斗"
+
+[node name="ReturnButton" type="Button" parent="CombatConfirmPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 60.0
+offset_right = 380.0
+offset_bottom = 100.0
+text = "返回"

@@ -377,6 +377,12 @@ func _generate_node_options() -> void:
 	# 普通回合：从节点池生成选项
 	_current_node_options = _node_pool_system.generate_options(turn)
 	
+	# 为战斗节点预生成敌人配置，供UI层预览使用
+	for opt in _current_node_options:
+		if opt.get("node_type", 0) == NodePoolSystem.NodeType.BATTLE:
+			var enemy_cfg: Dictionary = _node_resolver.generate_enemy_for_floor(turn)
+			opt["enemy_config"] = enemy_cfg
+	
 	# 缓存外出事件到事件透视系统
 	var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
 	if forecast_system != null:
