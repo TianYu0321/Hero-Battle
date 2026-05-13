@@ -441,6 +441,11 @@ func _process_node_result(result: Dictionary) -> void:
 			var pvp_result: Dictionary = pvp_director.execute_pvp(pvp_config)
 			var pvp_reward: Dictionary = {"type": "pvp_result", "data": pvp_result}
 			_process_reward(pvp_reward)
+			# PVP也走战斗动画/摘要面板流程
+			_battle_result_phase = BattleResultPhase.BATTLE_ENDED
+			_pending_battle_result = pvp_result
+			EventBus.emit_signal("battle_ended", pvp_result)
+			return
 		_finish_node_execution(result)
 		return
 	else:

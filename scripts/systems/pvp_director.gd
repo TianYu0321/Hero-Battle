@@ -31,9 +31,47 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	else:
 		battle_config = opponent_generator.generate_opponent(pvp_config, turn_number, false, null)
 
-	# 2. 执行真实战斗
+	# 2. 执行真实战斗（附带回放记录器）
 	var battle_engine: BattleEngine = BattleEngine.new()
 	add_child(battle_engine)
+
+	var recorder := BattlePlaybackRecorder.new()
+	recorder.name = "PvpPlaybackRecorder"
+	add_child(recorder)
+	recorder.start_recording()
+
+	var _on_turn_started = func(turn, _order, _mode):
+		recorder.record_event("turn_started", {"turn": turn, "order": []})
+	EventBus.battle_turn_started.connect(_on_turn_started)
+
+	var _on_action_executed = func(action_data):
+		recorder.record_event("action_executed", action_data)
+	EventBus.action_executed.connect(_on_action_executed)
+
+	var _on_unit_damaged = func(unit_id, amount, hp, max_hp, _dmg_type, is_crit, is_miss, attacker_id):
+		recorder.record_event("unit_damaged", {
+			"unit_id": unit_id, "damage": amount, "hp": hp, "max_hp": max_hp,
+			"is_crit": is_crit, "is_miss": is_miss, "attacker_id": attacker_id,
+		})
+	EventBus.unit_damaged.connect(_on_unit_damaged)
+
+	var _on_unit_died = func(unit_id, uname, _unit_type, killer_id):
+		recorder.record_event("unit_died", {"unit_id": unit_id, "name": uname, "killer_id": killer_id})
+	EventBus.unit_died.connect(_on_unit_died)
+
+	var _on_partner_assist = func(_pid, pname, _trigger_type, _assist_data, _assist_count):
+		recorder.record_event("partner_assist", {"partner_name": pname})
+	EventBus.partner_assist_triggered.connect(_on_partner_assist)
+
+	var _on_chain_triggered = func(chain_count, _partner_id, partner_name, damage, _multiplier, _total_chains):
+		recorder.record_event("chain_triggered", {
+			"chain_count": chain_count, "partner_name": partner_name, "damage": damage,
+		})
+	EventBus.chain_triggered.connect(_on_chain_triggered)
+
+	var _on_ultimate_triggered = func(_hero_class, hero_name, trigger_turn, _condition, ultimate_name):
+		recorder.record_event("ultimate_triggered", {"hero_name": hero_name, "turn": trigger_turn, "log": ultimate_name})
+	EventBus.ultimate_triggered.connect(_on_ultimate_triggered)
 
 	EventBus.pvp_match_found.emit({
 		"opponent_name": battle_config.hero.name,
@@ -44,6 +82,16 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 
 	var battle_result: Dictionary = battle_engine.execute_battle(battle_config)
 	var combat_log: Array[String] = battle_engine.get_combat_log()
+
+	EventBus.battle_turn_started.disconnect(_on_turn_started)
+	EventBus.action_executed.disconnect(_on_action_executed)
+	EventBus.unit_damaged.disconnect(_on_unit_damaged)
+	EventBus.unit_died.disconnect(_on_unit_died)
+	EventBus.partner_assist_triggered.disconnect(_on_partner_assist)
+	EventBus.chain_triggered.disconnect(_on_chain_triggered)
+	EventBus.ultimate_triggered.disconnect(_on_ultimate_triggered)
+
+	recorder.stop_recording()
 	battle_engine.queue_free()
 
 	# 3. 判断胜负（"player"=玩家获胜，"enemy"=敌人获胜）
@@ -83,6 +131,12 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 		"penalty_tier": penalty_tier,
 		"penalty_value": penalty_value,
 		"rating_change": 0,
+		# 供 BattleAnimationPanel 使用的字段
+		"playback_recorder": recorder,
+		"hero": battle_config.hero,
+		"enemies": battle_config.enemies,
+		"winner": battle_result.get("winner", ""),
+		"turns_elapsed": battle_result.get("turns_elapsed", 0),
 	}
 
 	# 6. 发射信号

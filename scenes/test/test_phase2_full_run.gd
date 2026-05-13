@@ -54,6 +54,7 @@ func _test_full_run_flow() -> void:
 			push_warning("第%d回合无节点选项" % (i + 1))
 			break
 		rc.select_node(0)
+		rc.confirm_battle_result()
 		var post_summary: Dictionary = rc.get_current_run_summary()
 		if post_summary.get("run_state", 0) == 3:
 			rc.select_training_attr(1)
@@ -69,7 +70,7 @@ func _test_full_run_flow() -> void:
 		_assert(pvp_options[0].get("node_type", 0) == 7, "第10回合应有PVP节点")
 		# 选择PVP节点
 		rc.select_node(0)
-		# PVP结果已处理（由NodeResolver → PvpDirector执行真实战斗）
+		rc.confirm_battle_result()
 		rc.advance_turn()
 	else:
 		push_warning("第10回合未生成PVP选项")
@@ -99,6 +100,7 @@ func _test_full_run_flow() -> void:
 	if pvp_options2.size() > 0:
 		_assert(pvp_options2[0].get("node_type", 0) == 7, "第20回合应有PVP节点")
 		rc.select_node(0)
+		rc.confirm_battle_result()
 		rc.advance_turn()
 	else:
 		push_warning("第20回合未生成PVP选项")

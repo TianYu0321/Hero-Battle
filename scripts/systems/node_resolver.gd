@@ -101,6 +101,7 @@ func generate_enemy_for_floor(_floor: int) -> Dictionary:
 			"attack": base_atk,
 			"gold_drop": 10 + _floor,
 			"estimated_damage": maxi(1, int(base_atk * 0.5)),
+			"enemy_config_id": 2001,
 		}
 	else:
 		var cfg: Dictionary = candidates[randi() % candidates.size()]
@@ -118,7 +119,6 @@ func generate_enemy_for_floor(_floor: int) -> Dictionary:
 
 
 func _resolve_battle(context: Dictionary) -> Dictionary:
-	## 简化回合制战斗：hero_attack vs enemy_hp，20回合上限
 	var turn: int = context.get("turn", 1)
 	var hero = context.get("hero")
 
@@ -129,8 +129,9 @@ func _resolve_battle(context: Dictionary) -> Dictionary:
 	var result: Dictionary = {
 		"success": true,
 		"node_type": NodePoolSystem.NodeType.BATTLE,
-		"requires_battle": false,
+		"requires_battle": true,
 		"is_elite": false,
+		"enemy_config_id": enemy.get("enemy_config_id", 2001),
 		"enemy_data": enemy,
 		"rewards": [],
 		"logs": [],
@@ -139,37 +140,6 @@ func _resolve_battle(context: Dictionary) -> Dictionary:
 	if hero == null:
 		push_error("[NodeResolver] BATTLE node requires hero in context")
 		return result
-
-	## 简化攻击计算
-	var hero_attack: int = hero.current_str * 2 + hero.current_tec
-	var battle_rounds: int = 0
-	var hero_hp_loss: int = 0
-	var enemy_hp: int = enemy.get("current_hp", 50)
-	var enemy_atk: int = enemy.get("attack", 10)
-
-	while enemy_hp > 0 and battle_rounds < 20:
-		## 玩家攻击
-		enemy_hp -= hero_attack
-		battle_rounds += 1
-
-		## 敌人反击
-		if enemy_hp > 0:
-			var damage: int = maxi(1, enemy_atk - hero.current_vit)
-			hero_hp_loss += damage
-
-			## 检查玩家死亡（累计伤害是否超过当前HP）
-			if hero_hp_loss >= hero.current_hp:
-				result["success"] = false
-				result["logs"].append("第%d层：战斗失败，生命耗尽" % turn)
-				result["rewards"].append({"type": "hp_damage", "amount": hero_hp_loss})
-				return result
-
-	## 战斗胜利
-	if enemy_hp <= 0:
-		var gold_reward: int = enemy.get("gold_drop", 20)
-		result["rewards"].append({"type": "gold", "amount": gold_reward})
-		result["rewards"].append({"type": "hp_damage", "amount": hero_hp_loss})
-		result["logs"].append("第%d层：战斗胜利，获得%d金币，损失%d生命" % [turn, gold_reward, hero_hp_loss])
 
 	return result
 
