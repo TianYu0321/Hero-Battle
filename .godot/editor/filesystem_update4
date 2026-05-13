@@ -1,13 +1,5 @@
-res://scripts/systems/pvp_director.gd
-res://scripts/systems/pvp_opponent_generator.gd
-res://scripts/systems/run_controller.gd
-res://autoload/event_bus.gd
-res://autoload/game_manager.gd
+res://autoload/config_manager.gd
 res://autoload/save_manager.gd
-res://scenes/main_menu/menu.gd
-res://scenes/pvp_lobby/pvp_lobby.gd
-res://scripts/systems/leaderboard_system.gd
-res://scenes/run_main/run_main.gd
-res://scripts/systems/node_pool_system.gd
-res://scripts/systems/node_resolver.gd
-res://scenes/run_main/battle_animation_panel.gd
+res://scenes/hero_select/hero_select.gd
+res://scripts/systems/run_controller.gd
+res://scenes/test/test_decoupling.gd

@@ -678,6 +678,7 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 			archive_dict[key] = score_dict[key]
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
 	EventBus.emit_signal("archive_generated", archive_dict)
+	_check_hero_unlocks()
 	_change_state(RunState.SETTLEMENT)
 
 
@@ -767,6 +768,21 @@ func _end_run() -> void:
 	
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_data)
 
+func _check_hero_unlocks() -> void:
+	var hero_id: String = ConfigManager.get_hero_id_by_config_id(_run.hero_config_id)
+	var all_heroes: Dictionary = ConfigManager.get_all_hero_configs()
+	
+	for hid in all_heroes:
+		var cfg: Dictionary = all_heroes[hid]
+		var condition: String = cfg.get("unlock_condition", "")
+		
+		match condition:
+			"clear_with_hero_warrior":
+				if hero_id == "hero_warrior" and _run.current_turn >= 30:
+					SaveManager.unlock_hero(hid)
+			"clear_with_hero_shadow_dancer":
+				if hero_id == "hero_shadow_dancer" and _run.current_turn >= 30:
+					SaveManager.unlock_hero(hid)
 
 func get_current_shop_items() -> Array[Dictionary]:
 	var shop_system = get_node_or_null("ShopSystem")

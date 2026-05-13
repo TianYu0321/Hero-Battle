@@ -30,6 +30,11 @@ func _assert(condition: bool, msg: String) -> void:
 # --- Step 1: ConfigManager 动态查询 ---
 func _test_config_manager_queries() -> void:
 	print("\n[ConfigManager 动态查询测试]")
+	
+	# 清理可能存在的旧 player_data，确保测试独立性
+	var player_data_path: String = ConfigManager.SAVE_DIR + "player_data.json"
+	if FileAccess.file_exists(player_data_path):
+		DirAccess.remove_absolute(player_data_path)
 
 	var unlocked_heroes: Array[String] = ConfigManager.get_unlocked_hero_ids()
 	_assert(unlocked_heroes.size() == 1, "默认解锁主角应为1名")

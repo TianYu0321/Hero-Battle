@@ -345,11 +345,17 @@ func get_pvp_opponent_template(template_id: String) -> Dictionary:
 
 func get_unlocked_hero_ids() -> Array[String]:
 	var result: Array[String] = []
+	var player_data: Dictionary = SaveManager.load_player_data()
+	var unlocked: Array = player_data.get("unlocked_heroes", [])
+	
 	for hero_id in _hero_configs:
 		var cfg: Dictionary = _hero_configs[hero_id]
-		if cfg.get("is_default_unlock", false):
+		if cfg.get("is_default_unlock", false) or hero_id in unlocked:
 			result.append(hero_id)
 	return result
+
+func get_all_hero_configs() -> Dictionary:
+	return _hero_configs.duplicate()
 
 
 func get_all_partner_ids() -> Array[String]:

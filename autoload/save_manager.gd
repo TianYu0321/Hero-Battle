@@ -323,7 +323,9 @@ func load_player_data() -> Dictionary:
 	var file_path: String = ConfigManager.SAVE_DIR + "player_data.json"
 	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
 	if data.is_empty():
-		data = {"mocheng_coin": 0, "unlocked_partners": [], "net_wins": 0, "total_wins": 0, "total_losses": 0, "pvp_wins_today": 0, "last_pvp_date": ""}
+		data = {"mocheng_coin": 0, "unlocked_partners": [], "unlocked_heroes": ["hero_warrior"], "net_wins": 0, "total_wins": 0, "total_losses": 0, "pvp_wins_today": 0, "last_pvp_date": ""}
+		if not data.has("unlocked_heroes"):
+			data["unlocked_heroes"] = ["hero_warrior"]
 	return data
 
 func save_player_data(data: Dictionary) -> void:
@@ -332,6 +334,17 @@ func save_player_data(data: Dictionary) -> void:
 	if file != null:
 		file.store_string(JSON.stringify(data, "\t"))
 		file.close()
+
+func unlock_hero(hero_id: String) -> bool:
+	var data = load_player_data()
+	var unlocked: Array = data.get("unlocked_heroes", [])
+	if not hero_id in unlocked:
+		unlocked.append(hero_id)
+		data["unlocked_heroes"] = unlocked
+		save_player_data(data)
+		print("[SaveManager] 解锁英雄: %s" % hero_id)
+		return true
+	return false
 
 func update_archive(archive_id: String, new_data: Dictionary) -> bool:
 	var file_path: String = ConfigManager.ARCHIVE_FILE

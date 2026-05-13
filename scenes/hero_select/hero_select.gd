@@ -17,10 +17,13 @@ var _selected_hero_id: String = ""
 
 func _ready() -> void:
 	_back_btn.pressed.connect(_on_back_pressed)
-	_hero_ids = ConfigManager.get_unlocked_hero_ids()
+	_hero_ids.assign(ConfigManager.get_all_hero_configs().keys())
 	_populate_hero_cards()
 
 func _populate_hero_cards() -> void:
+	var player_data: Dictionary = SaveManager.load_player_data()
+	var unlocked: Array = player_data.get("unlocked_heroes", [])
+	
 	var card_index: int = 0
 	for hero_id in _hero_ids:
 		var config: Dictionary = ConfigManager.get_hero_config(hero_id)
@@ -48,8 +51,30 @@ func _populate_hero_cards() -> void:
 		_set_stat_label(stats_container.get_node("StatTechnique"), "技巧", config.get("base_technique", 0), favored_attr == 4)
 		_set_stat_label(stats_container.get_node("StatSpirit"), "精神", config.get("base_spirit", 0), favored_attr == 5)
 
-		select_btn.pressed.connect(_on_select_hero.bind(hero_id, config))
+		var is_unlocked: bool = config.get("is_default_unlock", false) or hero_id in unlocked
+		
+		if is_unlocked:
+			select_btn.text = "选择"
+			select_btn.disabled = false
+			select_btn.modulate = Color(1, 1, 1)
+			select_btn.pressed.connect(_on_select_hero.bind(hero_id, config))
+		else:
+			select_btn.text = "未解锁"
+			select_btn.disabled = true
+			select_btn.modulate = Color(0.3, 0.3, 0.3)
+			var condition: String = config.get("unlock_condition", "")
+			var condition_text: String = _get_unlock_condition_text(condition)
+			desc_label.text += "\n[color=gray]%s[/color]" % condition_text
+
 		card_index += 1
+
+func _get_unlock_condition_text(condition: String) -> String:
+	match condition:
+		"clear_with_hero_warrior":
+			return "通关勇者解锁"
+		"clear_with_hero_shadow_dancer":
+			return "通关影舞者解锁"
+	return "未解锁"
 
 func _set_stat_label(label: Label, attr_name: String, value: int, is_star: bool) -> void:
 	label.text = "%s: %d %s" % [attr_name, value, "★" if is_star else ""]
