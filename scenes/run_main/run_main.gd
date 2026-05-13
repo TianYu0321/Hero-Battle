@@ -610,6 +610,9 @@ func _on_battle_animation_finished() -> void:
 	_show_battle_summary(_pending_battle_result)
 
 func _show_battle_summary(battle_result: Dictionary) -> void:
+	# 先隐藏战斗动画面板，避免叠加混乱
+	battle_animation_panel.visible = false
+	
 	battle_summary_panel.show_result(battle_result)
 	_show_modal_panel(battle_summary_panel)
 	if not battle_summary_panel.confirmed.is_connected(_on_battle_summary_confirmed):
