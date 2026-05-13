@@ -486,13 +486,10 @@ func _show_modal_panel(panel: Control) -> void:
 	ui_modal_blocker.visible = true
 	ui_modal_blocker.z_index = panel.z_index - 1 if panel.z_index > 0 else 50
 	_current_ui_state = UISceneState.LOADING
+	# 半覆盖架构：只隐藏选项按钮和菜单按钮，保留 HUD/属性/伙伴/敌人信息
 	option_container.visible = false
 	training_panel.visible = false
 	rescue_panel.visible = false
-	enemy_info_panel.visible = false
-	$HudContainer.visible = false
-	$PlayerInfoPanel.visible = false
-	$PartnerContainer.visible = false
 	$MenuButton.visible = false
 	panel.visible = true
 	panel.z_index = 100
@@ -503,9 +500,7 @@ func _hide_modal_panel(panel: Control) -> void:
 	print("[RunMain] _hide_modal_panel 开始: panel=%s" % panel.name)
 	panel.visible = false
 	ui_modal_blocker.visible = false
-	$HudContainer.visible = true
-	$PlayerInfoPanel.visible = true
-	$PartnerContainer.visible = true
+	# 半覆盖架构：只恢复菜单按钮和选项状态
 	$MenuButton.visible = true
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 	print("[RunMain] _hide_modal_panel 完成: blocker=%s, option_container=%s" % [ui_modal_blocker.visible, option_container.visible])
@@ -527,8 +522,9 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		var hero_max_hp: int = hero_data.get("max_hp", 100)
 		var enemy_max_hp: int = enemy_data.get("max_hp", 100)
 		
-		_show_modal_panel(battle_animation_panel)
+		# 半覆盖架构：先重置面板状态，再显示模态层
 		battle_animation_panel.reset_panel()
+		_show_modal_panel(battle_animation_panel)
 		battle_animation_panel.start_playback(recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [])
 		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_confirmed):
 			battle_animation_panel.confirmed.connect(_on_battle_animation_confirmed, CONNECT_ONE_SHOT)
