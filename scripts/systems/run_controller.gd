@@ -287,7 +287,9 @@ func advance_turn() -> void:
 	# 自动存档
 	_auto_save()
 
+	print("[RunController] 发射 floor_advanced: turn=%d" % _run.current_turn)
 	EventBus.emit_signal("floor_advanced", _run.current_turn, _get_phase_name(), _is_fixed_node_turn(_run.current_turn))
+	print("[RunController] floor_advanced 已发射，进入 RUNNING_NODE_SELECT")
 	_change_state(RunState.RUNNING_NODE_SELECT)
 
 
@@ -382,6 +384,7 @@ func _generate_node_options() -> void:
 	if forecast_system != null:
 		forecast_system.cache_outgoing_events(_current_node_options)
 	
+	print("[RunController] 发射 node_options_presented: options=%d" % _current_node_options.size())
 	EventBus.emit_signal("node_options_presented", _current_node_options)
 
 

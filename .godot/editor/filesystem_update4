@@ -3,3 +3,7 @@ res://autoload/save_manager.gd
 res://scenes/hero_select/hero_select.gd
 res://scripts/systems/run_controller.gd
 res://scenes/test/test_decoupling.gd
+res://scenes/shop/partner_card.gd
+res://scenes/shop/partner_card.tscn
+res://scenes/shop/shop.gd
+res://scenes/run_main/run_main.gd

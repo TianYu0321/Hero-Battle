@@ -16,7 +16,6 @@ signal buy_pressed(partner_id: String)
 @onready var _name_label: Label = %PartnerNameLabel
 @onready var _title_label: Label = %PartnerTitleLabel
 @onready var _desc_label: Label = %PartnerDescLabel
-@onready var _rarity_label: Label = %RarityLabel
 @onready var _price_label: Label = %PriceLabel
 @onready var _buy_btn: Button = %BuyButton
 @onready var _owned_overlay: Panel = %OwnedOverlay
@@ -51,7 +50,6 @@ func set_partner_data(data: Dictionary) -> void:
 	_name_label.text = data.get("name", _partner_id)
 	_title_label.text = data.get("title", "")
 	_desc_label.text = data.get("description", "")
-	_rarity_label.text = _get_rarity_text(data.get("rarity", 1))
 	_is_owned = data.get("is_owned", false)
 	_update_owned_state()
 
@@ -81,7 +79,6 @@ func _reset_display() -> void:
 	_name_label.text = "???"
 	_title_label.text = ""
 	_desc_label.text = ""
-	_rarity_label.text = ""
 	_price_label.text = "100魔城币"
 	_buy_btn.disabled = true
 	_owned_overlay.visible = false
@@ -92,14 +89,6 @@ func _update_owned_state() -> void:
 
 func _update_button_state() -> void:
 	_buy_btn.disabled = _is_owned or not _can_afford
-
-func _get_rarity_text(rarity: int) -> String:
-	match rarity:
-		1: return "N"
-		2: return "R"
-		3: return "SR"
-		4: return "SSR"
-		_: return "?"
 
 ## ============================================================
 ## 公共接口

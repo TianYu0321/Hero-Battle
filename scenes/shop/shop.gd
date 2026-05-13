@@ -45,7 +45,6 @@ func _load_shop_items() -> void:
 			"name": p.get("name", "???"),
 			"title": p.get("title", ""),
 			"description": p.get("description", ""),
-			"rarity": p.get("rarity", 1),
 			"price": price,
 			"is_unlocked": is_unlocked,
 		})
@@ -70,7 +69,6 @@ func _render_shop() -> void:
 			"name": item["name"],
 			"title": item["title"],
 			"description": item["description"],
-			"rarity": item["rarity"],
 			"is_owned": item["is_unlocked"],
 		})
 		card.set_price(item["price"])

@@ -304,15 +304,19 @@ func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 			btn.visible = false
 			btn.disabled = true
 	
-	# 强制确保 OptionContainer 和按钮可见且可交互
+	# 强制确保 OptionContainer 和按钮可见且可交互（防御性刷新）
 	option_container.visible = true
 	for i in range(option_buttons.size()):
 		if i < node_options.size():
+			var opt = node_options[i]
+			option_buttons[i].text = opt.get("node_name", "???")
 			option_buttons[i].visible = true
 			option_buttons[i].disabled = false
 	
-	print("[RunMain] 按钮状态: option_container=%s, 按钮1disabled=%s, 按钮2disabled=%s" % [
+	print("[RunMain] 按钮状态: option_container=%s, 按钮1text=%s, 按钮2text=%s, 按钮1disabled=%s, 按钮2disabled=%s" % [
 		option_container.visible,
+		option_buttons[0].text,
+		option_buttons[1].text,
 		option_buttons[0].disabled,
 		option_buttons[1].disabled
 	])
@@ -364,9 +368,8 @@ func _on_training_completed(_attr_code: int, attr_name: String, gain_value: int,
 
 
 func _on_floor_advanced(_new_floor: int, _floor_type: String, _is_special: bool) -> void:
-	# 楼层推进后清空按钮（等待下一轮选项）
+	# 楼层推进后仅禁用按钮，不覆盖文本，避免与 node_options_presented 冲突
 	for btn in option_buttons:
-		btn.text = "..."
 		btn.disabled = true
 
 
@@ -538,9 +541,10 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 
 func _on_battle_animation_confirmed() -> void:
 	print("[RunMain] 战斗动画确认关闭")
-	_hide_modal_panel(battle_animation_panel)
+	# 先推进游戏状态，再隐藏面板，确保 node_options_presented 在面板隐藏前触发
 	if _run_controller != null:
 		_run_controller.confirm_battle_result()
+	_hide_modal_panel(battle_animation_panel)
 
 func _on_battle_summary_confirmed() -> void:
 	print("[RunMain] 战斗摘要确认关闭")
