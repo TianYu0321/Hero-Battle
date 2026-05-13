@@ -551,6 +551,9 @@ func _execute_final_battle() -> void:
 
 
 func _run_battle_engine(enemy_config_id: int) -> Dictionary:
+	print("[RunController] _run_battle_engine 开始: hero_hp=%d/%d, enemy_config_id=%d" % [
+		_hero.current_hp, _hero.max_hp, enemy_config_id
+	])
 	var hero_stats: Dictionary = {
 		"physique": _hero.current_vit,
 		"strength": _hero.current_str,
@@ -668,8 +671,10 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 		result["max_chain_count"] = chain_stats.get("max_chain", 0)
 	
 	_pending_battle_result = result
-	print("[RunController] _run_battle_engine 结束, hero_hp=%d, winner=%s" % [
-		battle_hero.get("hp", 0), result.get("winner", "???")
+	var recorder_events: int = recorder.get_events().size()
+	var recorder_turns: int = recorder.get_events_by_turn().keys().size()
+	print("[RunController] _run_battle_engine 结束: hero_hp=%d, winner=%s, recorder_events=%d, recorder_turns=%d" % [
+		battle_hero.get("hp", 0), result.get("winner", "???"), recorder_events, recorder_turns
 	])
 	return result
 
@@ -819,9 +824,11 @@ func confirm_battle_result() -> void:
 	print("[RunController] confirm_battle_result 被调用, phase=%d" % _battle_result_phase)
 	if _battle_result_phase == BattleResultPhase.BATTLE_ENDED:
 		_battle_result_phase = BattleResultPhase.BATTLE_CONFIRMED
-		print("[RunController] confirm_battle_result 执行, _pending_battle_result winner=%s, hero_hp=%d" % [
+		var battle_hero_data: Dictionary = _pending_battle_result.get("hero", {})
+		print("[RunController] confirm_battle_result 执行, winner=%s, hero_remaining_hp=%d, hero.hp=%d" % [
 			_pending_battle_result.get("winner", "???"),
-			_pending_battle_result.get("hero_remaining_hp", -1)
+			_pending_battle_result.get("hero_remaining_hp", -1),
+			battle_hero_data.get("hp", -1)
 		])
 		_finish_node_execution(_pending_battle_result)
 		_battle_result_phase = BattleResultPhase.NONE

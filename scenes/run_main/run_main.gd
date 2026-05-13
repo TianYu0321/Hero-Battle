@@ -528,6 +528,7 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		var enemy_max_hp: int = enemy_data.get("max_hp", 100)
 		
 		_show_modal_panel(battle_animation_panel)
+		battle_animation_panel.reset_panel()
 		battle_animation_panel.start_playback(recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [])
 		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_confirmed):
 			battle_animation_panel.confirmed.connect(_on_battle_animation_confirmed, CONNECT_ONE_SHOT)
@@ -539,6 +540,11 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 
 func _on_battle_animation_confirmed() -> void:
 	print("[RunMain] 战斗动画确认关闭")
+	
+	# 断开信号（保险）
+	if battle_animation_panel.confirmed.is_connected(_on_battle_animation_confirmed):
+		battle_animation_panel.confirmed.disconnect(_on_battle_animation_confirmed)
+	
 	# 先推进游戏状态，再隐藏面板，确保 node_options_presented 在面板隐藏前触发
 	if _run_controller != null:
 		# 防御：如果 _pending_battle_result 为空，说明已经处理过了（旧 timer 的误触发）

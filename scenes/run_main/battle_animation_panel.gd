@@ -12,6 +12,7 @@ extends Control
 @onready var damage_container: Node = $DamageContainer
 @onready var hero_sprite: Control = $BattleArea/HeroSprite
 @onready var enemy_sprite: Control = $BattleArea/EnemySprite
+@onready var turn_timer: Timer = $TurnTimer
 
 var _recorder: BattlePlaybackRecorder = null
 var _events_by_turn: Dictionary = {}
@@ -28,6 +29,9 @@ var _result_emitted: bool = false
 
 signal confirmed
 
+func _ready() -> void:
+	turn_timer.timeout.connect(_on_turn_timer_timeout)
+
 func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_name: String,
 						hero_max_hp: int, enemy_max_hp: int, _hero_partners: Array, _enemy_partners: Array) -> void:
 	_playback_generation += 1
@@ -43,10 +47,13 @@ func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_n
 	_is_playing = true
 	visible = true
 	
+	# 清理残留状态
+	bottom_hint.text = ""
+	_clear_damage_numbers()
+	
 	hero_name_label.text = hero_name
 	enemy_name_label.text = enemy_name
 	_update_hp_display()
-	bottom_hint.text = ""
 	
 	if not skip_button.pressed.is_connected(_on_skip):
 		skip_button.pressed.connect(_on_skip)
@@ -66,7 +73,10 @@ func _play_turn() -> void:
 	
 	var turn: int = _turn_keys[_current_turn_index]
 	var events: Array = _events_by_turn[turn]
-	turn_label.text = "回合 %d" % (turn + 1)
+	if turn == 0:
+		turn_label.text = "战斗开始"
+	else:
+		turn_label.text = "回合 %d" % turn
 	bottom_hint.text = ""
 	
 	var partner_events: int = 0
@@ -80,13 +90,12 @@ func _play_turn() -> void:
 	for evt in events:
 		_process_event(evt)
 	
-	await get_tree().create_timer(duration).timeout
-	
-	# 检查 generation 是否变化（防止旧的 timer 干扰新的播放）
-	if gen != _playback_generation:
-		print("[BattleAnimation] gen=%d 的 timer 已过期，当前 gen=%d，忽略" % [gen, _playback_generation])
+	# 用 Timer 节点，可以被 stop()
+	turn_timer.start(duration)
+
+func _on_turn_timer_timeout() -> void:
+	if not _is_playing:
 		return
-	
 	_current_turn_index += 1
 	_play_turn()
 
@@ -196,10 +205,12 @@ func _screen_shake() -> void:
 func _on_skip() -> void:
 	print("[BattleAnimation] 跳过按钮点击, gen=%d" % _playback_generation)
 	_is_playing = false
+	turn_timer.stop()
 	_show_result()
 
 func _show_result() -> void:
 	_is_playing = false
+	turn_timer.stop()
 	if _result_emitted:
 		print("[BattleAnimation] _show_result 已发射过 confirmed，跳过")
 		return
@@ -207,3 +218,21 @@ func _show_result() -> void:
 	bottom_hint.append_text("\n[color=yellow]=== 战斗结束 ===[/color]")
 	print("[BattleAnimation] _show_result 发射 confirmed, gen=%d" % _playback_generation)
 	confirmed.emit()
+
+func reset_panel() -> void:
+	_is_playing = false
+	turn_timer.stop()
+	_current_turn_index = 0
+	_turn_keys = []
+	_events_by_turn = {}
+	bottom_hint.text = ""
+	turn_label.text = "回合 1"
+	_clear_damage_numbers()
+	# 重置血条到满血（由 start_playback 重新设置）
+	_hero_hp = _hero_max_hp
+	_enemy_hp = _enemy_max_hp
+	_update_hp_display()
+
+func _clear_damage_numbers() -> void:
+	for child in damage_container.get_children():
+		child.queue_free()
