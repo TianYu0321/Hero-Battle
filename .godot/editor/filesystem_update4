@@ -14,3 +14,4 @@ res://scripts/systems/run_controller.gd
 res://scripts/systems/virtual_archive_pool.gd
 res://scenes/tavern/tavern.gd
 res://scenes/leaderboard/ranking_row.gd
+res://autoload/config_manager.gd

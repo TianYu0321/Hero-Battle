@@ -35,7 +35,11 @@ const NODE_OPTIONS_PER_ROUND: int = 3
 # --- 存档常量 ---
 const SAVE_SLOT_COUNT: int = 3
 const SAVE_DIR: String = "user://saves/"
-const ARCHIVE_FILE: String = "user://archive.json"
+# 改为动态路径，支持账号隔离
+func get_archive_file_path(user_id: String = "") -> String:
+	if user_id.is_empty():
+		user_id = "local_default"
+	return "user://%s_archive.json" % user_id
 
 # --- 全局枚举 ---
 enum NodeType {

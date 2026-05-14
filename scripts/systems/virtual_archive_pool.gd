@@ -113,22 +113,46 @@ func get_shadow_count_for_floor(floor: int) -> int:
 			count += 1
 	return count
 
+func get_shadow_pool_file_path(user_id: String = "") -> String:
+	if user_id.is_empty():
+		var sm = Engine.get_main_loop().root.get_node_or_null("SaveManager")
+		if sm != null:
+			user_id = sm.get_user_id()
+		else:
+			user_id = "local_default"
+	return "user://%s_shadow_pool.json" % user_id
+
 func save_shadows_to_disk() -> void:
 	var data: Array = []
 	for s in _shadows:
 		data.append(s.to_dict())
-	var file := FileAccess.open("user://shadow_pool.json", FileAccess.WRITE)
+	var file_path: String = get_shadow_pool_file_path()
+	var file := FileAccess.open(file_path, FileAccess.WRITE)
 	if file == null:
-		push_error("[VirtualArchivePool] 保存影子池失败")
+		push_error("[VirtualArchivePool] 保存影子池失败: %s" % file_path)
 		return
 	file.store_string(JSON.stringify(data, "\t"))
 	file.close()
-	print("[VirtualArchivePool] 影子池已保存: %d个" % _shadows.size())
+	print("[VirtualArchivePool] 影子池已保存: %d个 -> %s" % [_shadows.size(), file_path])
 
 func load_shadows_from_disk() -> void:
-	if not FileAccess.file_exists("user://shadow_pool.json"):
+	var file_path: String = get_shadow_pool_file_path()
+	# 尝试迁移旧版全局影子池
+	if not FileAccess.file_exists(file_path):
+		var legacy_path: String = "user://shadow_pool.json"
+		if FileAccess.file_exists(legacy_path):
+			var leg_file := FileAccess.open(legacy_path, FileAccess.READ)
+			if leg_file != null:
+				var content: String = leg_file.get_as_text()
+				leg_file.close()
+				var new_file := FileAccess.open(file_path, FileAccess.WRITE)
+				if new_file != null:
+					new_file.store_string(content)
+					new_file.close()
+					print("[VirtualArchivePool] 影子池已从旧版迁移: %s -> %s" % [legacy_path, file_path])
+	if not FileAccess.file_exists(file_path):
 		return
-	var file := FileAccess.open("user://shadow_pool.json", FileAccess.READ)
+	var file := FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
 		return
 	var json := JSON.new()

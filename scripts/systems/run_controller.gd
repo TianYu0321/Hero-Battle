@@ -824,12 +824,14 @@ func _end_run() -> void:
 
 
 func _delete_run_saves() -> void:
+	var user_id: String = SaveManager.get_user_id()
+	var prefix: String = "%s_save_" % user_id
 	var dir: DirAccess = DirAccess.open(ConfigManager.SAVE_DIR)
 	if dir != null:
 		dir.list_dir_begin()
 		var file_name: String = dir.get_next()
 		while not file_name.is_empty():
-			if file_name.begins_with("save_") and file_name.ends_with(".json"):
+			if file_name.begins_with(prefix) and file_name.ends_with(".json"):
 				var save_path: String = ConfigManager.SAVE_DIR + file_name
 				DirAccess.remove_absolute(save_path)
 				print("[RunController] 已删除存档: %s" % save_path)
