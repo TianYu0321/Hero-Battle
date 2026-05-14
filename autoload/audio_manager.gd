@@ -1,7 +1,5 @@
 extends Node
 
-class_name AudioManager
-
 ## 音效管理器 — 简化版占位系统
 ## 三层总线：SFX（战斗音效）/ UI（界面音效）/ Music（背景音乐）
 
@@ -59,7 +57,7 @@ func _ensure_bus_exists(bus_name: String) -> void:
 ## ===== 播放接口 =====
 
 func play_sfx(sound_id: String) -> void:
-	var stream := _sfx_streams.get(sound_id, null)
+	var stream = _sfx_streams.get(sound_id)
 	if stream == null:
 		print("[AudioManager] 音效未加载: %s" % sound_id)
 		return
@@ -76,7 +74,7 @@ func play_sfx(sound_id: String) -> void:
 	_sfx_players[0].play()
 
 func play_ui(sound_id: String) -> void:
-	var stream := _sfx_streams.get(sound_id, null)
+	var stream = _sfx_streams.get(sound_id)
 	if stream == null:
 		print("[AudioManager] UI音效未加载: %s" % sound_id)
 		return
@@ -91,7 +89,7 @@ func play_ui(sound_id: String) -> void:
 	_ui_players[0].play()
 
 func play_music(track_id: String, fade_duration: float = 1.0) -> void:
-	var stream := _music_streams.get(track_id, null)
+	var stream = _music_streams.get(track_id)
 	if stream == null:
 		print("[AudioManager] 音乐未加载: %s" % track_id)
 		return

@@ -7,9 +7,9 @@ extends Control
 @onready var _close_button: Button = $Content/VBoxContainer/HeaderHBox/CloseButton
 
 var _shop_items: Dictionary = {}
-var _unlocked_heroes: Array[int] = []
-var _unlocked_partners: Array[int] = []
-var _unlocked_skins: Array[int] = []
+var _unlocked_heroes: Array = []
+var _unlocked_partners: Array = []
+var _unlocked_skins: Array = []
 var _current_coin: int = 0
 var _current_user_id: String = "local_default"
 
@@ -71,7 +71,7 @@ func _render_all_tabs() -> void:
 	_render_tab("伙伴", _shop_items.get("partners", []), _unlocked_partners)
 	_render_tab("皮肤", _shop_items.get("skins", []), _unlocked_skins)
 
-func _render_tab(tab_name: String, items: Array, unlocked: Array[int]) -> void:
+func _render_tab(tab_name: String, items: Array, unlocked: Array) -> void:
 	var grid: GridContainer = _tab_container.get_node("%s/ItemGrid" % tab_name)
 	for child in grid.get_children():
 		child.queue_free()
@@ -79,7 +79,7 @@ func _render_tab(tab_name: String, items: Array, unlocked: Array[int]) -> void:
 		var btn := _create_item_button(item, unlocked)
 		grid.add_child(btn)
 
-func _create_item_button(item: Dictionary, unlocked: Array[int]) -> Button:
+func _create_item_button(item: Dictionary, unlocked: Array) -> Button:
 	var btn := Button.new()
 	var id: int = int(item.get("id", 0))
 	var cost: int = int(item.get("cost", 0))

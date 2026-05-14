@@ -6,3 +6,11 @@ res://autoload/save_manager.gd
 res://scenes/hero_select/hero_select.gd
 res://scenes/main_menu/menu.gd
 res://scenes/shop/shop_popup.gd
+res://scenes/pvp_lobby/pvp_lobby.gd
+res://scripts/systems/character_manager.gd
+res://scripts/systems/pvp_director.gd
+res://scripts/systems/pvp_opponent_generator.gd
+res://scripts/systems/run_controller.gd
+res://scripts/systems/virtual_archive_pool.gd
+res://scenes/tavern/tavern.gd
+res://scenes/leaderboard/ranking_row.gd

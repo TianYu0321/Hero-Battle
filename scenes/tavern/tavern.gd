@@ -26,7 +26,7 @@ func _ready() -> void:
 func _get_available_partner_ids() -> Array[String]:
 	var user_id: String = SaveManager.get_user_id()
 	var unlock_state: Dictionary = SaveManager.load_unlock_state(user_id)
-	var unlocked_ids: Array[int] = unlock_state.get("unlocked_partners", [])
+	var unlocked_ids: Array = unlock_state.get("unlocked_partners", [])
 	var unlocked: Array = []
 	for pid in unlocked_ids:
 		unlocked.append(str(pid))
