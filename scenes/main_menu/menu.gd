@@ -15,6 +15,7 @@ extends Control
 @onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _leaderboard_panel: Panel = $LeaderboardPanel
 @onready var _shop_panel: ShopPopup = $ShopPopup
+var _settings_panel: Control = null
 
 func _ready() -> void:
 	print("[MainMenu] _ready 开始, continue_button=", _btn_continue != null)
@@ -22,6 +23,26 @@ func _ready() -> void:
 	_btn_continue.pressed.connect(_on_continue_pressed)
 	_btn_quit.pressed.connect(_on_quit_pressed)
 	_menu_button.pressed.connect(_on_menu_button_pressed)
+	
+	# 动态创建菜单背景
+	var bg_scene = load("res://scenes/main_menu/menu_background.tscn")
+	if bg_scene != null:
+		var bg = bg_scene.instantiate()
+		add_child(bg)
+		move_child(bg, 0)
+	
+	# 动态创建设置面板
+	var settings_scene = load("res://scenes/settings/settings_panel.tscn")
+	if settings_scene != null:
+		_settings_panel = settings_scene.instantiate()
+		add_child(_settings_panel)
+		_settings_panel.visible = false
+	
+	# 设置按钮悬停动画
+	_setup_button_hover(_btn_new_game)
+	_setup_button_hover(_btn_continue)
+	_setup_button_hover(_btn_quit)
+	_setup_button_hover(_menu_button)
 
 	# 启用斗士档案按钮
 	var btn_archive: Button = get_node_or_null("%BtnArchive")
@@ -59,9 +80,21 @@ func _ready() -> void:
 		btn_leaderboard.visible = true
 		btn_leaderboard.disabled = false
 		btn_leaderboard.pressed.connect(_on_leaderboard_pressed)
+		_setup_button_hover(btn_leaderboard)
 		print("[MainMenu] 排行榜按钮已启用")
 	else:
 		push_warning("[MainMenu] BtnLeaderboard 未找到")
+	
+	# 启用设置按钮
+	var btn_settings: Button = get_node_or_null("%BtnSettings")
+	if btn_settings != null:
+		btn_settings.visible = true
+		btn_settings.disabled = false
+		btn_settings.pressed.connect(_on_settings_pressed)
+		_setup_button_hover(btn_settings)
+		print("[MainMenu] 设置按钮已启用")
+	else:
+		push_warning("[MainMenu] BtnSettings 未找到")
 
 	# 主菜单中隐藏PauseMenu的"返回主菜单"按钮
 	_pause_menu.set_is_main_menu(true)
@@ -185,3 +218,29 @@ func _load_leaderboard_data() -> Array[Dictionary]:
 
 func _get_my_data() -> Dictionary:
 	return {"player_name": "Player", "net_wins": 0}
+
+func _on_settings_pressed() -> void:
+	AudioManager.play_ui("button_click")
+	if _settings_panel != null:
+		_show_panel(_settings_panel)
+		_settings_panel.load_settings()
+
+func _show_panel(panel: Control) -> void:
+	panel.visible = true
+	panel.scale = Vector2(0.8, 0.8)
+	panel.modulate.a = 0.0
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(panel, "scale", Vector2.ONE, 0.2)
+	tween.parallel().tween_property(panel, "modulate:a", 1.0, 0.2)
+
+func _setup_button_hover(button: Button) -> void:
+	button.mouse_entered.connect(func():
+		var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(button, "scale", Vector2.ONE * 1.05, 0.15)
+		tween.parallel().tween_property(button, "modulate", Color(1.2, 1.2, 1.2), 0.15)
+	)
+	button.mouse_exited.connect(func():
+		var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(button, "scale", Vector2.ONE, 0.15)
+		tween.parallel().tween_property(button, "modulate", Color.WHITE, 0.15)
+	)

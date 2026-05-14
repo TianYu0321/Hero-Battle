@@ -651,3 +651,24 @@ func sync_mocheng_coin_to_server(user_id: String, amount: int) -> void:
 
 func sync_unlock_state_to_server(user_id: String, state: Dictionary) -> void:
 	print("[SaveManager] 解锁状态同步到服务器: user=%s" % user_id)
+
+
+# --- 设置持久化 ---
+func save_settings(settings: Dictionary) -> void:
+	var file_path: String = "user://%s_settings.json" % current_user_id
+	var file := FileAccess.open(file_path, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(settings, "\t"))
+		file.close()
+
+func load_settings() -> Dictionary:
+	var file_path: String = "user://%s_settings.json" % current_user_id
+	if not FileAccess.file_exists(file_path):
+		return {}
+	var file := FileAccess.open(file_path, FileAccess.READ)
+	var json := JSON.new()
+	var result := json.parse(file.get_as_text())
+	file.close()
+	if result == OK:
+		return json.get_data()
+	return {}

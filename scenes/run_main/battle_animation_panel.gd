@@ -14,6 +14,12 @@ extends Control
 @onready var enemy_sprite: Control = $BattleArea/EnemySprite
 @onready var turn_timer: Timer = $TurnTimer
 
+var _frenzy_border: ColorRect = null
+var _frenzy_tween: Tween = null
+var _hero_id_hint: int = 1
+var _enemy_type_hint: String = ""
+var _is_boss_hint: bool = false
+
 var _recorder: BattlePlaybackRecorder = null
 var _events_by_turn: Dictionary = {}
 var _turn_keys: Array = []
@@ -35,6 +41,9 @@ func _ready() -> void:
 	turn_timer.one_shot = true # 确保只触发一次，_play_turn()里重新start()
 	_setup_hero_hp_bar_style(hero_hp_bar)
 	_setup_enemy_hp_bar_style(enemy_hp_bar)
+	_setup_shader_hp_bars()
+	_setup_frenzy_border()
+	_setup_placeholder_draw()
 
 func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_name: String,
 						hero_max_hp: int, enemy_max_hp: int, _hero_partners: Array, _enemy_partners: Array) -> void:
@@ -187,44 +196,98 @@ func _process_event(evt: Dictionary) -> void:
 			AudioManager.play_sfx("frenzy_alert")
 
 func _update_hp_display() -> void:
-	hero_hp_bar.value = float(_hero_hp) / maxi(1, _hero_max_hp) * 100
-	enemy_hp_bar.value = float(_enemy_hp) / maxi(1, _enemy_max_hp) * 100
-	
 	var hero_ratio: float = float(_hero_hp) / maxi(1, _hero_max_hp)
+	var enemy_ratio: float = float(_enemy_hp) / maxi(1, _enemy_max_hp)
 	
-	# 低血量闪烁（英雄，低于30%）
-	if hero_ratio < 0.3 and not _is_frenzy_active:
-		var tween := create_tween().set_loops()
-		tween.tween_property(hero_hp_bar, "modulate", Color(1, 0.3, 0.3), 0.3)
-		tween.tween_property(hero_hp_bar, "modulate", Color(1, 1, 1), 0.3)
-	elif not _is_frenzy_active:
-		hero_hp_bar.modulate = Color(1, 1, 1)
+	# 通过shader uniform更新进度
+	if hero_hp_bar.material != null:
+		hero_hp_bar.material.set_shader_parameter("progress", hero_ratio)
+		hero_hp_bar.material.set_shader_parameter("flash_speed", 5.0 if (hero_ratio < 0.3 and not _is_frenzy_active) else 0.0)
+	if enemy_hp_bar.material != null:
+		enemy_hp_bar.material.set_shader_parameter("progress", enemy_ratio)
+		enemy_hp_bar.material.set_shader_parameter("flash_speed", 0.0)
 	
-	# 狂暴阶段血条变红提示
+	# 狂暴阶段血条变红提示（shader已处理颜色，这里保留modulate作为额外强调）
 	if _is_frenzy_active:
-		hero_hp_bar.modulate = Color(1, 0.2, 0.2)
-		enemy_hp_bar.modulate = Color(1, 0.2, 0.2)
+		hero_hp_bar.modulate = Color(1, 0.5, 0.5)
+		enemy_hp_bar.modulate = Color(1, 0.5, 0.5)
+		_start_frenzy_border_pulse()
 	else:
+		hero_hp_bar.modulate = Color(1, 1, 1)
 		enemy_hp_bar.modulate = Color(1, 1, 1)
+		_stop_frenzy_border_pulse()
 
 func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool, is_chain: bool = false, chain_count: int = 0) -> void:
+	if not GameManager.damage_numbers_enabled:
+		return
 	var label := Label.new()
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	
+	var target_sprite: Control = enemy_sprite if is_enemy_side else hero_sprite
+	var sprite_pos: Vector2 = target_sprite.global_position
+	var sprite_size: Vector2 = target_sprite.size
 	
 	if is_chain:
 		label.text = "CHAIN x%d! %d" % [chain_count, damage]
 		label.add_theme_font_size_override("font_size", 28)
-		label.modulate = Color(0.8, 0.3, 1.0)  # 紫色
+		label.modulate = Color(0.8, 0.2, 1.0)  # 紫色
+		
+		# 连锁动画：旋转上飘 + 淡出
+		label.position = Vector2(
+			sprite_pos.x + sprite_size.x / 2.0 - 40,
+			sprite_pos.y - 10
+		)
+		damage_container.add_child(label)
+		
+		var tween := create_tween()
+		tween.tween_property(label, "position:y", label.position.y - 100, 0.8)
+		tween.parallel().tween_property(label, "rotation", 0.17, 0.8)  # 10度
+		tween.parallel().tween_property(label, "modulate:a", 0.0, 0.8)
+		tween.tween_callback(label.queue_free)
+		
 	elif is_crit:
 		label.text = str(damage)
 		label.add_theme_font_size_override("font_size", 36)
-		label.modulate = Color(1, 0.1, 0.1)  # 鲜红
+		label.modulate = Color(1, 0.2, 0.2)  # 鲜红
+		
+		# 暴击动画：缩放弹跳
+		label.position = Vector2(
+			sprite_pos.x + sprite_size.x / 2.0 - 20,
+			sprite_pos.y - 10
+		)
+		label.scale = Vector2.ZERO
+		damage_container.add_child(label)
+		
+		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(label, "scale", Vector2.ONE * 1.5, 0.15)
+		tween.tween_property(label, "scale", Vector2.ONE, 0.1)
+		tween.tween_property(label, "position:y", label.position.y - 80, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(label, "modulate:a", 0, 0.3)
+		tween.tween_callback(label.queue_free)
+		
+		# 屏幕震动
+		_screen_shake()
+		
 	else:
 		label.text = str(damage)
 		label.add_theme_font_size_override("font_size", 26)
-		label.modulate = Color(1, 0.9, 0.3)  # 金黄
+		label.modulate = Color(1, 0.9, 0.4)  # 金黄
+		
+		# 普通动画：抛物线上飘
+		label.position = Vector2(
+			sprite_pos.x + sprite_size.x / 2.0 - 15,
+			sprite_pos.y - 10
+		)
+		damage_container.add_child(label)
+		
+		var tween := create_tween()
+		var start_y: float = label.position.y
+		tween.tween_property(label, "position:y", start_y - 60, 0.5)
+		tween.tween_property(label, "position:y", start_y - 50, 0.3)
+		tween.tween_property(label, "modulate:a", 0.0, 0.5)
+		tween.tween_callback(label.queue_free)
 	
-	# 黑色描边/阴影效果：用 OutlineLabel 或双层 Label
-	# 简版：加 LabelSettings outline
+	# 统一描边
 	var label_settings := LabelSettings.new()
 	label_settings.font_size = label.get_theme_font_size("font_size")
 	label_settings.font_color = label.modulate
@@ -233,41 +296,6 @@ func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool, is_cha
 	label_settings.shadow_size = 2
 	label_settings.shadow_color = Color(0, 0, 0, 0.5)
 	label.label_settings = label_settings
-	
-	var target_sprite: Control = enemy_sprite if is_enemy_side else hero_sprite
-	var sprite_pos: Vector2 = target_sprite.global_position
-	var sprite_size: Vector2 = target_sprite.size
-	label.position = Vector2(
-		sprite_pos.x + float(sprite_size.x) / 2.0 - label.size.x / 2.0,
-		sprite_pos.y - 10
-	)
-	damage_container.add_child(label)
-	
-	# 动画：抛物线轨迹（先上后下）+ 淡出
-	var tween := create_tween()
-	var start_y: float = label.position.y
-	
-	if is_crit:
-		# 暴击：缩放弹跳 + 抛物线 + 震动
-		label.scale = Vector2(1.5, 1.5)
-		tween.tween_property(label, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "position:y", start_y - 80, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "position:y", start_y + 20, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tween.tween_property(label, "modulate:a", 0, 0.3)
-		# 暴击额外震动
-		_screen_shake()
-	elif is_chain:
-		# 连击：快速上飘 + 旋转
-		tween.tween_property(label, "position:y", start_y - 100, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tween.parallel().tween_property(label, "rotation", deg_to_rad(10), 0.3)
-		tween.tween_property(label, "modulate:a", 0, 0.4)
-	else:
-		# 普通伤害：抛物线
-		tween.tween_property(label, "position:y", start_y - 60, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "position:y", start_y + 10, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tween.tween_property(label, "modulate:a", 0, 0.3)
-	
-	tween.tween_callback(label.queue_free)
 
 func _flash_sprite(unit_id: String) -> void:
 	var is_enemy: bool = not (unit_id == "hero" or unit_id.begins_with("hero"))
@@ -280,6 +308,8 @@ func _flash_partner_icon(_partner_name: String) -> void:
 	pass
 
 func _screen_shake() -> void:
+	if not GameManager.screen_shake_enabled:
+		return
 	var viewport := get_viewport()
 	var original_transform := viewport.canvas_transform
 	var tween := create_tween()
@@ -382,3 +412,137 @@ func _setup_enemy_hp_bar_style(bar: ProgressBar) -> void:
 	
 	bar.add_theme_stylebox_override("fill", fg)
 	bar.add_theme_stylebox_override("background", bg)
+
+
+# ==================== Shader HP Bars ====================
+
+func _setup_shader_hp_bars() -> void:
+	var shader := load("res://shaders/health_bar.gdshader")
+	if shader == null:
+		push_warning("[BattleAnimation] 血条shader加载失败")
+		return
+	
+	var hero_mat := ShaderMaterial.new()
+	hero_mat.shader = shader
+	hero_hp_bar.material = hero_mat
+	
+	var enemy_mat := ShaderMaterial.new()
+	enemy_mat.shader = shader
+	enemy_hp_bar.material = enemy_mat
+
+
+# ==================== Frenzy Border Pulse ====================
+
+func _setup_frenzy_border() -> void:
+	_frenzy_border = ColorRect.new()
+	_frenzy_border.name = "FrenzyBorder"
+	_frenzy_border.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_frenzy_border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_frenzy_border.color = Color(1, 0, 0, 0)
+	add_child(_frenzy_border)
+	move_child(_frenzy_border, 1)
+
+func _start_frenzy_border_pulse() -> void:
+	if _frenzy_border == null:
+		return
+	_frenzy_border.visible = true
+	# 停止旧动画
+	if _frenzy_tween != null:
+		_frenzy_tween.kill()
+	_frenzy_tween = create_tween().set_loops()
+	_frenzy_tween.tween_property(_frenzy_border, "color:a", 0.3, 0.5)
+	_frenzy_tween.tween_property(_frenzy_border, "color:a", 0.0, 0.5)
+
+func _stop_frenzy_border_pulse() -> void:
+	if _frenzy_border == null:
+		return
+	_frenzy_border.visible = false
+	_frenzy_border.color = Color(1, 0, 0, 0)
+	if _frenzy_tween != null:
+		_frenzy_tween.kill()
+		_frenzy_tween = null
+
+
+# ==================== Placeholder Draw ====================
+
+func _setup_placeholder_draw() -> void:
+	hero_sprite.draw.connect(_on_draw_hero_placeholder)
+	enemy_sprite.draw.connect(_on_draw_enemy_placeholder)
+	hero_sprite.queue_redraw()
+	enemy_sprite.queue_redraw()
+
+func _on_draw_hero_placeholder() -> void:
+	var rect: Rect2 = Rect2(Vector2.ZERO, hero_sprite.size)
+	_draw_hero_placeholder(rect, _hero_id_hint, _hero_hp > 0)
+
+func _on_draw_enemy_placeholder() -> void:
+	var rect: Rect2 = Rect2(Vector2.ZERO, enemy_sprite.size)
+	_draw_enemy_placeholder(rect, _enemy_type_hint, _is_boss_hint)
+
+func _draw_hero_placeholder(rect: Rect2, hero_id: int, is_alive: bool) -> void:
+	var color: Color = Color(0.2, 0.6, 0.9) if is_alive else Color(0.3, 0.3, 0.3)
+	var center: Vector2 = rect.position + rect.size / 2
+	var radius: float = min(rect.size.x, rect.size.y) / 2 - 8
+	
+	# 外圈发光边框
+	hero_sprite.draw_circle(center, radius + 4, Color(color.r, color.g, color.b, 0.3))
+	# 主体圆形
+	hero_sprite.draw_circle(center, radius, color)
+	# 内部几何图案区分英雄
+	match hero_id:
+		2:  # 影舞者 - 六角星
+			_draw_star(hero_sprite, center, radius * 0.5, 6, Color.WHITE)
+		3:  # 铁卫 - 方块
+			var r2 = radius * 0.4
+			hero_sprite.draw_rect(Rect2(center - Vector2(r2, r2), Vector2(r2 * 2, r2 * 2)), Color.WHITE)
+		_:  # 默认/战士 - 十字
+			hero_sprite.draw_line(center - Vector2(radius * 0.4, 0), center + Vector2(radius * 0.4, 0), Color.WHITE, 3)
+			hero_sprite.draw_line(center - Vector2(0, radius * 0.4), center + Vector2(0, radius * 0.4), Color.WHITE, 3)
+	
+	# 死亡时加X标记
+	if not is_alive:
+		hero_sprite.draw_line(center - Vector2(radius * 0.5, radius * 0.5), center + Vector2(radius * 0.5, radius * 0.5), Color.RED, 4)
+		hero_sprite.draw_line(center + Vector2(-radius * 0.5, radius * 0.5), center + Vector2(radius * 0.5, -radius * 0.5), Color.RED, 4)
+
+func _draw_enemy_placeholder(rect: Rect2, enemy_type: String, is_boss: bool) -> void:
+	var color: Color
+	match enemy_type:
+		"slime": color = Color(0.4, 0.8, 0.2)
+		"demon": color = Color(0.8, 0.2, 0.2)
+		"heavy": color = Color(0.5, 0.5, 0.6)
+		_: color = Color(0.6, 0.1, 0.1)
+	
+	if is_boss:
+		color = Color(0.9, 0.1, 0.9)
+	
+	var center: Vector2 = rect.position + rect.size / 2
+	var radius: float = min(rect.size.x, rect.size.y) / 2 - 8
+	
+	# 外圈
+	enemy_sprite.draw_circle(center, radius + (6 if is_boss else 3), Color(color.r, color.g, color.b, 0.5))
+	# 主体
+	enemy_sprite.draw_circle(center, radius, color)
+	# Boss加皇冠标记
+	if is_boss:
+		var crown_points: Array[Vector2] = [
+			center + Vector2(0, -radius * 0.7),
+			center + Vector2(-radius * 0.25, -radius * 0.4),
+			center + Vector2(radius * 0.25, -radius * 0.4)
+		]
+		enemy_sprite.draw_polygon(crown_points, PackedColorArray([Color(1, 0.84, 0)]))
+		# 眼睛
+		enemy_sprite.draw_circle(center + Vector2(-radius * 0.3, -radius * 0.1), radius * 0.15, Color(1, 1, 1))
+		enemy_sprite.draw_circle(center + Vector2(radius * 0.3, -radius * 0.1), radius * 0.15, Color(1, 1, 1))
+	else:
+		# 普通敌人眼睛
+		enemy_sprite.draw_circle(center + Vector2(-radius * 0.25, -radius * 0.1), radius * 0.12, Color(0.1, 0.1, 0.1))
+		enemy_sprite.draw_circle(center + Vector2(radius * 0.25, -radius * 0.1), radius * 0.12, Color(0.1, 0.1, 0.1))
+
+func _draw_star(canvas: Control, center: Vector2, outer_radius: float, points: int, color: Color) -> void:
+	var polygon: Array[Vector2] = []
+	var inner_radius: float = outer_radius * 0.4
+	for i in range(points * 2):
+		var angle: float = PI / 2 + i * PI / points
+		var r: float = outer_radius if i % 2 == 0 else inner_radius
+		polygon.append(center + Vector2(cos(angle), -sin(angle)) * r)
+	canvas.draw_polygon(polygon, PackedColorArray([color]))

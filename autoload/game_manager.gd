@@ -43,6 +43,10 @@ const _PARTNER_STRING_TO_ID: Dictionary = {
 	"partner_hunter": 1006,
 }
 
+# 视觉/音频设置开关
+var screen_shake_enabled: bool = true
+var damage_numbers_enabled: bool = true
+
 var pending_archive: Dictionary = {}
 
 # 运行时选择数据（供RunMain读取启动新局）
