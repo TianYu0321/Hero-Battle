@@ -316,16 +316,22 @@ func get_mocheng_coin() -> int:
 
 func add_mocheng_coin(amount: int) -> void:
 	var data: Dictionary = _load_player_data()
-	data["mocheng_coin"] = data.get("mocheng_coin", 0) + amount
+	var new_amount: int = data.get("mocheng_coin", 0) + amount
+	data["mocheng_coin"] = new_amount
 	_save_player_data(data)
+	# 同步到账号隔离的新存储，确保新旧系统数据一致
+	save_mocheng_coin(new_amount)
 
 func spend_mocheng_coin(amount: int) -> bool:
 	var data: Dictionary = _load_player_data()
 	var current: int = data.get("mocheng_coin", 0)
 	if current < amount:
 		return false
-	data["mocheng_coin"] = current - amount
+	var new_amount: int = current - amount
+	data["mocheng_coin"] = new_amount
 	_save_player_data(data)
+	# 同步到账号隔离的新存储，确保新旧系统数据一致
+	save_mocheng_coin(new_amount)
 	return true
 
 func load_player_data() -> Dictionary:
@@ -419,12 +425,17 @@ func save_mocheng_coin(amount: int, user_id: String = current_user_id) -> bool:
 	file.store_string(JSON.stringify(data, "\t"))
 	file.close()
 	EventBus.mocheng_coin_changed.emit(amount)
+	# 同时同步到旧版 player_data.json，保持向后兼容
+	var legacy_data := load_player_data()
+	legacy_data["mocheng_coin"] = amount
+	save_player_data(legacy_data)
 	return true
 
 func load_mocheng_coin(user_id: String = current_user_id) -> int:
 	var file_path: String = "user://%s_mocheng_coin.json" % user_id
 	if not FileAccess.file_exists(file_path):
-		return 0
+		# 新文件不存在时，回退到旧版 player_data.json
+		return get_mocheng_coin()
 	var file := FileAccess.open(file_path, FileAccess.READ)
 	var json := JSON.new()
 	var result := json.parse(file.get_as_text())
@@ -433,7 +444,8 @@ func load_mocheng_coin(user_id: String = current_user_id) -> int:
 		var data: Dictionary = json.get_data()
 		if data.get("user_id", "") == user_id:
 			return data.get("amount", 0)
-	return 0
+	# 解析失败也回退到旧版
+	return get_mocheng_coin()
 
 # --- 解锁状态（账号隔离）---
 func save_unlock_state(

@@ -443,17 +443,15 @@ func _process_node_result(result: Dictionary) -> void:
 		_hero.is_alive = battle_result.get("winner", "") == "player"
 		if not _hero.is_alive:
 			_run.run_status = 3  # LOSE
-			_end_run()
-			_battle_result_phase = BattleResultPhase.NONE
-			return
 		# 战斗胜利奖励金币（从敌人配置读取）
-		var enemy_cfg2: Dictionary = ConfigManager.get_enemy_config(str(enemy_config_id))
-		var gold_reward: int = enemy_cfg2.get("reward_gold_min", 20)
-		if enemy_cfg2.has("reward_gold_max"):
-			var gold_max: int = enemy_cfg2.get("reward_gold_max", gold_reward)
-			if gold_max > gold_reward:
-				gold_reward = randi() % (gold_max - gold_reward + 1) + gold_reward
-		_process_reward({"type": "gold", "amount": gold_reward})
+		if _hero.is_alive:
+			var enemy_cfg2: Dictionary = ConfigManager.get_enemy_config(str(enemy_config_id))
+			var gold_reward: int = enemy_cfg2.get("reward_gold_min", 20)
+			if enemy_cfg2.has("reward_gold_max"):
+				var gold_max: int = enemy_cfg2.get("reward_gold_max", gold_reward)
+				if gold_max > gold_reward:
+					gold_reward = randi() % (gold_max - gold_reward + 1) + gold_reward
+			_process_reward({"type": "gold", "amount": gold_reward})
 		_battle_result_phase = BattleResultPhase.BATTLE_ENDED
 		_pending_battle_result = battle_result
 		EventBus.emit_signal("battle_ended", battle_result)
@@ -888,7 +886,10 @@ func confirm_battle_result() -> void:
 			_pending_battle_result.get("hero_remaining_hp", -1),
 			battle_hero_data.get("hp", -1)
 		])
-		_finish_node_execution(_pending_battle_result)
+		if not _hero.is_alive:
+			_end_run()
+		else:
+			_finish_node_execution(_pending_battle_result)
 		_battle_result_phase = BattleResultPhase.NONE
 		_pending_battle_result = {}
 		print("[RunController] confirm_battle_result 完成, 状态已重置")
