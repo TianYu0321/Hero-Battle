@@ -47,6 +47,9 @@ func save_run_state(run_data: Dictionary, is_auto: bool = true) -> bool:
 
 	file.store_string(json_text)
 	file.close()
+	
+	print("[SaveManager] 存档已保存: %s" % file_path)
+	print("[SaveManager] 内容预览: %s" % json_text.substr(0, 200))
 
 	EventBus.game_saved.emit(slot_id, data["timestamp"], data.get("current_floor", 0), is_auto)
 	return true

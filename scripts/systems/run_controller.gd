@@ -298,6 +298,7 @@ func advance_turn() -> void:
 		return
 
 	_run.current_turn += 1
+	_run.current_floor = _run.current_turn  # 同步更新 current_floor，确保存档正确
 
 	# 事件透视消耗1次
 	var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")

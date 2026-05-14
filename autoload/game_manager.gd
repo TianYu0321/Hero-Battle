@@ -151,6 +151,7 @@ func _on_new_game_requested(_hero_id: String) -> void:
 
 func _on_continue_game_requested() -> void:
 	var save_data: Dictionary = SaveManager.load_latest_run()
+	print("[GameManager] 继续游戏存档: %s" % JSON.stringify(save_data).substr(0, 200))
 	if not SaveManager.is_valid_save(save_data):
 		push_warning("[GameManager] 存档数据无效，无法继续")
 		return

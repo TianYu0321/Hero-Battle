@@ -704,11 +704,13 @@ func _on_resume_game() -> void:
 	pass
 
 func _on_return_main_menu() -> void:
-	print("[RunMain] 返回主菜单")
-	# 主动存档当前层入口状态（包含当前选项）
+	print("[RunMain] 返回主菜单, _run_controller=%s" % _run_controller)
 	if _run_controller != null:
+		print("[RunMain] 调用 _save_at_floor_entrance()")
 		_run_controller._save_at_floor_entrance()
-		print("[RunMain] 返回主菜单前已保存进度")
+		print("[RunMain] 存档完成")
+	else:
+		print("[RunMain] ⚠️ _run_controller 为 null，无法存档！")
 	get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")
 
 
