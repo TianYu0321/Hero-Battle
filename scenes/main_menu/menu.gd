@@ -65,9 +65,10 @@ func _ready() -> void:
 	# 主菜单中隐藏PauseMenu的"返回主菜单"按钮
 	_pause_menu.set_is_main_menu(true)
 
-	var has_save: bool = SaveManager.has_active_run()
-	_btn_continue.visible = has_save
-	print("[MainMenu] 继续游戏按钮显隐: ", has_save)
+	var save_data = SaveManager.load_latest_run()
+	var is_valid = SaveManager.is_valid_save(save_data)
+	_btn_continue.visible = is_valid
+	print("[MainMenu] 继续游戏按钮显隐: ", is_valid)
 
 	_update_pvp_archive_display()
 

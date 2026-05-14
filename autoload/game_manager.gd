@@ -151,10 +151,14 @@ func _on_new_game_requested(_hero_id: String) -> void:
 
 func _on_continue_game_requested() -> void:
 	var save_data: Dictionary = SaveManager.load_latest_run()
-	if save_data.is_empty():
-		push_warning("[GameManager] No save data found, cannot continue")
+	if not SaveManager.is_valid_save(save_data):
+		push_warning("[GameManager] 存档数据无效，无法继续")
 		return
-	pending_save_data = save_data
+	pending_save_data = save_data.duplicate()
+	selected_hero_config_id = save_data.get("hero_config_id", 0)
+	selected_partner_config_ids.clear()
+	for p in save_data.get("partners", []):
+		selected_partner_config_ids.append(p.get("config_id", p.get("partner_config_id", 0)))
 	change_scene("RUNNING", "fade")
 
 func _on_hero_selected(hero_id: String) -> void:

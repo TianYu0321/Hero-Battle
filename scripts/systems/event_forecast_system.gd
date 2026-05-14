@@ -12,6 +12,11 @@ func add_charges(amount: int) -> void:
 	_foresight_charges += amount
 	print("[EventForecast] 透视次数+%d，当前=%d" % [amount, _foresight_charges])
 
+# 设置透视次数（存档恢复时使用）
+func set_charges(amount: int) -> void:
+	_foresight_charges = maxi(0, amount)
+	print("[EventForecast] 透视次数设置为=%d" % _foresight_charges)
+
 # 获取当前透视次数
 func get_charges() -> int:
 	return _foresight_charges

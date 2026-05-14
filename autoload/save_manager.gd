@@ -75,20 +75,7 @@ func has_active_run() -> bool:
 		return false
 	
 	var data = ModelsSerializer.load_json_file(latest_path)
-	if data == null or data.is_empty():
-		print("[SaveManager] 检查结果: false (存档为空)")
-		return false
-	
-	var has_hero = data.has("hero_config_id") or data.has("hero_id")
-	var has_floor = data.has("current_floor") and data.get("current_floor", 0) > 0
-	var has_turn = data.has("current_turn") and data.get("current_turn", 0) > 0
-	var run_status = data.get("run_status", 1)
-	var is_ongoing = (run_status == 1)
-	
-	print("[SaveManager] 存档检查: has_hero=", has_hero, ", has_floor=", has_floor or has_turn, ", floor=", data.get("current_floor", data.get("current_turn", 0)), ", run_status=", run_status)
-	var result = has_hero and (has_floor or has_turn) and is_ongoing
-	print("[SaveManager] 检查结果: ", result)
-	return result
+	return is_valid_save(data) and data.get("run_status", 1) == 1
 
 func load_latest_run() -> Dictionary:
 	var latest_path: String = ""
@@ -287,6 +274,21 @@ func load_archives(sort_by: String = "date", limit: int = 100, filter_hero: Stri
 			result.sort_custom(func(a, b): return a.get("created_at", 0) > b.get("created_at", 0))
 
 	return result.slice(0, limit)
+
+func is_valid_save(save_data: Dictionary) -> bool:
+	if save_data.is_empty():
+		return false
+	var required_fields = ["hero_config_id", "current_floor", "hero"]
+	for field in required_fields:
+		if not save_data.has(field):
+			return false
+	var floor = save_data.get("current_floor", 0)
+	if floor < 1 or floor > 30:
+		return false
+	var hero = save_data.get("hero", {})
+	if not hero.has("current_hp") or not hero.has("max_hp"):
+		return false
+	return true
 
 func _validate_save_integrity(save_data: Dictionary) -> bool:
 	for field in _REQUIRED_SAVE_FIELDS:

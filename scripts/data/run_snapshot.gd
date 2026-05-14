@@ -31,6 +31,11 @@ var node_history: Array = []
 var battle_win_count: int = 0
 var elite_win_count: int = 0
 
+# 跨局持久化字段（用于继续游戏恢复）
+var pvp_net_wins: int = 0
+var mocheng_coin: int = 0
+var event_forecast_charges: int = 0
+
 func to_dict() -> Dictionary:
 	return {
 		"version": 1,
@@ -51,6 +56,9 @@ func to_dict() -> Dictionary:
 		"node_history": node_history,
 		"battle_win_count": battle_win_count,
 		"elite_win_count": elite_win_count,
+		"pvp_net_wins": pvp_net_wins,
+		"mocheng_coin": mocheng_coin,
+		"event_forecast_charges": event_forecast_charges,
 	}
 
 static func from_dict(data: Dictionary) -> RunSnapshot:
@@ -76,4 +84,7 @@ static func from_dict(data: Dictionary) -> RunSnapshot:
 	snap.node_history = data.get("node_history", [])
 	snap.battle_win_count = data.get("battle_win_count", 0)
 	snap.elite_win_count = data.get("elite_win_count", 0)
+	snap.pvp_net_wins = data.get("pvp_net_wins", 0)
+	snap.mocheng_coin = data.get("mocheng_coin", 0)
+	snap.event_forecast_charges = data.get("event_forecast_charges", 0)
 	return snap

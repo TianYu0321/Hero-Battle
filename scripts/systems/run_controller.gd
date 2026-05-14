@@ -184,10 +184,42 @@ func continue_from_save(save_data: Dictionary) -> bool:
 	# 重置节点池
 	_node_pool_system.reset()
 	
+	# 恢复事件透视次数
+	var forecast_charges: int = save_data.get("event_forecast_charges", 0)
+	if forecast_charges > 0:
+		var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+		if forecast_system != null:
+			forecast_system.set_charges(forecast_charges)
+			print("[RunController] 恢复事件透视次数: %d" % forecast_charges)
+	
 	# 恢复状态
 	_state = RunState.RUNNING_NODE_SELECT
-	_change_state(RunState.RUNNING_NODE_SELECT)
 	
+	# 恢复当前层的选项（如果有）
+	var saved_options: Array = save_data.get("node_options", [])
+	if not saved_options.is_empty():
+		_current_node_options = saved_options.duplicate(true)
+		EventBus.emit_signal("floor_changed", _run.current_turn, _MAX_TURNS, _get_phase_name())
+		EventBus.emit_signal("node_options_presented", _current_node_options)
+		print("[RunController] 恢复存档选项: %d 个" % _current_node_options.size())
+	else:
+		# 没有保存的选项，重新生成
+		_change_state(RunState.RUNNING_NODE_SELECT)
+	
+	# 恢复事件透视次数
+	var forecast_charges: int = save_data.get("event_forecast_charges", 0)
+	if forecast_charges > 0:
+		var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+		if forecast_system != null:
+			forecast_system.set_charges(forecast_charges)
+			print("[RunController] 恢复事件透视次数: %d" % forecast_charges)
+	
+	EventBus.emit_signal("run_started", {
+		"hero_id": _run.hero_config_id,
+		"partner_ids": [],
+		"run_seed": _run.run_seed,
+	})
+	EventBus.emit_signal("gold_changed", _run.gold_owned, 0, "continue_from_save")
 	EventBus.emit_signal("run_continued", _run.current_turn)
 	print("[RunController] 存档恢复完成，当前层=%d" % _run.current_turn)
 	return true
@@ -282,9 +314,6 @@ func advance_turn() -> void:
 		forecast_system.consume_charge()
 		print("[RunController] 透视消耗后: %d" % forecast_system.get_charges())
 
-	# 自动存档
-	_auto_save()
-
 	print("[RunController] 发射 floor_advanced: turn=%d" % _run.current_turn)
 	EventBus.emit_signal("floor_advanced", _run.current_turn, _get_phase_name(), _is_fixed_node_turn(_run.current_turn))
 	print("[RunController] floor_advanced 已发射，进入 RUNNING_NODE_SELECT")
@@ -352,6 +381,7 @@ func _generate_node_options() -> void:
 			candidates = rescue_system.generate_candidates()
 		# 不生成普通选项，直接打开救援面板
 		EventBus.emit_signal("panel_opened", "RESCUE_PANEL", {"candidates": candidates})
+		_save_at_floor_entrance()
 		return
 
 	if turn in _PVP_TURNS:
@@ -362,6 +392,7 @@ func _generate_node_options() -> void:
 			"node_id": "pvp_%d" % turn,
 		}]
 		EventBus.emit_signal("node_options_presented", _current_node_options)
+		_save_at_floor_entrance()
 		return
 
 	if turn == _FINAL_TURN:
@@ -372,6 +403,7 @@ func _generate_node_options() -> void:
 			"node_id": "final_%d" % turn,
 		}]
 		EventBus.emit_signal("node_options_presented", _current_node_options)
+		_save_at_floor_entrance()
 		return
 
 	# 普通回合：从节点池生成选项
@@ -390,6 +422,7 @@ func _generate_node_options() -> void:
 	
 	print("[RunController] 发射 node_options_presented: options=%d" % _current_node_options.size())
 	EventBus.emit_signal("node_options_presented", _current_node_options)
+	_save_at_floor_entrance()
 
 
 func _process_node_result(result: Dictionary) -> void:
@@ -701,6 +734,9 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 	# 标记存档为已完成并保存，确保"继续游戏"不再加载已通关的局
 	_run.run_status = 2  # COMPLETED
 	_auto_save()
+	
+	# 删除run存档（通关后无需保留进度文件）
+	_delete_run_saves()
 
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
 	EventBus.emit_signal("archive_generated", archive_dict)
@@ -779,7 +815,15 @@ func _end_run() -> void:
 	else:
 		push_error("[RunController] GameManager not found, cannot pass archive")
 	
-	# 删除所有存档文件，防止已结束的局被"继续游戏"加载
+	# 先保存最终状态，再删除run存档
+	_auto_save()
+	_delete_run_saves()
+	
+	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_data)
+	return
+
+
+func _delete_run_saves() -> void:
 	var dir: DirAccess = DirAccess.open(ConfigManager.SAVE_DIR)
 	if dir != null:
 		dir.list_dir_begin()
@@ -791,8 +835,6 @@ func _end_run() -> void:
 				print("[RunController] 已删除存档: %s" % save_path)
 			file_name = dir.get_next()
 		dir.list_dir_end()
-	
-	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_data)
 
 func _check_hero_unlocks() -> void:
 	var hero_id: String = ConfigManager.get_hero_id_by_config_id(_run.hero_config_id)
@@ -817,13 +859,30 @@ func get_current_shop_items() -> Array[Dictionary]:
 	return []
 
 
-func _auto_save() -> void:
+func _save_at_floor_entrance() -> void:
+	## 层入口存档：包含当前层的选项（种子模式，确保SL后选项不变）
 	if SaveManager != null and _run != null:
 		var data = _run.to_dict()
 		data["hero"] = _hero.to_dict() if _hero != null else {}
 		data["partners"] = _get_partner_dicts()
 		data["gold"] = _run.gold_owned
+		data["node_options"] = _current_node_options.duplicate(true)
+		
+		# 额外跨局字段
+		var player_data = SaveManager.load_player_data()
+		data["pvp_net_wins"] = player_data.get("net_wins", 0)
+		data["mocheng_coin"] = player_data.get("mocheng_coin", 0)
+		var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+		if forecast_system != null:
+			data["event_forecast_charges"] = forecast_system.get_charges()
+		
 		SaveManager.save_run_state(data, true)
+		print("[RunController] 层入口存档: 第%d层, 选项数=%d" % [_run.current_turn, _current_node_options.size()])
+
+
+func _auto_save() -> void:
+	## 保留旧接口兼容，统一调用层入口存档
+	_save_at_floor_entrance()
 
 
 func confirm_battle_result() -> void:
