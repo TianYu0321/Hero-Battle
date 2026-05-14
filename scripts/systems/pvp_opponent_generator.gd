@@ -242,3 +242,100 @@ func _generate_opponent_name(rng: RandomNumberGenerator) -> String:
 		var letters: Array[String] = ["A", "B", "C", "X", "Y", "Z"]
 		suffix = letters[rng.randi() % letters.size()] + str(rng.randi() % 10)
 	return "%s_%s" % [prefix, suffix]
+
+
+# ==================== 影子对手生成 (Shadow PVP) ====================
+
+func generate_pvp_opponent(player_floor: int, player_user_id: String, pool: VirtualArchivePool = null) -> Dictionary:
+	if pool == null:
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree != null:
+			pool = tree.root.get_node_or_null("VirtualArchivePool")
+			if pool == null:
+				pool = tree.root.get_node_or_null("RunController/VirtualArchivePool")
+
+	if pool != null:
+		var shadow = pool.get_random_shadow_for_floor(player_floor, player_user_id)
+		if shadow != null:
+			print("[PvpOpponentGenerator] 使用影子对手: user=%s, floor=%d" % [shadow.user_id, shadow.floor])
+			return _build_opponent_from_shadow(shadow)
+
+	print("[PvpOpponentGenerator] 影子池为空，使用固定AI")
+	return _build_default_ai_opponent(player_floor)
+
+func _build_opponent_from_shadow(shadow) -> Dictionary:
+	var hero_cfg: Dictionary = shadow.hero_config
+	var hero_id: String = ConfigManager.get_hero_id_by_config_id(hero_cfg.get("hero_config_id", 1))
+	if hero_id.is_empty():
+		hero_id = "hero_warrior"
+
+	var hero_stats: Dictionary = {
+		"physique": hero_cfg.get("current_vit", 10),
+		"strength": hero_cfg.get("current_str", 10),
+		"agility": hero_cfg.get("current_agi", 10),
+		"technique": hero_cfg.get("current_tec", 10),
+		"spirit": hero_cfg.get("current_mnd", 10),
+	}
+	var ai_hero: Dictionary = DamageCalculator.spawn_hero(hero_id, hero_stats)
+	ai_hero.hp = hero_cfg.get("current_hp", ai_hero.max_hp)
+	ai_hero.name = "影子_%s" % shadow.user_id.substr(0, 8)
+
+	# 从影子提取伙伴
+	var ai_partners: Array = []
+	for p_data in shadow.partner_configs:
+		if not p_data is Dictionary:
+			continue
+		var pid: int = p_data.get("partner_config_id", 1001)
+		var pcfg: Dictionary = ConfigManager.get_partner_config(str(pid))
+		var p_name: String = pcfg.get("name", "伙伴")
+		var p_level: int = p_data.get("current_level", 1)
+		var assist_cfg: Dictionary = ConfigManager.get_partner_assist_by_partner_id(str(pid))
+		var base_stats: Dictionary = {
+			"physique": assist_cfg.get("base_physique", 10),
+			"strength": assist_cfg.get("base_strength", 10),
+			"agility": assist_cfg.get("base_agility", 10),
+			"technique": assist_cfg.get("base_technique", 10),
+			"spirit": assist_cfg.get("base_spirit", 10),
+		}
+		var level_multiplier: float = 1.0 + (p_level - 1) * 0.2
+		for key in base_stats.keys():
+			base_stats[key] = int(base_stats[key] * level_multiplier)
+		ai_partners.append(PartnerAssist.make_partner_battle_unit(str(pid), p_name, base_stats))
+
+	return {
+		"hero": ai_hero,
+		"enemies": [],
+		"partners": ai_partners,
+		"battle_seed": shadow.timestamp + shadow.floor,
+		"playback_mode": "fast_forward",
+		"opponent_name": ai_hero.name,
+		"opponent_source": "shadow",
+		"shadow_data": shadow.to_dict(),
+	}
+
+func _build_default_ai_opponent(floor: int) -> Dictionary:
+	var template: Dictionary = _select_template(floor)
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = floor * 1000
+
+	var default_stats: Dictionary = {
+		"physique": 20,
+		"strength": 20,
+		"agility": 20,
+		"technique": 20,
+		"spirit": 20,
+	}
+	var ai_hero: Dictionary = DamageCalculator.spawn_hero("hero_warrior", default_stats)
+	ai_hero.name = _generate_opponent_name(rng)
+
+	var ai_partners: Array = _generate_ai_partners(template, rng)
+
+	return {
+		"hero": ai_hero,
+		"enemies": [],
+		"partners": ai_partners,
+		"battle_seed": rng.seed,
+		"playback_mode": "fast_forward",
+		"opponent_name": ai_hero.name,
+		"opponent_source": "default_ai",
+	}

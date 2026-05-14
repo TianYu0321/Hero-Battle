@@ -240,6 +240,39 @@ func get_battle_ready_team() -> Dictionary:
 	}
 
 
+## 获取英雄属性快照（用于PVP影子保存）
+func get_hero_snapshot() -> Dictionary:
+	if _hero == null:
+		return {}
+	return {
+		"hero_config_id": _hero.hero_config_id,
+		"max_hp": _hero.max_hp,
+		"current_hp": _hero.current_hp,
+		"current_vit": _hero.current_vit,
+		"current_str": _hero.current_str,
+		"current_agi": _hero.current_agi,
+		"current_tec": _hero.current_tec,
+		"current_mnd": _hero.current_mnd,
+		"passive_skill_id": _hero.passive_skill_id,
+		"ultimate_skill_id": _hero.ultimate_skill_id,
+		"buff_list": _hero.buff_list.duplicate(),
+	}
+
+
+## 获取伙伴快照列表（用于PVP影子保存）
+func get_partners_snapshot() -> Array:
+	var result: Array = []
+	for p in _partners:
+		if p is RuntimePartner:
+			result.append({
+				"partner_config_id": p.partner_config_id,
+				"current_level": p.current_level,
+				"favored_attr": p.favored_attr,
+				"is_active": p.is_active,
+			})
+	return result
+
+
 # --- 私有方法 ---
 
 func _calculate_max_hp(vit: int) -> int:

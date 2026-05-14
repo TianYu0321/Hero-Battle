@@ -3,9 +3,12 @@ extends Node
 
 var _virtual_archives: Array[Dictionary] = []
 var _local_archives: Array[Dictionary] = []
+var _shadows: Array = []  # Array of ShadowData
+var _max_shadows_per_floor: int = 50
 
 func _ready() -> void:
 	_load_virtual_archives()
+	load_shadows_from_disk()
 
 func _load_virtual_archives() -> void:
 	var dir_path: String = "res://resources/virtual_archives/"
@@ -64,3 +67,82 @@ func find_opponent_for_floor(_floor: int) -> Dictionary:
 		selected.get("_source", "local")
 	])
 	return selected
+
+# ==================== 影子池 (Shadow Pool) ====================
+
+func add_shadow(shadow) -> void:
+	# 同层同用户去重：先删除旧影子
+	_shadows = _shadows.filter(func(s): return not (s.user_id == shadow.user_id and s.floor == shadow.floor))
+	_shadows.append(shadow)
+
+	# 同层超过上限时，删除最旧的
+	var floor_shadows := _shadows.filter(func(s): return s.floor == shadow.floor)
+	if floor_shadows.size() > _max_shadows_per_floor:
+		floor_shadows.sort_custom(func(a, b): return a.timestamp < b.timestamp)
+		var oldest = floor_shadows[0]
+		_shadows.erase(oldest)
+
+	print("[VirtualArchivePool] 影子已添加: user=%s, floor=%d, 池大小=%d" % [shadow.user_id, shadow.floor, _shadows.size()])
+
+func get_random_shadow_for_floor(floor: int, exclude_user_id: String = "") -> Object:
+	var candidates := _shadows.filter(func(s): return s.floor == floor and s.user_id != exclude_user_id)
+	if candidates.is_empty():
+		return null
+
+	# 加权随机：胜率高的影子更容易被匹配（增加挑战性）
+	var total_weight: float = 0.0
+	for s in candidates:
+		total_weight += s.win_rate + 0.1  # +0.1避免0权重
+
+	var roll := randf() * total_weight
+	var cumulative: float = 0.0
+	for s in candidates:
+		cumulative += s.win_rate + 0.1
+		if roll <= cumulative:
+			return s
+
+	return candidates[candidates.size() - 1]  # fallback
+
+func get_shadow_count() -> int:
+	return _shadows.size()
+
+func get_shadow_count_for_floor(floor: int) -> int:
+	var count: int = 0
+	for s in _shadows:
+		if s.floor == floor:
+			count += 1
+	return count
+
+func save_shadows_to_disk() -> void:
+	var data: Array = []
+	for s in _shadows:
+		data.append(s.to_dict())
+	var file := FileAccess.open("user://shadow_pool.json", FileAccess.WRITE)
+	if file == null:
+		push_error("[VirtualArchivePool] 保存影子池失败")
+		return
+	file.store_string(JSON.stringify(data, "\t"))
+	file.close()
+	print("[VirtualArchivePool] 影子池已保存: %d个" % _shadows.size())
+
+func load_shadows_from_disk() -> void:
+	if not FileAccess.file_exists("user://shadow_pool.json"):
+		return
+	var file := FileAccess.open("user://shadow_pool.json", FileAccess.READ)
+	if file == null:
+		return
+	var json := JSON.new()
+	var result := json.parse(file.get_as_text())
+	file.close()
+	if result != OK:
+		push_error("[VirtualArchivePool] 加载影子池失败")
+		return
+	var parsed: Variant = json.get_data()
+	if not parsed is Array:
+		return
+	_shadows.clear()
+	for entry in parsed:
+		if entry is Dictionary:
+			var sd = load("res://scripts/data/shadow_data.gd")
+			_shadows.append(sd.from_dict(entry))
+	print("[VirtualArchivePool] 影子池已加载: %d个" % _shadows.size())

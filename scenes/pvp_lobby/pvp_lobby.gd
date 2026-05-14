@@ -20,6 +20,7 @@ var _player_data: Dictionary = {}
 var _selected_archive: Dictionary = {}
 var _virtual_pool: VirtualArchivePool = null
 var _pending_pvp_result: Dictionary = {}
+var _shadow_battle_config: Dictionary = {}
 
 func _ready() -> void:
 	_load_player_data()
@@ -90,12 +91,30 @@ func _update_ui() -> void:
 		net_wins_label.text = "净胜场: %d" % _selected_archive.get("net_wins", 0)
 
 func _on_match_pressed() -> void:
+	_shadow_battle_config = {}
+
+	# 优先尝试影子池匹配（异步镜像对战）
+	var save_data: Dictionary = SaveManager.load_latest_run()
+	var player_floor: int = save_data.get("current_floor", 0)
+	var player_user_id: String = SaveManager.get_user_id()
+
+	if player_floor > 0:
+		_shadow_battle_config = PvpOpponentGenerator.new().generate_pvp_opponent(player_floor, player_user_id)
+		if not _shadow_battle_config.is_empty():
+			var source: String = _shadow_battle_config.get("opponent_source", "")
+			if source == "shadow":
+				var opp_name: String = _shadow_battle_config.get("opponent_name", "影子斗士")
+				opponent_info_label.text = "匹配到镜像对手: %s\n层数: %d" % [opp_name, player_floor]
+				print("[PvpLobby] 影子匹配成功: %s" % opp_name)
+				match_result_panel.visible = true
+				return
+
+	# 影子池为空或无活跃存档，fallback到档案匹配
 	if _selected_archive.is_empty():
 		push_warning("[PvpLobby] 未选择出战档案")
 		return
 
-	print("[PvpLobby] 开始匹配")
-
+	print("[PvpLobby] 档案匹配")
 	var net_wins: int = _selected_archive.get("net_wins", 0)
 	var opponent: Dictionary = _find_opponent_by_net_wins(net_wins)
 
@@ -157,15 +176,54 @@ func _on_start_battle() -> void:
 	var pvp_director := PvpDirector.new()
 	add_child(pvp_director)
 
-	var pvp_config: Dictionary = {
-		"turn_number": 30,
-		"player_gold": 0,
-		"player_hp": _selected_archive.get("max_hp_reached", 100),
-		"player_hero": _archive_to_battle_dict(_selected_archive),
-		"run_seed": randi(),
-		"use_archive": true,
-		"opponent_archive": _current_opponent,
-	}
+	var pvp_config: Dictionary
+	if not _shadow_battle_config.is_empty():
+		# 影子对战：使用预构建的 battle_config
+		var player_hero: Dictionary = {
+			"hero_id": ConfigManager.get_hero_id_by_config_id(_selected_archive.get("hero_config_id", 1)),
+			"stats": {
+				"physique": _selected_archive.get("attr_snapshot_vit", 10),
+				"strength": _selected_archive.get("attr_snapshot_str", 10),
+				"agility": _selected_archive.get("attr_snapshot_agi", 10),
+				"technique": _selected_archive.get("attr_snapshot_tec", 10),
+				"spirit": _selected_archive.get("attr_snapshot_mnd", 10),
+			},
+			"max_hp": _selected_archive.get("max_hp_reached", 100),
+			"hp": _selected_archive.get("max_hp_reached", 100),
+		}
+		# 补充敌人（玩家镜像）到 shadow battle_config
+		var shadow_cfg: Dictionary = _shadow_battle_config.duplicate(true)
+		if shadow_cfg.get("enemies", []).is_empty():
+			var player_unit: Dictionary = player_hero.duplicate(true)
+			player_unit["unit_id"] = "enemy_player"
+			player_unit["unit_type"] = "ENEMY"
+			player_unit["name"] = "玩家镜像"
+			player_unit["special_mechanic"] = ""
+			player_unit["is_alive"] = true
+			if not player_unit.has("buffs"):
+				player_unit["buffs"] = []
+			shadow_cfg["enemies"] = [player_unit]
+
+		pvp_config = {
+			"turn_number": 30,
+			"player_gold": 0,
+			"player_hp": _selected_archive.get("max_hp_reached", 100),
+			"player_hero": player_hero,
+			"run_seed": randi(),
+			"use_archive": false,
+			"battle_config": shadow_cfg,
+		}
+	else:
+		# 档案对战：原有逻辑
+		pvp_config = {
+			"turn_number": 30,
+			"player_gold": 0,
+			"player_hp": _selected_archive.get("max_hp_reached", 100),
+			"player_hero": _archive_to_battle_dict(_selected_archive),
+			"run_seed": randi(),
+			"use_archive": true,
+			"opponent_archive": _current_opponent,
+		}
 
 	var result: Dictionary = pvp_director.execute_pvp(pvp_config)
 	var recorder: BattlePlaybackRecorder = result.get("playback_recorder", null)
@@ -182,17 +240,19 @@ func _on_start_battle() -> void:
 		var enemy_name = enemy_data.get("name", "???")
 		var hero_max_hp = hero_data.get("max_hp", 100)
 		var enemy_max_hp = enemy_data.get("max_hp", 100)
-		
+
 		battle_animation_panel.reset_panel()
 		battle_animation_panel.visible = true
 		battle_animation_panel.z_index = 100
 		battle_animation_panel.start_playback(recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [])
-		
+
 		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
 			battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)
 	else:
 		# 没有 recorder，直接显示结算
 		_show_pvp_summary(result)
+
+	_shadow_battle_config = {}
 
 
 func _on_battle_animation_finished() -> void:
@@ -315,6 +375,7 @@ func _on_back_pressed() -> void:
 func _on_cancel_match() -> void:
 	match_result_panel.visible = false
 	_current_opponent = {}
+	_shadow_battle_config = {}
 
 func _on_battle_confirmed() -> void:
 	battle_summary_panel.visible = false

@@ -533,6 +533,46 @@ func _update_legacy_player_data(unlocked_heroes: Array[int], unlocked_partners: 
 
 	save_player_data(data)
 
+# --- 每日计数器 ---
+func get_daily_counter(key: String) -> int:
+	var file_path: String = "user://%s_daily_counters.json" % current_user_id
+	if not FileAccess.file_exists(file_path):
+		return 0
+	var file := FileAccess.open(file_path, FileAccess.READ)
+	var json := JSON.new()
+	var result := json.parse(file.get_as_text())
+	file.close()
+	if result != OK:
+		return 0
+	var data: Dictionary = json.get_data()
+	var today: String = Time.get_date_string_from_system()
+	var entry: Dictionary = data.get(key, {})
+	if entry.get("date", "") != today:
+		return 0
+	return int(entry.get("count", 0))
+
+func increment_daily_counter(key: String) -> void:
+	var file_path: String = "user://%s_daily_counters.json" % current_user_id
+	var data: Dictionary = {}
+	if FileAccess.file_exists(file_path):
+		var file := FileAccess.open(file_path, FileAccess.READ)
+		var json := JSON.new()
+		if json.parse(file.get_as_text()) == OK:
+			data = json.get_data()
+		file.close()
+
+	var today: String = Time.get_date_string_from_system()
+	var entry: Dictionary = data.get(key, {})
+	if entry.get("date", "") != today:
+		entry = {"date": today, "count": 0}
+	entry["count"] = int(entry.get("count", 0)) + 1
+	data[key] = entry
+
+	var file := FileAccess.open(file_path, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(data, "\t"))
+		file.close()
+
 # 预留：服务器同步接口
 func sync_mocheng_coin_to_server(user_id: String, amount: int) -> void:
 	print("[SaveManager] 魔城币同步到服务器: user=%s, amount=%d" % [user_id, amount])

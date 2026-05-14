@@ -967,13 +967,17 @@ func _finish_node_execution(result: Dictionary) -> void:
 		7:  # PVP
 			# PVP结果由 _process_reward 中的 "pvp_result" 分支处理
 			pass
-	
+
 	# 战斗节点统一计数（含普通战斗、外出精英战）
 	if result.get("requires_battle", false):
 		_run.battle_win_count += 1
 		if result.get("is_elite", false):
 			_run.elite_win_count += 1
 			_run.elite_total_count += 1
+
+	# 战斗节点完成后保存影子到虚拟档案池（用于异步PVP镜像）
+	if result.get("requires_battle", false):
+		_save_shadow_to_pool()
 
 	_node_pool_system.record_selection(_pending_node_type)
 	_change_state(RunState.TURN_ADVANCE)
@@ -1015,3 +1019,43 @@ func _hero_to_battle_dict() -> Dictionary:
 		"max_hp": _hero.max_hp,
 		"hp": _hero.current_hp,
 	}
+
+
+## 保存影子到虚拟档案池（PVP异步镜像）
+func _save_shadow_to_pool() -> void:
+	if _character_manager == null:
+		return
+	var pool: VirtualArchivePool = get_node_or_null("VirtualArchivePool")
+	if pool == null:
+		return
+
+	var shadow := ShadowData.new()
+	shadow.user_id = SaveManager.get_user_id()
+	shadow.floor = _run.current_floor
+	shadow.hero_config = _character_manager.get_hero_snapshot()
+	shadow.partner_configs = _character_manager.get_partners_snapshot()
+	shadow.combat_style_tags = _derive_combat_style()
+	shadow.win_rate = _calculate_recent_win_rate()
+	shadow.timestamp = Time.get_unix_time_from_system()
+
+	pool.add_shadow(shadow)
+	pool.save_shadows_to_disk()
+	print("[RunController] 影子已保存: user=%s, floor=%d" % [shadow.user_id, shadow.floor])
+
+func _derive_combat_style() -> Array[String]:
+	var tags: Array[String] = []
+	if _hero == null:
+		return tags
+	if _hero.current_str > _hero.current_vit:
+		tags.append("aggressive")
+	elif _hero.current_vit > _hero.current_str:
+		tags.append("defensive")
+	else:
+		tags.append("balanced")
+	return tags
+
+func _calculate_recent_win_rate() -> float:
+	var total_battles: int = _run.battle_win_count + maxi(0, _run.current_turn - _run.battle_win_count)
+	if total_battles <= 0:
+		return 0.5
+	return clampf(float(_run.battle_win_count) / float(total_battles), 0.0, 1.0)

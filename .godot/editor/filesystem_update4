@@ -5,3 +5,4 @@ res://autoload/game_manager.gd
 res://autoload/save_manager.gd
 res://scenes/hero_select/hero_select.gd
 res://scenes/main_menu/menu.gd
+res://scenes/shop/shop_popup.gd

@@ -25,6 +25,9 @@ func show_popup() -> void:
 	refresh()
 
 func hide_popup() -> void:
+	for child in get_children():
+		if child is Window:
+			child.queue_free()
 	visible = false
 	closed.emit()
 
@@ -45,7 +48,12 @@ func _load_shop_items() -> void:
 	if result != OK:
 		push_error("[ShopPopup] 解析 shop_items.json 失败")
 		return
-	_shop_items = json.get_data() as Dictionary
+	var parsed: Variant = json.get_data()
+	if parsed is Dictionary:
+		_shop_items = parsed as Dictionary
+	else:
+		push_error("[ShopPopup] shop_items.json 根节点必须是对象")
+		_shop_items = {}
 
 func _load_unlock_state() -> void:
 	var state := SaveManager.load_unlock_state(_current_user_id)
@@ -73,8 +81,8 @@ func _render_tab(tab_name: String, items: Array, unlocked: Array[int]) -> void:
 
 func _create_item_button(item: Dictionary, unlocked: Array[int]) -> Button:
 	var btn := Button.new()
-	var id: int = item.get("id", 0)
-	var cost: int = item.get("cost", 0)
+	var id: int = int(item.get("id", 0))
+	var cost: int = int(item.get("cost", 0))
 	var is_owned: bool = id in unlocked
 	var can_afford: bool = _current_coin >= cost
 
@@ -97,7 +105,7 @@ func _create_item_button(item: Dictionary, unlocked: Array[int]) -> Button:
 	return btn
 
 func _on_purchase_requested(item: Dictionary) -> void:
-	var cost: int = item.get("cost", 0)
+	var cost: int = int(item.get("cost", 0))
 	var item_name: String = item.get("name", "???")
 
 	var dialog := AcceptDialog.new()
@@ -112,8 +120,8 @@ func _on_purchase_requested(item: Dictionary) -> void:
 	dialog.popup_centered()
 
 func _confirm_purchase(item: Dictionary) -> void:
-	var id: int = item.get("id", 0)
-	var cost: int = item.get("cost", 0)
+	var id: int = int(item.get("id", 0))
+	var cost: int = int(item.get("cost", 0))
 	var type: String = _get_item_type(id)
 
 	if _current_coin < cost:
