@@ -249,6 +249,7 @@ func _input(event: InputEvent) -> void:
 			pause_menu.show_menu()
 
 func _on_node_button_pressed(index: int) -> void:
+	AudioManager.play_ui("button_click")
 	print("[RunMain] 按钮被点击: index=%d, RunController=%s" % [index, _run_controller != null])
 	if _run_controller == null:
 		push_warning("[RunMain] RunController not available")
@@ -297,6 +298,7 @@ func _show_combat_preview(opt: Dictionary, index: int) -> void:
 
 
 func _on_combat_confirmed() -> void:
+	AudioManager.play_ui("confirm")
 	# 隐藏预览
 	combat_confirm_panel.visible = false
 	enemy_info_panel.visible = false
@@ -313,6 +315,7 @@ func _on_combat_confirmed() -> void:
 
 
 func _on_combat_cancelled() -> void:
+	AudioManager.play_ui("cancel")
 	# 返回，恢复4选项
 	combat_confirm_panel.visible = false
 	enemy_info_panel.visible = false
@@ -323,6 +326,7 @@ func _on_combat_cancelled() -> void:
 
 
 func _on_training_attr_selected(attr_type: int) -> void:
+	AudioManager.play_ui("confirm")
 	## 玩家从训练面板选择了具体属性
 	if _run_controller != null:
 		_run_controller.select_training_attr(attr_type)

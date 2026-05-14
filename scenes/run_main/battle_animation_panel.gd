@@ -33,6 +33,8 @@ signal confirmed
 func _ready() -> void:
 	turn_timer.timeout.connect(_on_turn_timer_timeout)
 	turn_timer.one_shot = true # 确保只触发一次，_play_turn()里重新start()
+	_setup_hero_hp_bar_style(hero_hp_bar)
+	_setup_enemy_hp_bar_style(enemy_hp_bar)
 
 func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_name: String,
 						hero_max_hp: int, enemy_max_hp: int, _hero_partners: Array, _enemy_partners: Array) -> void:
@@ -123,10 +125,14 @@ func _process_event(evt: Dictionary) -> void:
 			
 			if is_miss:
 				bottom_hint.append_text("[color=gray]%s → %s miss[/color]  " % [actor, target])
+				AudioManager.play_sfx("miss")
 			elif is_crit:
 				bottom_hint.append_text("[color=red]%s → %s 暴击 %d！[/color]  " % [actor, target, value])
+				AudioManager.play_sfx("crit")
+				_screen_shake()
 			else:
 				bottom_hint.append_text("%s → %s %d  " % [actor, target, value])
+				AudioManager.play_sfx("attack")
 		
 		"unit_damaged":
 			var unit_id: String = data.get("unit_id", "")
@@ -138,32 +144,39 @@ func _process_event(evt: Dictionary) -> void:
 				_hero_hp = maxi(0, hp)
 				_update_hp_display()
 				_show_damage_number(damage, is_crit, false)
+				AudioManager.play_sfx("hero_hit")
 			else:
 				_enemy_hp = maxi(0, hp)
 				_update_hp_display()
 				_show_damage_number(damage, is_crit, true)
+				AudioManager.play_sfx("enemy_hit")
 			
 			_flash_sprite(unit_id)
 		
 		"unit_died":
 			var uname: String = data.get("name", "???")
 			bottom_hint.append_text("[color=red]%s 被击败！[/color]  " % uname)
+			AudioManager.play_sfx("defeat")
 		
 		"partner_assist":
 			var pname: String = data.get("partner_name", "???")
 			bottom_hint.append_text("[color=cyan]%s 援助！[/color]  " % pname)
 			_flash_partner_icon(pname)
+			AudioManager.play_sfx("partner_assist")
 		
 		"chain_triggered":
 			var chain_count: int = data.get("chain_count", 0)
 			var pname: String = data.get("partner_name", "???")
 			var dmg: int = data.get("damage", 0)
 			bottom_hint.append_text("[color=purple]CHAIN x%d! %s %d[/color]  " % [chain_count, pname, dmg])
+			_show_damage_number(dmg, false, false, true, chain_count)
+			AudioManager.play_sfx("chain")
 		
 		"ultimate_triggered":
 			var log_text: String = data.get("log", "")
 			bottom_hint.append_text("[color=gold]%s[/color]  " % log_text)
 			_screen_shake()
+			AudioManager.play_sfx("ultimate")
 		
 		"frenzy_triggered":
 			_is_frenzy_active = true
@@ -171,37 +184,89 @@ func _process_event(evt: Dictionary) -> void:
 			bottom_hint.append_text("\n[color=red]★ %s ★[/color]\n" % msg)
 			turn_label.modulate = Color(1, 0.2, 0.2)
 			_update_hp_display()
+			AudioManager.play_sfx("frenzy_alert")
 
 func _update_hp_display() -> void:
 	hero_hp_bar.value = float(_hero_hp) / maxi(1, _hero_max_hp) * 100
 	enemy_hp_bar.value = float(_enemy_hp) / maxi(1, _enemy_max_hp) * 100
 	
+	var hero_ratio: float = float(_hero_hp) / maxi(1, _hero_max_hp)
+	
+	# 低血量闪烁（英雄，低于30%）
+	if hero_ratio < 0.3 and not _is_frenzy_active:
+		var tween := create_tween().set_loops()
+		tween.tween_property(hero_hp_bar, "modulate", Color(1, 0.3, 0.3), 0.3)
+		tween.tween_property(hero_hp_bar, "modulate", Color(1, 1, 1), 0.3)
+	elif not _is_frenzy_active:
+		hero_hp_bar.modulate = Color(1, 1, 1)
+	
 	# 狂暴阶段血条变红提示
 	if _is_frenzy_active:
-		hero_hp_bar.modulate = Color(1, 0.3, 0.3)
-		enemy_hp_bar.modulate = Color(1, 0.3, 0.3)
+		hero_hp_bar.modulate = Color(1, 0.2, 0.2)
+		enemy_hp_bar.modulate = Color(1, 0.2, 0.2)
 	else:
-		hero_hp_bar.modulate = Color(1, 1, 1)
 		enemy_hp_bar.modulate = Color(1, 1, 1)
 
-func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool) -> void:
+func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool, is_chain: bool = false, chain_count: int = 0) -> void:
 	var label := Label.new()
-	label.text = str(damage)
-	label.add_theme_font_size_override("font_size", 32 if is_crit else 24)
-	label.modulate = Color(1, 0.2, 0.2) if is_crit else Color(1, 1, 1)
+	
+	if is_chain:
+		label.text = "CHAIN x%d! %d" % [chain_count, damage]
+		label.add_theme_font_size_override("font_size", 28)
+		label.modulate = Color(0.8, 0.3, 1.0)  # 紫色
+	elif is_crit:
+		label.text = str(damage)
+		label.add_theme_font_size_override("font_size", 36)
+		label.modulate = Color(1, 0.1, 0.1)  # 鲜红
+	else:
+		label.text = str(damage)
+		label.add_theme_font_size_override("font_size", 26)
+		label.modulate = Color(1, 0.9, 0.3)  # 金黄
+	
+	# 黑色描边/阴影效果：用 OutlineLabel 或双层 Label
+	# 简版：加 LabelSettings outline
+	var label_settings := LabelSettings.new()
+	label_settings.font_size = label.get_theme_font_size("font_size")
+	label_settings.font_color = label.modulate
+	label_settings.outline_size = 2
+	label_settings.outline_color = Color(0, 0, 0, 0.8)
+	label_settings.shadow_size = 2
+	label_settings.shadow_color = Color(0, 0, 0, 0.5)
+	label.label_settings = label_settings
 	
 	var target_sprite: Control = enemy_sprite if is_enemy_side else hero_sprite
 	var sprite_pos: Vector2 = target_sprite.global_position
 	var sprite_size: Vector2 = target_sprite.size
 	label.position = Vector2(
-		sprite_pos.x + float(sprite_size.x) / 2.0 - 20,
+		sprite_pos.x + float(sprite_size.x) / 2.0 - label.size.x / 2.0,
 		sprite_pos.y - 10
 	)
 	damage_container.add_child(label)
 	
+	# 动画：抛物线轨迹（先上后下）+ 淡出
 	var tween := create_tween()
-	tween.tween_property(label, "position:y", label.position.y - 60, 0.6)
-	tween.tween_property(label, "modulate:a", 0, 0.3)
+	var start_y: float = label.position.y
+	
+	if is_crit:
+		# 暴击：缩放弹跳 + 抛物线 + 震动
+		label.scale = Vector2(1.5, 1.5)
+		tween.tween_property(label, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(label, "position:y", start_y - 80, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(label, "position:y", start_y + 20, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(label, "modulate:a", 0, 0.3)
+		# 暴击额外震动
+		_screen_shake()
+	elif is_chain:
+		# 连击：快速上飘 + 旋转
+		tween.tween_property(label, "position:y", start_y - 100, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.parallel().tween_property(label, "rotation", deg_to_rad(10), 0.3)
+		tween.tween_property(label, "modulate:a", 0, 0.4)
+	else:
+		# 普通伤害：抛物线
+		tween.tween_property(label, "position:y", start_y - 60, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(label, "position:y", start_y + 10, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(label, "modulate:a", 0, 0.3)
+	
 	tween.tween_callback(label.queue_free)
 
 func _flash_sprite(unit_id: String) -> void:
@@ -215,10 +280,19 @@ func _flash_partner_icon(_partner_name: String) -> void:
 	pass
 
 func _screen_shake() -> void:
+	var viewport := get_viewport()
+	var original_transform := viewport.canvas_transform
 	var tween := create_tween()
-	tween.tween_property(self, "position:x", position.x + 5, 0.05)
-	tween.tween_property(self, "position:x", position.x - 5, 0.05)
-	tween.tween_property(self, "position:x", position.x, 0.05)
+	# 复合震动：作用于整个视口，而非面板本身
+	for i in range(6):
+		var offset := Vector2(randf_range(-8, 8), randf_range(-4, 4))
+		tween.tween_callback(func() -> void:
+			viewport.canvas_transform = original_transform.translated(offset)
+		)
+		tween.tween_interval(0.03)
+	tween.tween_callback(func() -> void:
+		viewport.canvas_transform = original_transform
+	)
 
 func _on_skip() -> void:
 	print("[BattleAnimation] 跳过按钮点击, gen=%d" % _playback_generation)
@@ -232,8 +306,8 @@ func _show_result() -> void:
 	if _result_emitted:
 		print("[BattleAnimation] _show_result 已发射过 confirmed，跳过")
 		return
-	# 关键排查：看在哪个回合被调用
-	push_error("[Battle] _show_result at index=%d, total=%d" % [_current_turn_index, _turn_keys.size()])
+	# 调试日志：记录调用位置
+	print("[Battle] _show_result at index=%d, total=%d" % [_current_turn_index, _turn_keys.size()])
 	
 	_result_emitted = true
 	bottom_hint.append_text("\n[color=yellow]=== 战斗结束 ===[/color]")
@@ -259,3 +333,52 @@ func reset_panel() -> void:
 func _clear_damage_numbers() -> void:
 	for child in damage_container.get_children():
 		child.queue_free()
+
+
+func _setup_hero_hp_bar_style(bar: ProgressBar) -> void:
+	var fg := StyleBoxFlat.new()
+	fg.bg_color = Color(0.2, 0.8, 0.3)
+	fg.corner_radius_top_left = 4
+	fg.corner_radius_top_right = 4
+	fg.corner_radius_bottom_left = 4
+	fg.corner_radius_bottom_right = 4
+	fg.border_width_left = 2
+	fg.border_width_top = 2
+	fg.border_width_right = 2
+	fg.border_width_bottom = 2
+	fg.border_color = Color(0.1, 0.4, 0.15, 0.8)
+	
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.1, 0.1, 0.1, 0.8)
+	bg.corner_radius_top_left = 4
+	bg.corner_radius_top_right = 4
+	bg.corner_radius_bottom_left = 4
+	bg.corner_radius_bottom_right = 4
+	
+	bar.add_theme_stylebox_override("fill", fg)
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_constant_override("separation", 0)
+
+
+func _setup_enemy_hp_bar_style(bar: ProgressBar) -> void:
+	var fg := StyleBoxFlat.new()
+	fg.bg_color = Color(0.85, 0.15, 0.15)
+	fg.corner_radius_top_left = 4
+	fg.corner_radius_top_right = 4
+	fg.corner_radius_bottom_left = 4
+	fg.corner_radius_bottom_right = 4
+	fg.border_width_left = 2
+	fg.border_width_top = 2
+	fg.border_width_right = 2
+	fg.border_width_bottom = 2
+	fg.border_color = Color(0.5, 0.05, 0.05, 0.9)
+	
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.15, 0.05, 0.05, 0.8)
+	bg.corner_radius_top_left = 4
+	bg.corner_radius_top_right = 4
+	bg.corner_radius_bottom_left = 4
+	bg.corner_radius_bottom_right = 4
+	
+	bar.add_theme_stylebox_override("fill", fg)
+	bar.add_theme_stylebox_override("background", bg)

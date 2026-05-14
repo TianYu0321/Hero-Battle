@@ -24,8 +24,13 @@ func _ready() -> void:
 	_populate_partner_slots()
 
 func _get_available_partner_ids() -> Array[String]:
-	var player_data: Dictionary = SaveManager.load_player_data()
-	var unlocked: Array = player_data.get("unlocked_partners", [])
+	var user_id: String = SaveManager.get_user_id()
+	var unlock_state: Dictionary = SaveManager.load_unlock_state(user_id)
+	var unlocked_ids: Array[int] = unlock_state.get("unlocked_partners", [])
+	var unlocked: Array = []
+	for pid in unlocked_ids:
+		unlocked.append(str(pid))
+
 	var all_ids: Array[String] = ConfigManager.get_all_partner_ids()
 	var result: Array[String] = []
 	for pid in all_ids:

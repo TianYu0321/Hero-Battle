@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scenes/main_menu/menu.gd" id="1_menu"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 [ext_resource type="PackedScene" path="res://scenes/leaderboard/leaderboard_panel.tscn" id="3_lbp"]
+[ext_resource type="PackedScene" path="res://scenes/shop/shop_popup.tscn" id="4_sp"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -122,6 +123,9 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="LeaderboardPanel" parent="." instance=ExtResource("3_lbp")]
+visible = false
+
+[node name="ShopPopup" parent="." instance=ExtResource("4_sp")]
 visible = false
 
 [node name="VersionLabel" type="Label" parent="."]

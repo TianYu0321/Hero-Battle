@@ -32,9 +32,13 @@ func save_run_state(run_data: Dictionary, is_auto: bool = true) -> bool:
 	var slot_id: int = 1
 	var file_path: String = ConfigManager.SAVE_DIR + "save_%03d.json" % slot_id
 	
-	# 使用 RunSnapshot 统一存档格式
+	# 使用 RunSnapshot 统一存档格式，同时保留原始数据中的额外字段（如 node_options）
 	var snapshot = RunSnapshot.from_dict(run_data)
 	var data: Dictionary = snapshot.to_dict()
+	# 合并原始数据中的额外字段（RunSnapshot 未覆盖的字段）
+	for key in run_data.keys():
+		if not data.has(key):
+			data[key] = run_data[key]
 	data["timestamp"] = Time.get_unix_time_from_system()
 	data["is_auto_save"] = is_auto
 
@@ -387,3 +391,151 @@ func _load_player_data() -> Dictionary:
 
 func _save_player_data(data: Dictionary) -> void:
 	save_player_data(data)
+
+
+# ==================== 账号绑定系统 (Account-Bound Progression) ====================
+
+var current_user_id: String = "local_default"
+
+func set_user_id(user_id: String) -> void:
+	current_user_id = user_id
+	print("[SaveManager] 用户ID已设置: %s" % user_id)
+
+func get_user_id() -> String:
+	return current_user_id
+
+# --- 魔城币（账号隔离）---
+func save_mocheng_coin(amount: int, user_id: String = current_user_id) -> bool:
+	var file_path: String = "user://%s_mocheng_coin.json" % user_id
+	var data: Dictionary = {
+		"user_id": user_id,
+		"amount": amount,
+		"timestamp": Time.get_unix_time_from_system()
+	}
+	var file := FileAccess.open(file_path, FileAccess.WRITE)
+	if file == null:
+		push_error("[SaveManager] 保存魔城币失败: %s" % file_path)
+		return false
+	file.store_string(JSON.stringify(data, "\t"))
+	file.close()
+	EventBus.mocheng_coin_changed.emit(amount)
+	return true
+
+func load_mocheng_coin(user_id: String = current_user_id) -> int:
+	var file_path: String = "user://%s_mocheng_coin.json" % user_id
+	if not FileAccess.file_exists(file_path):
+		return 0
+	var file := FileAccess.open(file_path, FileAccess.READ)
+	var json := JSON.new()
+	var result := json.parse(file.get_as_text())
+	file.close()
+	if result == OK:
+		var data: Dictionary = json.get_data()
+		if data.get("user_id", "") == user_id:
+			return data.get("amount", 0)
+	return 0
+
+# --- 解锁状态（账号隔离）---
+func save_unlock_state(
+	unlocked_heroes: Array[int],
+	unlocked_partners: Array[int],
+	unlocked_skins: Array[int],
+	user_id: String = current_user_id
+) -> bool:
+	var file_path: String = "user://%s_meta_progression.json" % user_id
+	var data: Dictionary = {
+		"user_id": user_id,
+		"unlocked_heroes": unlocked_heroes,
+		"unlocked_partners": unlocked_partners,
+		"unlocked_skins": unlocked_skins,
+		"last_save": Time.get_unix_time_from_system()
+	}
+	var file := FileAccess.open(file_path, FileAccess.WRITE)
+	if file == null:
+		push_error("[SaveManager] 保存解锁状态失败: %s" % file_path)
+		return false
+	file.store_string(JSON.stringify(data, "\t"))
+	file.close()
+	print("[SaveManager] 解锁状态已保存: %s" % file_path)
+
+	# 同时更新旧版 player_data.json 以保持向后兼容
+	_update_legacy_player_data(unlocked_heroes, unlocked_partners)
+	return true
+
+func load_unlock_state(user_id: String = current_user_id) -> Dictionary:
+	var file_path: String = "user://%s_meta_progression.json" % user_id
+	if not FileAccess.file_exists(file_path):
+		# 尝试从旧版 player_data.json 迁移
+		return _migrate_unlock_state_from_legacy(user_id)
+	var file := FileAccess.open(file_path, FileAccess.READ)
+	var json := JSON.new()
+	var result := json.parse(file.get_as_text())
+	file.close()
+	if result == OK:
+		var data: Dictionary = json.get_data()
+		if data.get("user_id", "") == user_id:
+			return data
+	return _migrate_unlock_state_from_legacy(user_id)
+
+func _migrate_unlock_state_from_legacy(user_id: String) -> Dictionary:
+	var legacy: Dictionary = load_player_data()
+	var unlocked_heroes: Array[int] = []
+	var unlocked_partners: Array[int] = []
+	var unlocked_skins: Array[int] = []
+
+	# 迁移英雄解锁（字符串键 → 数字ID）
+	for hero_key in legacy.get("unlocked_heroes", []):
+		if hero_key is String:
+			var cfg: Dictionary = ConfigManager.get_hero_config(hero_key)
+			var hid: int = cfg.get("hero_id", 0)
+			if hid > 0 and not hid in unlocked_heroes:
+				unlocked_heroes.append(hid)
+
+	# 迁移伙伴解锁（字符串数字 → 数字ID）
+	for partner_str in legacy.get("unlocked_partners", []):
+		var pid: int = int(str(partner_str))
+		if pid > 0 and not pid in unlocked_partners:
+			unlocked_partners.append(pid)
+
+	# 如果 legacy 中没有任何解锁数据，设置默认
+	if unlocked_heroes.is_empty():
+		unlocked_heroes.append(1)  # 默认解锁勇者
+
+	var result: Dictionary = {
+		"user_id": user_id,
+		"unlocked_heroes": unlocked_heroes,
+		"unlocked_partners": unlocked_partners,
+		"unlocked_skins": unlocked_skins,
+		"last_save": 0
+	}
+	# 保存迁移后的数据
+	save_unlock_state(unlocked_heroes, unlocked_partners, unlocked_skins, user_id)
+	return result
+
+func _update_legacy_player_data(unlocked_heroes: Array[int], unlocked_partners: Array[int]) -> void:
+	var data: Dictionary = load_player_data()
+
+	# 数字ID → 字符串键
+	var hero_keys: Array = []
+	for hid in unlocked_heroes:
+		var key: String = ConfigManager.get_hero_id_by_config_id(hid)
+		if not key.is_empty() and not key in hero_keys:
+			hero_keys.append(key)
+	data["unlocked_heroes"] = hero_keys
+
+	# 数字ID → 字符串
+	var partner_strs: Array = []
+	for pid in unlocked_partners:
+		var s: String = str(pid)
+		if not s in partner_strs:
+			partner_strs.append(s)
+	data["unlocked_partners"] = partner_strs
+
+	save_player_data(data)
+
+# 预留：服务器同步接口
+func sync_mocheng_coin_to_server(user_id: String, amount: int) -> void:
+	print("[SaveManager] 魔城币同步到服务器: user=%s, amount=%d" % [user_id, amount])
+
+func sync_unlock_state_to_server(user_id: String, state: Dictionary) -> void:
+	print("[SaveManager] 解锁状态同步到服务器: user=%s" % user_id)

@@ -69,6 +69,10 @@ var _current_state: String = "MENU"
 var _is_transitioning: bool = false
 
 func _ready() -> void:
+	# 初始化用户ID（本地阶段固定，后续从登录回调获取）
+	SaveManager.set_user_id("local_default")
+	print("[GameManager] 用户ID初始化: %s" % SaveManager.get_user_id())
+
 	EventBus.new_game_requested.connect(_on_new_game_requested)
 	EventBus.continue_game_requested.connect(_on_continue_game_requested)
 	EventBus.hero_selected.connect(_on_hero_selected)

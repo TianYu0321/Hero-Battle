@@ -1,4 +1,7 @@
-res://scripts/systems/run_controller.gd
+res://scenes/run_main/battle_animation_panel.gd
+res://autoload/audio_manager.gd
+res://scenes/run_main/run_main.gd
 res://autoload/game_manager.gd
 res://autoload/save_manager.gd
-res://scenes/run_main/run_main.gd
+res://scenes/hero_select/hero_select.gd
+res://scenes/main_menu/menu.gd

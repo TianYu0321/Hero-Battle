@@ -1,0 +1,112 @@
+{
+	"heroes": [
+		{
+			"config_id": 1,
+			"name": "烈焰战士",
+			"description": "初始英雄，平衡型战士",
+			"unlock_cost": 0,
+			"prerequisite": null,
+			"icon": "res://assets/heroes/hero_01.png",
+			"is_default": true
+		},
+		{
+			"config_id": 2,
+			"name": "暗影刺客",
+			"description": "高敏捷，擅长暴击",
+			"unlock_cost": 1000,
+			"prerequisite": null,
+			"icon": "res://assets/heroes/hero_02.png",
+			"is_default": false
+		},
+		{
+			"config_id": 3,
+			"name": "圣光骑士",
+			"description": "高体魄，擅长恢复",
+			"unlock_cost": 1500,
+			"prerequisite": null,
+			"icon": "res://assets/heroes/hero_03.png",
+			"is_default": false
+		},
+		{
+			"config_id": 4,
+			"name": "元素法师",
+			"description": "高精神，擅长群体伤害",
+			"unlock_cost": 2000,
+			"prerequisite": null,
+			"icon": "res://assets/heroes/hero_04.png",
+			"is_default": false
+		}
+	],
+	"partners": [
+		{
+			"config_id": 101,
+			"name": "铁壁卫士",
+			"description": "前排坦克型伙伴",
+			"unlock_cost": 500,
+			"prerequisite": null,
+			"icon": "res://assets/partners/partner_101.png",
+			"favored_attr": 1,
+			"favored_desc": "体魄"
+		},
+		{
+			"config_id": 102,
+			"name": "疾风弓手",
+			"description": "后排输出型伙伴",
+			"unlock_cost": 800,
+			"prerequisite": null,
+			"icon": "res://assets/partners/partner_102.png",
+			"favored_attr": 2,
+			"favored_desc": "力量"
+		},
+		{
+			"config_id": 103,
+			"name": "治愈祭司",
+			"description": "辅助恢复型伙伴",
+			"unlock_cost": 600,
+			"prerequisite": null,
+			"icon": "res://assets/partners/partner_103.png",
+			"favored_attr": 5,
+			"favored_desc": "精神"
+		},
+		{
+			"config_id": 104,
+			"name": "影刃刺客",
+			"description": "高爆发型伙伴",
+			"unlock_cost": 1200,
+			"prerequisite": null,
+			"icon": "res://assets/partners/partner_104.png",
+			"favored_attr": 3,
+			"favored_desc": "敏捷"
+		},
+		{
+			"config_id": 105,
+			"name": "战术大师",
+			"description": "策略增益型伙伴",
+			"unlock_cost": 1500,
+			"prerequisite": null,
+			"icon": "res://assets/partners/partner_105.png",
+			"favored_attr": 4,
+			"favored_desc": "技巧"
+		}
+	],
+	"skins": [
+		{
+			"config_id": 1001,
+			"name": "黄金烈焰",
+			"description": "烈焰战士黄金皮肤",
+			"unlock_cost": 3000,
+			"prerequisite": 1,
+			"icon": "res://assets/skins/skin_1001.png",
+			"target_hero": 1
+		},
+		{
+			"config_id": 1002,
+			"name": "暗夜行者",
+			"description": "暗影刺客限定皮肤",
+			"unlock_cost": 3500,
+			"prerequisite": 2,
+			"icon": "res://assets/skins/skin_1002.png",
+			"target_hero": 2
+		}
+	]
+}

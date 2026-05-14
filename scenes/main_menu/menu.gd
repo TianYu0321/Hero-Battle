@@ -14,6 +14,7 @@ extends Control
 @onready var _menu_button: Button = $MenuButton
 @onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _leaderboard_panel: Panel = $LeaderboardPanel
+@onready var _shop_panel: ShopPopup = $ShopPopup
 
 func _ready() -> void:
 	print("[MainMenu] _ready 开始, continue_button=", _btn_continue != null)
@@ -99,7 +100,7 @@ func _on_pvp_pressed() -> void:
 
 func _on_shop_pressed() -> void:
 	print("[MainMenu] 商店按钮点击")
-	EventBus.shop_requested.emit()
+	_shop_panel.show_popup()
 
 func _on_leaderboard_pressed() -> void:
 	print("[MainMenu] 排行榜按钮点击")
