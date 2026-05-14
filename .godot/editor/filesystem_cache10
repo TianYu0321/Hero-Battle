@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1778688500
+::res://::1778738440
 repair_plan_v2.2.md::TextFile::-1::1778408514::0::1::::<><><>0<>0<><>::
 test_output_test_decoupling.txt::TextFile::-1::1778493329::0::1::::<><><>0<>0<><>::
 test_output_test_run_loop.txt::TextFile::-1::1778493330::0::1::::<><><>0<>0<><>::
@@ -9,8 +9,8 @@ test_output_test_score_formula.txt::TextFile::-1::1778493329::0::1::::<><><>0<>0
 audio_manager.gd::GDScript::7887373177378120365::1778607069::0::1::::<>Node<><>0<>0<><>::
 config_manager.gd::GDScript::6669216324424158771::1778651768::0::1::::<>Node<><>0<>0<><>::
 event_bus.gd::GDScript::624577216022475290::1778691471::0::1::::<>Node<><>0<>0<><>::
-game_manager.gd::GDScript::933307150271136425::1778607062::0::1::::<>Node<><>0<>0<><>::
-save_manager.gd::GDScript::7324539117998813799::1778651248::0::1::::<>Node<><>0<>0<><>::
+game_manager.gd::GDScript::933307150271136425::1778735519::0::1::::<>Node<><>0<>0<><>::
+save_manager.gd::GDScript::7324539117998813799::1778735501::0::1::::<>Node<><>0<>0<><>::
 ::res://Docs/::1778605041
 architecture-decoupling-audit.md::TextFile::-1::1778408448::0::1::::<><><>0<>0<><>::
 phase0-task-distribution.md::TextFile::-1::1778408449::0::1::::<><><>0<>0<><>::
@@ -144,7 +144,7 @@ leaderboard_panel.tscn::PackedScene::-1::1778692170::0::1::::<><><>0<>0<><>::res
 ranking_row.gd::GDScript::603606977648222233::1778692145::0::1::::<>HBoxContainer<><>0<>0<><>::
 ranking_row.tscn::PackedScene::-1::1778693402::0::1::::<><><>0<>0<><>::res://scenes/leaderboard/ranking_row.gd
 ::res://scenes/main_menu/::1778408448
-menu.gd::GDScript::587589824777460322::1778692234::0::1::::MenuUI<>Control<><>0<>0<><>::
+menu.gd::GDScript::587589824777460322::1778735510::0::1::::MenuUI<>Control<><>0<>0<><>::
 menu.tscn::PackedScene::6554368614887292099::1778692208::0::1::::<><><>0<>0<><>::res://scenes/main_menu/menu.gd<>uid://c0m8q1p2x3y5a::::res://scenes/menu/pause_menu.tscn<>res://scenes/leaderboard/leaderboard_panel.tscn
 ::res://scenes/menu/::1778453559
 pause_menu.gd::GDScript::2486319506638144365::1778483565::0::1::::PauseMenu<>CanvasLayer<><>0<>0<><>::
@@ -160,7 +160,7 @@ battle_animation_panel.gd::GDScript::2976978516352853055::1778691685::0::1::::Ba
 battle_animation_panel.tscn::PackedScene::-1::1778681756::0::1::::<><><>0<>0<><>::res://scenes/run_main/battle_animation_panel.gd
 battle_summary_panel.gd::GDScript::6251344695526243157::1778566042::0::1::::BattleSummaryPanel<>Panel<><>0<>0<><>::
 battle_summary_panel.tscn::PackedScene::1495776401771099732::1778502812::0::1::::<><><>0<>0<><>::res://scenes/run_main/battle_summary_panel.gd
-run_main.gd::GDScript::6258138150675163206::1778689962::0::1::::RunMain<>Control<><>0<>0<><>::
+run_main.gd::GDScript::6258138150675163206::1778737307::0::1::::RunMain<>Control<><>0<>0<><>::
 run_main.tscn::PackedScene::-1::1778681892::0::1::::<><><>0<>0<><>::res://scenes/run_main/run_main.gd<>uid://c0m8q1p2x3y5a::::res://scenes/menu/pause_menu.tscn<>uid://vktho61lbwnk::::res://scenes/run_main/battle_summary_panel.tscn<>res://scenes/run_main/battle_animation_panel.tscn
 shop_item_button.gd::GDScript::3659918190249945116::1778515630::0::1::::ShopItemButton<>Button<><>0<>0<><>::
 shop_item_button.tscn::PackedScene::6583233398992709960::1778507929::0::1::::<><><>0<>0<><>::res://scenes/run_main/shop_item_button.gd
@@ -228,7 +228,7 @@ test_battle_core.gd::GDScript::9082373852494990164::1778408449::0::1::::<>Node<>
 test_battle_engine.gd::GDScript::6898131918949763311::1778493034::0::1::::TestBattleEngine<>Control<><>0<>0<><>::
 ultimate_manager.gd::GDScript::5434324194168697417::1778408449::0::1::::UltimateManager<>RefCounted<><>0<>0<><>::
 ::res://scripts/data/::1778487889
-run_snapshot.gd::GDScript::7122027970620793906::1778667406::0::1::::RunSnapshot<>RefCounted<><>0<>0<><>::
+run_snapshot.gd::GDScript::7122027970620793906::1778735536::0::1::::RunSnapshot<>RefCounted<><>0<>0<><>::
 ::res://scripts/models/::1778424822
 battle_action.gd::GDScript::5999184225590939585::1778408449::0::1::::BattleAction<>RefCounted<><>0<>0<><>::
 battle_final_result.gd::GDScript::4406210130521025227::1778408449::0::1::::BattleFinalResult<>RefCounted<><>0<>0<><>::
@@ -252,7 +252,7 @@ runtime_training_log.gd::GDScript::1006437865235249199::1778408449::0::1::::Runt
 battle_playback_recorder.gd::GDScript::3506881571864491029::1778676808::0::1::::BattlePlaybackRecorder<>Node<><>0<>0<><>::
 character_manager.gd::GDScript::8450686754771686274::1778505098::0::1::::CharacterManager<>Node<><>0<>0<><>::
 elite_battle_system.gd::GDScript::3651840502356033784::1778607096::0::1::::EliteBattleSystem<>Node<><>0<>0<><>::
-event_forecast_system.gd::GDScript::2161188840677539005::1778591636::0::1::::EventForecastSystem<>Node<><>0<>0<><>::
+event_forecast_system.gd::GDScript::2161188840677539005::1778735644::0::1::::EventForecastSystem<>Node<><>0<>0<><>::
 final_boss_pool.gd::GDScript::6456047507601481221::1778409007::0::1::::FinalBossPool<>RefCounted<><>0<>0<><>::
 leaderboard_system.gd::GDScript::6296031808886645679::1778588348::0::1::::LeaderboardSystem<>Node<><>0<>0<><>::
 node_pool_system.gd::GDScript::2348667953951742354::1778667594::0::1::::NodePoolSystem<>Node<><>0<>0<><>::
@@ -263,7 +263,7 @@ pvp_director.gd::GDScript::1814076925887933567::1778670809::0::1::::PvpDirector<
 pvp_opponent_generator.gd::GDScript::7548118403047805097::1778662876::0::1::::PvpOpponentGenerator<>RefCounted<><>0<>0<><>::
 pvp_penalty_strategy.gd::GDScript::1806835399154618062::1778607112::0::1::::IPVPPenaltyStrategy<>RefCounted<><>0<>0<><>::
 rescue_system.gd::GDScript::6962236766558306166::1778518139::0::1::::RescueSystem<>Node<><>0<>0<><>::
-run_controller.gd::GDScript::1465019551514000390::1778682737::0::1::::RunController<>Node<><>0<>0<><>::
+run_controller.gd::GDScript::1465019551514000390::1778737349::0::1::::RunController<>Node<><>0<>0<><>::
 settlement_system.gd::GDScript::1152954791363108355::1778408449::0::1::::SettlementSystem<>Node<><>0<>0<><>::
 shop_system.gd::GDScript::7697005665661210457::1778519254::0::1::::ShopSystem<>Node<><>0<>0<><>::
 skill_milestone_system.gd::GDScript::5954645049426815484::1778664827::0::1::::SkillMilestoneSystem<>Node<><>0<>0<><>::

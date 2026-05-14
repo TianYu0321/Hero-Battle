@@ -206,14 +206,6 @@ func continue_from_save(save_data: Dictionary) -> bool:
 		# 没有保存的选项，重新生成
 		_change_state(RunState.RUNNING_NODE_SELECT)
 	
-	# 恢复事件透视次数
-	var forecast_charges: int = save_data.get("event_forecast_charges", 0)
-	if forecast_charges > 0:
-		var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
-		if forecast_system != null:
-			forecast_system.set_charges(forecast_charges)
-			print("[RunController] 恢复事件透视次数: %d" % forecast_charges)
-	
 	EventBus.emit_signal("run_started", {
 		"hero_id": _run.hero_config_id,
 		"partner_ids": [],

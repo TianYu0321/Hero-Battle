@@ -1,7 +1,0 @@
-res://autoload/game_manager.gd
-res://autoload/save_manager.gd
-res://scenes/main_menu/menu.gd
-res://scripts/data/run_snapshot.gd
-res://scripts/systems/event_forecast_system.gd
-res://scripts/systems/run_controller.gd
-res://scenes/run_main/run_main.gd
