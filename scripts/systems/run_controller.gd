@@ -699,6 +699,15 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 	if not result.has("max_chain_count"):
 		var chain_stats = result.get("chain_stats", {})
 		result["max_chain_count"] = chain_stats.get("max_chain", 0)
+	# 补充 hero 字典供 BattleAnimationPanel 使用（修复血条显示满血问题）
+	if not result.has("hero"):
+		var hero_cfg: Dictionary = ConfigManager.get_hero_config(hero_id)
+		var hero_display_name: String = hero_cfg.get("name", battle_hero.get("name", "英雄"))
+		result["hero"] = {
+			"name": hero_display_name,
+			"max_hp": _hero.max_hp,
+			"current_hp": battle_hero.get("hp", _hero.current_hp),
+		}
 	
 	_pending_battle_result = result
 	var recorder_events: int = recorder.get_events().size()
