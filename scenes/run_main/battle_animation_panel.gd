@@ -64,6 +64,7 @@ func _ready() -> void:
 	turn_timer.timeout.connect(_on_turn_timer_timeout)
 	skip_button.pressed.connect(_on_skip)
 	visible = false
+	battle_log.scroll_following = true
 	_apply_dark_theme()
 
 func _apply_dark_theme() -> void:
