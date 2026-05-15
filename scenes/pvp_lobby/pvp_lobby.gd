@@ -232,6 +232,10 @@ func _on_start_battle() -> void:
 	_process_pvp_result(result)
 	_pending_pvp_result = result
 
+	# 从 combat_summary 获取真实回合数
+	var combat_summary: Dictionary = result.get("combat_summary", {})
+	var total_rounds: int = combat_summary.get("turns", 0)
+
 	# 如果有 recorder，先播放战斗动画
 	if recorder != null and recorder.get_events().size() > 0:
 		var hero_data = result.get("hero", {})
@@ -244,7 +248,11 @@ func _on_start_battle() -> void:
 		battle_animation_panel.reset_panel()
 		battle_animation_panel.visible = true
 		battle_animation_panel.z_index = 100
-		battle_animation_panel.start_playback(recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [])
+		battle_animation_panel.start_playback(
+			recorder, hero_name, enemy_name,
+			hero_max_hp, enemy_max_hp,
+			[], [], total_rounds
+		)
 
 		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
 			battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)

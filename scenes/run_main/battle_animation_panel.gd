@@ -81,25 +81,30 @@ func _apply_dark_theme() -> void:
 
 func start_playback(recorder, hero_name: String, enemy_name: String,
 					hero_max_hp: int, enemy_max_hp: int,
-					_hero_partners: Array, _enemy_partners: Array) -> void:
+					_hero_partners: Array, _enemy_partners: Array,
+					total_rounds: int = 0) -> void:
 	_playback_generation += 1
 	_result_emitted = false
 	_is_playing = true
 	visible = true
 	
 	_recorder = recorder
+	_events_by_turn = {}
+	_turn_keys = []
+	var _real_max_turn: int = 0
+	
 	if _recorder != null and _recorder.has_method("get_events_by_turn"):
-		var raw_turns: Dictionary = _recorder.get_events_by_turn()
-		# 重映射为 1-based 连续索引，兼容任意原始 turn 值
-		var sorted_keys: Array = raw_turns.keys().duplicate()
-		sorted_keys.sort()
-		_events_by_turn = {}
-		for i in range(sorted_keys.size()):
-			_events_by_turn[i + 1] = raw_turns[sorted_keys[i]]
+		_events_by_turn = _recorder.get_events_by_turn()
 		_turn_keys = _events_by_turn.keys()
-	else:
-		_events_by_turn = {}
-		_turn_keys = []
+		for t in _turn_keys:
+			_real_max_turn = maxi(_real_max_turn, int(t))
+	
+	# 使用传入的 total_rounds 作为真实回合数保底
+	var effective_rounds: int = total_rounds
+	if effective_rounds <= 0:
+		effective_rounds = maxi(_real_max_turn, 3)
+	
+	_sim_total_rounds = effective_rounds
 	
 	_hero_max_hp = maxi(1, hero_max_hp)
 	_hero_hp = _hero_max_hp
@@ -120,7 +125,9 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 	battle_log.text = ""
 	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
 	
-	print("[BattleAnimation] 回放开始: gen=%d, %d回合" % [_playback_generation, _turn_keys.size()])
+	print("[BattleAnimation] 回放开始: gen=%d, 真实%d回合, recorder有效=%s" % [
+		_playback_generation, effective_rounds, _real_max_turn > 0
+	])
 	_play_next_turn()
 
 # === 模式B：摘要模拟（爬塔用） ===
@@ -176,32 +183,27 @@ func _play_next_turn() -> void:
 	
 	_current_round += 1
 	
-	# 检查结束条件
-	if _recorder != null:
-		var max_turn: int = 0
-		for t in _turn_keys:
-			max_turn = maxi(max_turn, int(t))
-		if _current_round > max_turn or max_turn == 0:
-			_show_result()
-			return
-	else:
-		if _current_round > _sim_total_rounds or _hero_hp <= 0 or _enemy_hp <= 0:
-			_show_result()
-			return
+	# 结束条件：达到真实回合数，或一方死亡（超过保底3回合）
+	var should_end: bool = _current_round > _sim_total_rounds
+	if (_hero_hp <= 0 or _enemy_hp <= 0) and _current_round > 3:
+		should_end = true
 	
-	# 只显示当前回合，不显示总数
+	if should_end:
+		_show_result()
+		return
+	
 	round_label.text = "回合 %d" % _current_round
 	
-	# 播放本回合事件
+	# 优先用 recorder 的真实事件，没有则用模拟
 	if _recorder != null and _events_by_turn.has(_current_round):
 		var events: Array = _events_by_turn[_current_round]
 		for evt in events:
 			_process_event(evt)
-	elif _recorder == null:
+	else:
 		_generate_simulated_turn()
 	
 	_update_hp_display()
-	turn_timer.start(1.2)
+	turn_timer.start(1.0)
 
 func _process_event(evt: Dictionary) -> void:
 	var type: String = evt.get("type", "")
@@ -318,7 +320,7 @@ func _show_result() -> void:
 		return
 	_result_emitted = true
 	
-	if _recorder == null:
+	if _turn_keys.size() == 0:
 		_hero_hp = _sim_hero_final_hp
 		_enemy_hp = _sim_enemy_final_hp
 	
