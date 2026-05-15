@@ -16,8 +16,8 @@ extends Control
 @onready var vs_label: Label = $HudContainer/CenterBadge/VsLabel
 @onready var round_label: Label = $HudContainer/CenterBadge/RoundLabel
 
-@onready var hero_art: ColorRect = $StageArea/HeroArt
-@onready var enemy_art: ColorRect = $StageArea/EnemyArt
+@onready var hero_art: AnimatedSprite2D  = $StageArea/HeroArt
+@onready var enemy_art: AnimatedSprite2D  = $StageArea/EnemyArt
 @onready var stage_name_label: Label = $StageArea/StageName
 
 @onready var log_head: Label = $LogPanel/LogHead
@@ -77,6 +77,12 @@ func _ready() -> void:
 	battle_log.scroll_following = true
 	_apply_dark_theme()
 	_apply_theme_colors()
+	
+	# 战斗场景氛围：灰烬粒子
+	var _ash_parent := Node2D.new()
+	_ash_parent.name = "AshParent"
+	add_child(_ash_parent)
+	EnvVFX.create_ash_particles(_ash_parent, Vector2(1280, 720))
 
 func _apply_dark_theme() -> void:
 	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.92)
@@ -116,7 +122,9 @@ func _apply_theme_colors() -> void:
 func start_playback(recorder, hero_name: String, enemy_name: String,
 					hero_max_hp: int, enemy_max_hp: int,
 					_hero_partners: Array, _enemy_partners: Array,
-					total_rounds: int = 0) -> void:
+					total_rounds: int = 0,
+					hero_sprite_path: String = "",
+					enemy_sprite_path: String = "") -> void:
 	_playback_generation += 1
 	_result_emitted = false
 	_is_playing = true
@@ -152,6 +160,8 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 	
 	hero_art.visible = true
 	enemy_art.visible = true
+	_load_sprite(hero_art, hero_sprite_path)
+	_load_sprite(enemy_art, enemy_sprite_path)
 	
 	_update_hp_display()
 	_apply_hp_bar_colors()
@@ -196,6 +206,8 @@ func start_battle(battle_result: Dictionary) -> void:
 	
 	hero_art.visible = true
 	enemy_art.visible = true
+	_load_sprite(hero_art, battle_result.get("hero_sprite_path", ""))
+	_load_sprite(enemy_art, battle_result.get("enemy_sprite_path", ""))
 	
 	_hero_hp = _hero_max_hp
 	_enemy_hp = _enemy_max_hp
@@ -275,33 +287,75 @@ func _process_event(evt: Dictionary) -> void:
 				battle_log.append_text("[color=#F28A3E]  %s → %s 暴击 %d！[/color]\n" % [actor, target, value])
 			else:
 				battle_log.append_text("  %s → %s %d\n" % [actor, target, value])
+			
+			# 攻击方播放攻击动画
+			if actor == hero_name_label.text:
+				_play_anim(hero_art, "attack")
+			elif actor == enemy_name_label.text:
+				_play_anim(enemy_art, "attack")
 		
 		"unit_damaged":
 			var unit_id: String = data.get("unit_id", "")
 			var hp: int = data.get("hp", 0)
 			var is_crit: bool = data.get("is_crit", false)
+			var damage: int = data.get("damage", 0)
 			
 			if unit_id == "hero" or unit_id.begins_with("hero"):
 				_hero_hp = maxi(0, hp)
 				_flash_sprite(true, is_crit)
+				
+				# 受击闪白 + 屏幕震动
+				VFX.flash_white(hero_art, 0.1)
+				VFX.screen_shake(8.0, 0.15)
+				
+				# 暴击额外特效
 				if is_crit:
-					TweenFX.shake(self, 0.3, 10.0, 4)
+					VFX.critical_hit(hero_art.global_position)
+					VFX.freeze_frame(0.08, 0.05)
+				
+				# 伤害数字
+				VFX.spawn_damage_number(hero_art.global_position, damage, is_crit)
+				
+				# 受击动画
+				_play_anim(hero_art, "hurt")
+				
+				if _hero_hp <= 0:
+					battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % hero_name_label.text)
+					VFX.kill_effect(hero_art.global_position)
+					_play_anim(hero_art, "dead")
+					_death_flash(true)
 			else:
 				_enemy_hp = maxi(0, hp)
 				_flash_sprite(false, is_crit)
+				
+				# 受击闪白 + 屏幕震动
+				VFX.flash_white(enemy_art, 0.1)
+				VFX.screen_shake(8.0, 0.15)
+				
+				# 暴击额外特效
 				if is_crit:
-					TweenFX.shake(self, 0.3, 10.0, 4)
-			
-			if _hero_hp <= 0:
-				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % hero_name_label.text)
-				_death_flash(true)
-			elif _enemy_hp <= 0:
-				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % enemy_name_label.text)
-				_death_flash(false)
+					VFX.critical_hit(enemy_art.global_position)
+					VFX.freeze_frame(0.08, 0.05)
+				
+				# 伤害数字
+				VFX.spawn_damage_number(enemy_art.global_position, damage, is_crit)
+				
+				# 受击动画
+				_play_anim(enemy_art, "hurt")
+				
+				if _enemy_hp <= 0:
+					battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % enemy_name_label.text)
+					VFX.kill_effect(enemy_art.global_position)
+					_play_anim(enemy_art, "dead")
+					_death_flash(false)
 		
 		"unit_died":
 			var uname: String = data.get("name", "???")
 			battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % uname)
+			if uname == hero_name_label.text:
+				_play_anim(hero_art, "dead")
+			elif uname == enemy_name_label.text:
+				_play_anim(enemy_art, "dead")
 		
 		"partner_assist":
 			var pname: String = data.get("partner_name", "???")
@@ -336,9 +390,23 @@ func _generate_simulated_turn() -> void:
 			battle_log.append_text("  %s → %s %d\n" % [hero_name_label.text, enemy_name_label.text, hero_dmg])
 			_enemy_hp = maxi(0, _enemy_hp - hero_dmg)
 		
-		if _enemy_hp <= 0:
-			battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % enemy_name_label.text)
-			_death_flash(false)
+			
+			# 受击特效
+			VFX.flash_white(enemy_art, 0.1)
+			VFX.screen_shake(5.0, 0.1)
+			VFX.spawn_damage_number(enemy_art.global_position, hero_dmg, is_crit)
+			
+			if is_crit:
+				VFX.critical_hit(enemy_art.global_position)
+				VFX.freeze_frame(0.08, 0.05)
+			
+			# 敌人受击动画
+			_play_anim(enemy_art, "hurt")
+			
+			if _enemy_hp <= 0:
+				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % enemy_name_label.text)
+				_play_anim(enemy_art, "dead")
+				_death_flash(false)
 	
 	# 敌人行动
 	if _current_round < maxi(_sim_total_rounds, 3) and _hero_hp > 0 and _enemy_hp > 0:
@@ -352,15 +420,50 @@ func _generate_simulated_turn() -> void:
 				battle_log.append_text("  %s → %s %d\n" % [enemy_name_label.text, hero_name_label.text, enemy_dmg])
 				_hero_hp = maxi(0, _hero_hp - enemy_dmg)
 			
-			if _hero_hp <= 0:
-				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % hero_name_label.text)
-				_death_flash(true)
+				# 受击特效
+				VFX.flash_white(hero_art, 0.1)
+				VFX.screen_shake(5.0, 0.1)
+				VFX.spawn_damage_number(hero_art.global_position, enemy_dmg, false)
+				
+				# 英雄受击动画
+				_play_anim(hero_art, "hurt")
+				
+				if _hero_hp <= 0:
+					battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % hero_name_label.text)
+					_play_anim(hero_art, "dead")
+					_death_flash(true)
 
 func _apply_hp_bar_colors() -> void:
 	hero_hp_bar.add_theme_color_override("theme_fg", COL_BLUE_MAIN)
 	hero_hp_bar.add_theme_color_override("theme_bg", COL_BLUE_DEEP)
 	enemy_hp_bar.add_theme_color_override("theme_fg", COL_RED_MAIN)
 	enemy_hp_bar.add_theme_color_override("theme_bg", COL_RED_DEEP)
+
+func _load_sprite(animated_sprite: AnimatedSprite2D, path: String) -> void:
+	if path.is_empty():
+		return
+	var frames: Resource = load(path)
+	if frames == null or not frames is SpriteFrames:
+		push_warning("[BattleAnimation] 无法加载 SpriteFrames: %s" % path)
+		return
+	animated_sprite.sprite_frames = frames
+	animated_sprite.autoplay = "idle"
+	animated_sprite.play("idle")
+
+func _play_anim(animated_sprite: AnimatedSprite2D, action: String) -> void:
+	if animated_sprite.sprite_frames == null:
+		return
+	var anim_name: String = action
+	match action:
+		"attack":
+			if animated_sprite.sprite_frames.has_animation("attack_1"):
+				anim_name = "attack_1"
+			elif not animated_sprite.sprite_frames.has_animation("attack"):
+				return
+		"hurt", "dead", "idle":
+			if not animated_sprite.sprite_frames.has_animation(action):
+				return
+	animated_sprite.play(anim_name)
 
 func _on_turn_timer_timeout() -> void:
 	if not _is_playing:
@@ -415,6 +518,8 @@ func reset_panel() -> void:
 	_events_by_turn = {}
 	_turn_keys = []
 	battle_log.text = ""
+	_play_anim(hero_art, "idle")
+	_play_anim(enemy_art, "idle")
 	visible = false
 
 func _update_hp_display() -> void:
@@ -426,14 +531,14 @@ func _update_hp_display() -> void:
 	enemy_hp_meta.text = "%d / %d" % [enemy_current, _enemy_max_hp]
 
 func _flash_sprite(is_hero: bool, is_crit: bool) -> void:
-	var sprite: ColorRect = hero_art if is_hero else enemy_art
+	var sprite: AnimatedSprite2D  = hero_art if is_hero else enemy_art
 	var flash_color: Color = COL_CRIT if is_crit else Color(1, 1, 1)
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", flash_color, 0.1)
 	tween.tween_property(sprite, "modulate", Color(1, 1, 1, 0.3), 0.2)
 
 func _death_flash(is_hero: bool) -> void:
-	var sprite: ColorRect = hero_art if is_hero else enemy_art
+	var sprite: AnimatedSprite2D  = hero_art if is_hero else enemy_art
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", Color(0.8, 0.1, 0.1), 0.15)
 	tween.tween_property(sprite, "modulate", Color(1, 1, 1, 0.3), 0.3)

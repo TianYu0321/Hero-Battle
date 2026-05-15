@@ -27,7 +27,9 @@ ConfigManager="*res://autoload/config_manager.gd"
 GameManager="*res://autoload/game_manager.gd"
 SaveManager="*res://autoload/save_manager.gd"
 AudioManager="*res://autoload/audio_manager.gd"
-TweenFX="*res://TweenFX-2cbf6559572a1713b7f9c0e9ae2ecaef4d05307c/addons/TweenFX/TweenFX.gd"
+TweenFX="*uid://d2n10rw2dnx8o"
+VFX="*uid://ecyiymmaj3jv"
+EnvVFX="*uid://qomyut16hnoi"
 
 [debug]
 
@@ -45,7 +47,7 @@ project/assembly_name="Hero Battle"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/theme_gen_save_sync/plugin.cfg")
+enabled=PackedStringArray("res://addons/TweenFX/plugin.cfg", "res://addons/addons/theme_gen_save_sync/plugin.cfg", "res://addons/vfx_library/plugin.cfg")
 
 [input]
 

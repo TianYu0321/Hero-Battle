@@ -1,10 +1,11 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3 uid="uid://ckfgrx7r2posu"]
 
-[ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
+[ext_resource type="Script" uid="uid://cvfqvd5okb40y" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
 [ext_resource type="Script" path="res://scenes/run_main/combat_confirm_panel.gd" id="2_def34"]
 [ext_resource type="PackedScene" path="res://scenes/run_main/battle_animation_panel.tscn" id="3_ghi56"]
+[ext_resource type="Theme" uid="uid://fb3cikx2xjyn" path="res://themes/generated/dark_theme.tres" id="4_qxeyt"]
 
-[node name="RunMain" type="Control"]
+[node name="RunMain" type="Control" unique_id=1657387686]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,14 +14,14 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_abc12")
 
-[node name="HudContainer" type="Control" parent="."]
-layout_mode = 3
+[node name="HudContainer" type="Control" parent="." unique_id=1750019691]
+layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 140.0
 grow_horizontal = 2
 
-[node name="FloorLabel" type="Label" parent="HudContainer"]
+[node name="FloorLabel" type="Label" parent="HudContainer" unique_id=1169652350]
 layout_mode = 0
 offset_left = 20.0
 offset_top = 20.0
@@ -28,7 +29,7 @@ offset_right = 150.0
 offset_bottom = 50.0
 text = "层数: 1/30"
 
-[node name="GoldLabel" type="Label" parent="HudContainer"]
+[node name="GoldLabel" type="Label" parent="HudContainer" unique_id=976237563]
 layout_mode = 0
 offset_left = 180.0
 offset_top = 20.0
@@ -36,7 +37,7 @@ offset_right = 330.0
 offset_bottom = 50.0
 text = "金币: 100"
 
-[node name="HpLabel" type="Label" parent="HudContainer"]
+[node name="HpLabel" type="Label" parent="HudContainer" unique_id=2096980900]
 layout_mode = 0
 offset_left = 360.0
 offset_top = 20.0
@@ -44,7 +45,7 @@ offset_right = 510.0
 offset_bottom = 50.0
 text = "生命: 100/100"
 
-[node name="AttrBar1" type="ProgressBar" parent="HudContainer"]
+[node name="AttrBar1" type="ProgressBar" parent="HudContainer" unique_id=344762311]
 layout_mode = 0
 offset_left = 800.0
 offset_top = 10.0
@@ -52,7 +53,7 @@ offset_right = 1000.0
 offset_bottom = 30.0
 value = 50.0
 
-[node name="AttrLabel1" type="Label" parent="HudContainer"]
+[node name="AttrLabel1" type="Label" parent="HudContainer" unique_id=2002103713]
 layout_mode = 0
 offset_left = 1010.0
 offset_top = 10.0
@@ -60,7 +61,7 @@ offset_right = 1100.0
 offset_bottom = 30.0
 text = "体魄"
 
-[node name="AttrBar2" type="ProgressBar" parent="HudContainer"]
+[node name="AttrBar2" type="ProgressBar" parent="HudContainer" unique_id=703613433]
 layout_mode = 0
 offset_left = 800.0
 offset_top = 35.0
@@ -68,7 +69,7 @@ offset_right = 1000.0
 offset_bottom = 55.0
 value = 50.0
 
-[node name="AttrLabel2" type="Label" parent="HudContainer"]
+[node name="AttrLabel2" type="Label" parent="HudContainer" unique_id=701159798]
 layout_mode = 0
 offset_left = 1010.0
 offset_top = 35.0
@@ -76,7 +77,7 @@ offset_right = 1100.0
 offset_bottom = 55.0
 text = "力量"
 
-[node name="AttrBar3" type="ProgressBar" parent="HudContainer"]
+[node name="AttrBar3" type="ProgressBar" parent="HudContainer" unique_id=1698095735]
 layout_mode = 0
 offset_left = 800.0
 offset_top = 60.0
@@ -84,7 +85,7 @@ offset_right = 1000.0
 offset_bottom = 80.0
 value = 50.0
 
-[node name="AttrLabel3" type="Label" parent="HudContainer"]
+[node name="AttrLabel3" type="Label" parent="HudContainer" unique_id=1746432729]
 layout_mode = 0
 offset_left = 1010.0
 offset_top = 60.0
@@ -92,7 +93,7 @@ offset_right = 1100.0
 offset_bottom = 80.0
 text = "敏捷"
 
-[node name="AttrBar4" type="ProgressBar" parent="HudContainer"]
+[node name="AttrBar4" type="ProgressBar" parent="HudContainer" unique_id=1290064731]
 layout_mode = 0
 offset_left = 800.0
 offset_top = 85.0
@@ -100,7 +101,7 @@ offset_right = 1000.0
 offset_bottom = 105.0
 value = 50.0
 
-[node name="AttrLabel4" type="Label" parent="HudContainer"]
+[node name="AttrLabel4" type="Label" parent="HudContainer" unique_id=143401477]
 layout_mode = 0
 offset_left = 1010.0
 offset_top = 85.0
@@ -108,7 +109,7 @@ offset_right = 1100.0
 offset_bottom = 105.0
 text = "技巧"
 
-[node name="AttrBar5" type="ProgressBar" parent="HudContainer"]
+[node name="AttrBar5" type="ProgressBar" parent="HudContainer" unique_id=549662145]
 layout_mode = 0
 offset_left = 800.0
 offset_top = 110.0
@@ -116,7 +117,7 @@ offset_right = 1000.0
 offset_bottom = 130.0
 value = 50.0
 
-[node name="AttrLabel5" type="Label" parent="HudContainer"]
+[node name="AttrLabel5" type="Label" parent="HudContainer" unique_id=1129473844]
 layout_mode = 0
 offset_left = 1010.0
 offset_top = 110.0
@@ -124,42 +125,42 @@ offset_right = 1100.0
 offset_bottom = 130.0
 text = "精神"
 
-[node name="OptionContainer" type="Control" parent="."]
-layout_mode = 0
+[node name="OptionContainer" type="Control" parent="." unique_id=536254372]
+anchors_preset = 0
 offset_left = 440.0
 offset_top = 280.0
 offset_right = 840.0
 offset_bottom = 470.0
 
-[node name="TrainButton" type="Button" parent="OptionContainer"]
+[node name="TrainButton" type="Button" parent="OptionContainer" unique_id=1792721126]
 layout_mode = 0
 offset_right = 400.0
 offset_bottom = 40.0
 text = "训练"
 
-[node name="BattleButton" type="Button" parent="OptionContainer"]
+[node name="BattleButton" type="Button" parent="OptionContainer" unique_id=1617798099]
 layout_mode = 0
 offset_top = 50.0
 offset_right = 400.0
 offset_bottom = 90.0
 text = "战斗"
 
-[node name="RestButton" type="Button" parent="OptionContainer"]
+[node name="RestButton" type="Button" parent="OptionContainer" unique_id=2110653474]
 layout_mode = 0
 offset_top = 100.0
 offset_right = 400.0
 offset_bottom = 140.0
 text = "休息"
 
-[node name="OutingButton" type="Button" parent="OptionContainer"]
+[node name="OutingButton" type="Button" parent="OptionContainer" unique_id=767424962]
 layout_mode = 0
 offset_top = 150.0
 offset_right = 400.0
 offset_bottom = 190.0
 text = "外出"
 
-[node name="PartnerContainer" type="Control" parent="."]
-layout_mode = 3
+[node name="PartnerContainer" type="Control" parent="." unique_id=2089793647]
+layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
@@ -168,7 +169,7 @@ offset_top = -100.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="PartnerSlot1" type="ColorRect" parent="PartnerContainer"]
+[node name="PartnerSlot1" type="ColorRect" parent="PartnerContainer" unique_id=817258586]
 layout_mode = 0
 offset_left = 200.0
 offset_top = 18.0
@@ -176,7 +177,7 @@ offset_right = 264.0
 offset_bottom = 82.0
 color = Color(0.2, 0.6, 0.3, 1)
 
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot1"]
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot1" unique_id=1423394870]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -187,7 +188,7 @@ text = "伙伴1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PartnerSlot2" type="ColorRect" parent="PartnerContainer"]
+[node name="PartnerSlot2" type="ColorRect" parent="PartnerContainer" unique_id=89418588]
 layout_mode = 0
 offset_left = 400.0
 offset_top = 18.0
@@ -195,7 +196,7 @@ offset_right = 464.0
 offset_bottom = 82.0
 color = Color(0.9, 0.5, 0.1, 1)
 
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot2"]
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot2" unique_id=1503897988]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -206,7 +207,7 @@ text = "伙伴2"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PartnerSlot3" type="ColorRect" parent="PartnerContainer"]
+[node name="PartnerSlot3" type="ColorRect" parent="PartnerContainer" unique_id=124349354]
 layout_mode = 0
 offset_left = 600.0
 offset_top = 18.0
@@ -214,7 +215,7 @@ offset_right = 664.0
 offset_bottom = 82.0
 color = Color(0.2, 0.4, 0.8, 1)
 
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot3"]
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot3" unique_id=1615386517]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -225,7 +226,7 @@ text = "伙伴3"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PartnerSlot4" type="ColorRect" parent="PartnerContainer"]
+[node name="PartnerSlot4" type="ColorRect" parent="PartnerContainer" unique_id=786371894]
 layout_mode = 0
 offset_left = 800.0
 offset_top = 18.0
@@ -233,7 +234,7 @@ offset_right = 864.0
 offset_bottom = 82.0
 color = Color(0.7, 0.2, 0.7, 1)
 
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot4"]
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot4" unique_id=1964096449]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -244,7 +245,7 @@ text = "伙伴4"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PartnerSlot5" type="ColorRect" parent="PartnerContainer"]
+[node name="PartnerSlot5" type="ColorRect" parent="PartnerContainer" unique_id=1469470748]
 layout_mode = 0
 offset_left = 1000.0
 offset_top = 18.0
@@ -252,7 +253,7 @@ offset_right = 1064.0
 offset_bottom = 82.0
 color = Color(0.8, 0.8, 0.2, 1)
 
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot5"]
+[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot5" unique_id=617786303]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -263,14 +264,14 @@ text = "伙伴5"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="EnemyInfoPanel" type="Panel" parent="."]
+[node name="EnemyInfoPanel" type="Panel" parent="." unique_id=1538002518]
 layout_mode = 0
 offset_left = 900.0
 offset_top = 200.0
 offset_right = 1200.0
 offset_bottom = 400.0
 
-[node name="EnemyNameLabel" type="Label" parent="EnemyInfoPanel"]
+[node name="EnemyNameLabel" type="Label" parent="EnemyInfoPanel" unique_id=451088841]
 layout_mode = 0
 offset_left = 10.0
 offset_top = 10.0
@@ -278,7 +279,7 @@ offset_right = 290.0
 offset_bottom = 40.0
 text = "敌人: ???"
 
-[node name="EnemyHpLabel" type="Label" parent="EnemyInfoPanel"]
+[node name="EnemyHpLabel" type="Label" parent="EnemyInfoPanel" unique_id=358067617]
 layout_mode = 0
 offset_left = 10.0
 offset_top = 50.0
@@ -286,7 +287,7 @@ offset_right = 290.0
 offset_bottom = 80.0
 text = "HP: 0/0"
 
-[node name="EstimatedLossLabel" type="Label" parent="EnemyInfoPanel"]
+[node name="EstimatedLossLabel" type="Label" parent="EnemyInfoPanel" unique_id=335080589]
 layout_mode = 0
 offset_left = 10.0
 offset_top = 90.0
@@ -294,16 +295,16 @@ offset_right = 290.0
 offset_bottom = 120.0
 text = "预计损失: 0"
 
-[node name="CombatConfirmPanel" type="Panel" parent="."]
+[node name="CombatConfirmPanel" type="Panel" parent="." unique_id=1150122023]
+visible = false
 layout_mode = 0
 offset_left = 440.0
 offset_top = 200.0
 offset_right = 840.0
 offset_bottom = 440.0
-visible = false
 script = ExtResource("2_def34")
 
-[node name="SilhouetteRect" type="ColorRect" parent="CombatConfirmPanel"]
+[node name="SilhouetteRect" type="ColorRect" parent="CombatConfirmPanel" unique_id=2003742848]
 layout_mode = 0
 offset_left = 100.0
 offset_top = 10.0
@@ -311,7 +312,7 @@ offset_right = 300.0
 offset_bottom = 110.0
 color = Color(0.333333, 0.333333, 0.333333, 1)
 
-[node name="EnemyNameLabel" type="Label" parent="CombatConfirmPanel"]
+[node name="EnemyNameLabel" type="Label" parent="CombatConfirmPanel" unique_id=1429982528]
 layout_mode = 0
 offset_left = 20.0
 offset_top = 120.0
@@ -320,7 +321,7 @@ offset_bottom = 150.0
 text = "敌人: ???"
 horizontal_alignment = 1
 
-[node name="ConfirmButton" type="Button" parent="CombatConfirmPanel"]
+[node name="ConfirmButton" type="Button" parent="CombatConfirmPanel" unique_id=1915896615]
 layout_mode = 0
 offset_left = 20.0
 offset_top = 160.0
@@ -328,7 +329,7 @@ offset_right = 185.0
 offset_bottom = 200.0
 text = "进入战斗"
 
-[node name="CancelButton" type="Button" parent="CombatConfirmPanel"]
+[node name="CancelButton" type="Button" parent="CombatConfirmPanel" unique_id=610816484]
 layout_mode = 0
 offset_left = 215.0
 offset_top = 160.0
@@ -336,5 +337,7 @@ offset_right = 380.0
 offset_bottom = 200.0
 text = "返回"
 
-[node name="BattleAnimationPanel" parent="." instance=ExtResource("3_ghi56")]
+[node name="BattleAnimationPanel" parent="." unique_id=1923546336 instance=ExtResource("3_ghi56")]
 visible = false
+layout_mode = 1
+theme = ExtResource("4_qxeyt")

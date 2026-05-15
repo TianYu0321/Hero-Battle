@@ -189,6 +189,17 @@ func _start_full_battle_ui() -> void:
 	var enemy_cfg: Dictionary = selected_node.get("enemy_config", {})
 	var hero_data: Dictionary = summary.get("hero", {})
 	
+	# 英雄 sprite 路径映射（config_id → path）
+	var hero_sprite_path: String = ""
+	match GameManager.selected_hero_config_id:
+		2:
+			hero_sprite_path = "res://assets/characters/shinobi/hero_frames.tres"
+	
+	# 敌人 sprite 路径
+	var enemy_sprite_path: String = enemy_cfg.get("sprite_path", "")
+	if enemy_sprite_path.is_empty():
+		enemy_sprite_path = "res://assets/characters/gorgen/gorgen.tres"
+	
 	# 构建 battle_result 字典，符合 battle_animation_panel.start_battle() 的期望
 	var battle_result: Dictionary = {
 		"hero_name": hero_data.get("hero_name", "英雄"),
@@ -200,6 +211,8 @@ func _start_full_battle_ui() -> void:
 		"total_rounds": enemy_cfg.get("estimated_hp_loss", 10) / 5 + 2,
 		"stage_name": selected_node.get("node_name", "深渊斗技场"),
 		"victory": true,
+		"hero_sprite_path": hero_sprite_path,
+		"enemy_sprite_path": enemy_sprite_path,
 	}
 	
 	_show_modal_panel(battle_animation_panel)

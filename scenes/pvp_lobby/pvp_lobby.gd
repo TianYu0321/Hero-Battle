@@ -236,10 +236,21 @@ func _on_start_battle() -> void:
 	var combat_summary: Dictionary = result.get("combat_summary", {})
 	var total_rounds: int = combat_summary.get("turns", 0)
 
+	# 英雄 sprite 路径映射（config_id → path）
+	var hero_sprite_path: String = ""
+	match GameManager.selected_hero_config_id:
+		2:
+			hero_sprite_path = "res://assets/characters/shinobi/hero_frames.tres"
+	
+	# 敌人 sprite 路径（对手）
+	var enemy_data = result.get("enemies", [{}])[0]
+	var enemy_sprite_path: String = enemy_data.get("sprite_path", "")
+	if enemy_sprite_path.is_empty():
+		enemy_sprite_path = "res://assets/characters/gorgen/gorgen.tres"
+
 	# 如果有 recorder，先播放战斗动画
 	if recorder != null and recorder.get_events().size() > 0:
 		var hero_data = result.get("hero", {})
-		var enemy_data = result.get("enemies", [{}])[0]
 		var hero_name = hero_data.get("name", "英雄")
 		var enemy_name = enemy_data.get("name", "???")
 		var hero_max_hp = hero_data.get("max_hp", 100)
@@ -251,7 +262,8 @@ func _on_start_battle() -> void:
 		battle_animation_panel.start_playback(
 			recorder, hero_name, enemy_name,
 			hero_max_hp, enemy_max_hp,
-			[], [], total_rounds
+			[], [], total_rounds,
+			hero_sprite_path, enemy_sprite_path
 		)
 
 		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
