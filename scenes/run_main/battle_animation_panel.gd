@@ -40,6 +40,7 @@ var _enemy_max_hp: int = 0
 var _recorder: BattlePlaybackRecorder = null
 var _events_by_turn: Dictionary = {}
 var _turn_keys: Array = []
+var _event_tween: Tween = null
 
 # 摘要模拟模式
 var _sim_total_rounds: int = 0
@@ -198,16 +199,24 @@ func _play_next_turn() -> void:
 	# 日志里加回合标题（暗金颜色，换行）
 	battle_log.append_text("\n[color=#E6C040]━━ 回合 %d ━━[/color]\n" % _current_round)
 	
-	# 播放本回合事件
+	# 播放本回合事件（Tween 串行，每个间隔 0.5 秒）
 	if _recorder != null and _events_by_turn.has(_current_round):
 		var events: Array = _events_by_turn[_current_round]
-		for evt in events:
-			_process_event(evt)
+		if events.size() > 0:
+			if _event_tween != null and _event_tween.is_valid():
+				_event_tween.kill()
+			_event_tween = create_tween()
+			for i in range(events.size()):
+				_event_tween.tween_callback(_process_event.bind(events[i]))
+				_event_tween.tween_callback(_update_hp_display)
+				_event_tween.tween_interval(0.5)
+			_event_tween.tween_callback(func(): turn_timer.start(1.0))
+		else:
+			turn_timer.start(1.0)
 	else:
 		_generate_simulated_turn()
-	
-	_update_hp_display()
-	turn_timer.start(1.0)
+		_update_hp_display()
+		turn_timer.start(1.0)
 
 func _process_event(evt: Dictionary) -> void:
 	var type: String = evt.get("type", "")
@@ -330,6 +339,8 @@ func _on_skip() -> void:
 	print("[BattleAnimation] 跳过, gen=%d" % _playback_generation)
 	_is_playing = false
 	turn_timer.stop()
+	if _event_tween != null and _event_tween.is_valid():
+		_event_tween.kill()
 	_show_result()
 
 func _show_result() -> void:
@@ -357,6 +368,8 @@ func _show_result() -> void:
 func reset_panel() -> void:
 	_is_playing = false
 	turn_timer.stop()
+	if _event_tween != null and _event_tween.is_valid():
+		_event_tween.kill()
 	_current_round = 0
 	_hero_hp = 0
 	_hero_max_hp = 0
