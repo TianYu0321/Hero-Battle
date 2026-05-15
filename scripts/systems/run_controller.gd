@@ -276,7 +276,10 @@ func _process_node_result(result: Dictionary) -> void:
 		var battle_result: Dictionary = result.get("battle_result", {})
 		if battle_result.is_empty() and result.has("winner"):
 			battle_result = result
-		var hero_name: String = _hero.hero_name if _hero != null else "英雄"
+		var hero_name: String = "英雄"
+		if _hero != null:
+			var hero_cfg: Dictionary = ConfigManager.get_hero_config(ConfigManager.get_hero_id_by_config_id(_hero.hero_config_id))
+			hero_name = hero_cfg.get("name", "英雄")
 		var enemy_name: String = "敌人"
 		if result.has("enemy_config"):
 			enemy_name = result["enemy_config"].get("name", "敌人")
@@ -476,6 +479,14 @@ func _get_partner_dicts() -> Array:
 	for p in _character_manager.get_partners():
 		result.append(p.to_dict())
 	return result
+
+func confirm_battle_result() -> void:
+	## v1 compat: select_node 已同步完成节点执行，此方法保留供测试/外部调用兼容
+	pass
+
+func close_shop_panel() -> void:
+	## v1 compat: 商店面板关闭回调
+	pass
 
 func select_training_attr(attr_type: int) -> void:
 	## 玩家从训练面板选择了具体属性

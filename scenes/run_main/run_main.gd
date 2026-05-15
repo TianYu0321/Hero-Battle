@@ -191,7 +191,14 @@ func _start_full_battle_ui() -> void:
 	
 	# 启动战斗动画面板
 	_show_modal_panel(battle_animation_panel)
-	battle_animation_panel.start_battle(enemy_cfg, hero_data)
+	battle_animation_panel.start_battle({
+		"enemy_max_hp": enemy_cfg.get("max_hp", 100),
+		"enemy_hp": enemy_cfg.get("current_hp", 100),
+		"hero_max_hp": hero_data.get("max_hp", 100),
+		"hero_hp": hero_data.get("current_hp", 100),
+		"hero_name": hero_data.get("name", "英雄"),
+		"enemy_name": enemy_cfg.get("name", "敌人"),
+	})
 	
 	# 延迟执行战斗（给面板时间初始化显示，避免第一回合卡住）
 	call_deferred("_execute_combat_deferred", _combat_selected_index)

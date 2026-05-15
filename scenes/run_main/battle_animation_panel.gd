@@ -1,81 +1,147 @@
 class_name BattleAnimationPanel
 extends Control
 
-@onready var round_label: Label = $BattleField/RoundLabel
-@onready var hero_rect: Control = $BattleField/HeroRect
-@onready var enemy_rect: Control = $BattleField/EnemyRect
-@onready var hero_hp_bar: ProgressBar = $BattleField/HeroHpBar
-@onready var enemy_hp_bar: ProgressBar = $BattleField/EnemyHpBar
-@onready var battle_log: RichTextLabel = $BattleLog
-@onready var speed_button: Button = $SpeedButton
+@onready var semi_transparent_bg: ColorRect = $SemiTransparentBg
+
+@onready var hero_portrait: ColorRect = $HudContainer/HeroCard/Portrait
+@onready var hero_name_label: Label = $HudContainer/HeroCard/NameLabel
+@onready var hero_hp_bar: ProgressBar = $HudContainer/HeroCard/HpBar
+@onready var hero_hp_meta: Label = $HudContainer/HeroCard/HpMeta
+
+@onready var enemy_portrait: ColorRect = $HudContainer/EnemyCard/Portrait
+@onready var enemy_name_label: Label = $HudContainer/EnemyCard/NameLabel
+@onready var enemy_hp_bar: ProgressBar = $HudContainer/EnemyCard/HpBar
+@onready var enemy_hp_meta: Label = $HudContainer/EnemyCard/HpMeta
+
+@onready var vs_label: Label = $HudContainer/CenterBadge/VsLabel
+@onready var round_label: Label = $HudContainer/CenterBadge/RoundLabel
+
+@onready var hero_art: ColorRect = $StageArea/HeroArt
+@onready var enemy_art: ColorRect = $StageArea/EnemyArt
+@onready var stage_name_label: Label = $StageArea/StageName
+
+@onready var log_head: Label = $LogPanel/LogHead
+@onready var battle_log: RichTextLabel = $LogPanel/BattleLog
+@onready var skip_button: Button = $LogPanel/SkipButton
+
 @onready var turn_timer: Timer = $TurnTimer
 
 var _playback_generation: int = 0
 var _result_emitted: bool = false
 var _is_playing: bool = false
 var _current_round: int = 0
-var _max_rounds: int = 0
+var _total_rounds: int = 0
+
 var _hero_hp: int = 0
 var _hero_max_hp: int = 0
 var _enemy_hp: int = 0
 var _enemy_max_hp: int = 0
-var _enemy_name: String = "???"
 
 signal confirmed
 
+const COL_TEXT_MAIN := Color(0.90, 0.90, 0.92)
+const COL_TEXT_SECOND := Color(0.68, 0.68, 0.71)
+const COL_RED_MAIN := Color(0.85, 0.22, 0.15)
+const COL_RED_DEEP := Color(0.35, 0.06, 0.04)
+const COL_BLUE_MAIN := Color(0.25, 0.55, 0.85)
+const COL_BLUE_DEEP := Color(0.08, 0.18, 0.35)
+const COL_GOLD := Color(0.90, 0.75, 0.35)
+
 func _ready() -> void:
 	turn_timer.timeout.connect(_on_turn_timer_timeout)
-	speed_button.pressed.connect(_on_skip)
+	skip_button.pressed.connect(_on_skip)
 	visible = false
+	_apply_dark_theme()
 
-func start_battle(enemy_cfg: Dictionary, hero_data: Dictionary) -> void:
+func _apply_dark_theme() -> void:
+	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.70)
+	hero_portrait.color = COL_BLUE_DEEP
+	enemy_portrait.color = COL_RED_DEEP
+	vs_label.add_theme_color_override("font_color", COL_GOLD)
+	round_label.add_theme_color_override("font_color", COL_TEXT_MAIN)
+	log_head.add_theme_color_override("font_color", COL_GOLD)
+	stage_name_label.add_theme_color_override("font_color", COL_TEXT_SECOND)
+	skip_button.add_theme_color_override("font_color", COL_TEXT_MAIN)
+	skip_button.add_theme_color_override("font_hover_color", COL_GOLD)
+
+func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_name: String, hero_max_hp: int, enemy_max_hp: int, _allies: Array, _enemies: Array) -> void:
+	var events: Array[Dictionary] = recorder.get_events()
+	var turn_count: int = 1
+	for evt in events:
+		var t: int = evt.get("data", {}).get("turn", 0)
+		if t > turn_count:
+			turn_count = t
+	start_battle({
+		"total_rounds": maxi(1, turn_count),
+		"hero_max_hp": hero_max_hp,
+		"hero_hp": hero_max_hp,
+		"enemy_max_hp": enemy_max_hp,
+		"enemy_hp": enemy_max_hp,
+		"hero_name": hero_name,
+		"enemy_name": enemy_name,
+		"stage_name": "PVP 对决",
+	})
+
+func start_battle(battle_result: Dictionary) -> void:
 	_playback_generation += 1
 	_result_emitted = false
 	_is_playing = true
 	visible = true
 	
-	_hero_max_hp = hero_data.get("max_hp", 100)
-	_hero_hp = hero_data.get("current_hp", 100)
-	_enemy_max_hp = enemy_cfg.get("max_hp", 100)
-	_enemy_hp = enemy_cfg.get("hp", 100)
-	_enemy_name = enemy_cfg.get("name", "???")
-	
-	var estimated_loss: int = enemy_cfg.get("estimated_hp_loss", 10)
-	_max_rounds = clampi(estimated_loss / 5 + 2, 3, 15)
+	_total_rounds = battle_result.get("total_rounds", 1)
 	_current_round = 0
 	
-	hero_hp_bar.max_value = _hero_max_hp
-	hero_hp_bar.value = _hero_hp
-	enemy_hp_bar.max_value = _enemy_max_hp
-	enemy_hp_bar.value = _enemy_hp
+	_hero_max_hp = battle_result.get("hero_max_hp", 100)
+	_hero_hp = battle_result.get("hero_hp", _hero_max_hp)
+	_enemy_max_hp = battle_result.get("enemy_max_hp", 100)
+	_enemy_hp = battle_result.get("enemy_hp", _enemy_max_hp)
 	
-	round_label.text = "回合: 1/%d" % _max_rounds
-	battle_log.clear()
-	battle_log.append_text("[color=yellow]战斗开始！[/color]\n")
+	var hero_name: String = battle_result.get("hero_name", "英雄")
+	var enemy_name: String = battle_result.get("enemy_name", "敌人")
+	var stage_name: String = battle_result.get("stage_name", "深渊斗技场")
 	
-	print("[BattleAnimation] 开始: gen=%d, %d回合, 敌人=%s" % [_playback_generation, _max_rounds, _enemy_name])
+	hero_name_label.text = hero_name
+	enemy_name_label.text = enemy_name
+	stage_name_label.text = stage_name
+	
+	_update_hp_display()
+	
+	hero_hp_bar.add_theme_color_override("theme_fg", COL_BLUE_MAIN)
+	hero_hp_bar.add_theme_color_override("theme_bg", COL_BLUE_DEEP)
+	enemy_hp_bar.add_theme_color_override("theme_fg", COL_RED_MAIN)
+	enemy_hp_bar.add_theme_color_override("theme_bg", COL_RED_DEEP)
+	
+	battle_log.text = ""
+	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
+	
+	print("[BattleAnimation] 开始: gen=%d, %d回合" % [_playback_generation, _total_rounds])
 	_play_turn()
 
 func _play_turn() -> void:
-	var gen: int = _playback_generation
-	
-	if not _is_playing or _current_round >= _max_rounds:
-		_show_result()
+	if not _is_playing:
 		return
 	
 	_current_round += 1
-	round_label.text = "回合: %d/%d" % [_current_round, _max_rounds]
+	if _current_round > _total_rounds:
+		_show_result()
+		return
 	
-	# 模拟战斗过程（线性插值预估）
-	var progress: float = float(_current_round) / float(_max_rounds)
+	round_label.text = "回合 %d/%d" % [_current_round, _total_rounds]
+	
+	var progress: float = float(_current_round) / float(_total_rounds)
 	var hero_loss_est: int = int((_hero_max_hp - _hero_hp) * progress * 0.3)
 	var enemy_loss_est: int = int(_enemy_max_hp * progress * 0.7)
 	
 	hero_hp_bar.value = maxi(0, _hero_hp - hero_loss_est)
 	enemy_hp_bar.value = maxi(0, _enemy_hp - enemy_loss_est)
-	battle_log.append_text("第 %d 回合... " % _current_round)
+	_update_hp_display()
 	
-	turn_timer.start(0.8)
+	if _current_round == 1:
+		battle_log.append_text("[color=#5A8FD0]第 %d 回合... [/color]" % _current_round)
+	else:
+		battle_log.append_text("第 %d 回合... " % _current_round)
+	
+	turn_timer.start(1.0)
 
 func _on_turn_timer_timeout() -> void:
 	if not _is_playing:
@@ -98,7 +164,12 @@ func _show_result() -> void:
 	if _result_emitted:
 		return
 	_result_emitted = true
-	battle_log.append_text("\n[color=yellow]=== 战斗结束 ===[/color]")
+	
+	hero_hp_bar.value = _hero_hp
+	enemy_hp_bar.value = _enemy_hp
+	_update_hp_display()
+	
+	battle_log.append_text("\n[color=#E6C040]=== 战斗结束 ===[/color]")
 	print("[BattleAnimation] confirmed, gen=%d" % _playback_generation)
 	confirmed.emit()
 
@@ -106,14 +177,16 @@ func reset_panel() -> void:
 	_is_playing = false
 	turn_timer.stop()
 	_current_round = 0
-	_max_rounds = 0
+	_total_rounds = 0
 	_hero_hp = 0
 	_hero_max_hp = 0
 	_enemy_hp = 0
 	_enemy_max_hp = 0
-	_enemy_name = "???"
 	battle_log.text = ""
-	round_label.text = "回合: 1/20"
-	hero_hp_bar.value = 100
-	enemy_hp_bar.value = 100
 	visible = false
+
+func _update_hp_display() -> void:
+	var hero_current: int = maxi(0, _hero_hp)
+	var enemy_current: int = maxi(0, _enemy_hp)
+	hero_hp_meta.text = "%d / %d" % [hero_current, _hero_max_hp]
+	enemy_hp_meta.text = "%d / %d" % [enemy_current, _enemy_max_hp]

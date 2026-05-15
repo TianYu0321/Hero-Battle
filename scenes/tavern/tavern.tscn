@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://t1u2v3w4x5y6z"]
+[gd_scene format=3 uid="uid://ptpxtcu45me6"]
 
 [ext_resource type="Script" path="res://scenes/tavern/tavern.gd" id="1_tavern"]
 

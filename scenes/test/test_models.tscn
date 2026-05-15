@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://cjm0kxx4v0q01"]
+[gd_scene format=3 uid="uid://cjm0kxx4v0q01"]
 
 [ext_resource type="Script" path="res://scenes/test/test_models.gd" id="1_abc12"]
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://h5s6e7f8g9i0j"]
+[gd_scene format=3 uid="uid://f0f73lqcurh0"]
 
 [ext_resource type="Script" path="res://scenes/hero_select/hero_select.gd" id="1_heroselect"]
 
