@@ -67,11 +67,40 @@ func _ready() -> void:
 	visible = false
 	battle_log.scroll_following = true
 	_apply_dark_theme()
+	_apply_theme_colors()
 
 func _apply_dark_theme() -> void:
 	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.92)
 	hero_portrait.color = COL_BLUE_DEEP
 	enemy_portrait.color = COL_RED_DEEP
+
+func _apply_theme_colors() -> void:
+	var theme := get_theme()
+	
+	# 从 Theme 读取颜色，Theme 没定义就用代码常量
+	var text_main_color: Color = COL_TEXT_MAIN
+	var gold_color: Color = COL_GOLD
+	var text_second_color: Color = COL_TEXT_SECOND
+	
+	if theme != null:
+		if theme.has_color("font_color", "Label"):
+			text_main_color = theme.get_color("font_color", "Label")
+		if theme.has_color("gold", "custom"):
+			gold_color = theme.get_color("gold", "custom")
+		if theme.has_color("text_second", "custom"):
+			text_second_color = theme.get_color("text_second", "custom")
+	
+	# 应用到所有文字节点
+	vs_label.add_theme_color_override("font_color", gold_color)
+	round_label.add_theme_color_override("font_color", text_main_color)
+	log_head.add_theme_color_override("font_color", gold_color)
+	stage_name_label.add_theme_color_override("font_color", text_second_color)
+	hero_name_label.add_theme_color_override("font_color", text_main_color)
+	enemy_name_label.add_theme_color_override("font_color", text_main_color)
+	hero_hp_meta.add_theme_color_override("font_color", text_main_color)
+	enemy_hp_meta.add_theme_color_override("font_color", text_main_color)
+	skip_button.add_theme_color_override("font_color", text_main_color)
+	skip_button.add_theme_color_override("font_hover_color", gold_color)
 
 # === 模式A：Recorder回放（PVP用） ===
 
