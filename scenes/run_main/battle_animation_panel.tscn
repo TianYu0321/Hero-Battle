@@ -204,6 +204,3 @@ one_shot = true
 [node name="ResultTimer" type="Timer" parent="." unique_id=653165749]
 process_callback = 0
 one_shot = true
-
-[node name="CanvasModulate" type="CanvasModulate" parent="."]
-color = Color(0.7, 0.7, 0.8, 1)
