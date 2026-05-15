@@ -183,7 +183,7 @@ func _play_next_turn() -> void:
 	
 	_current_round += 1
 	
-	# 结束条件：达到真实回合数，或一方死亡（超过保底3回合）
+	# 结束条件
 	var should_end: bool = _current_round > _sim_total_rounds
 	if (_hero_hp <= 0 or _enemy_hp <= 0) and _current_round > 3:
 		should_end = true
@@ -194,7 +194,10 @@ func _play_next_turn() -> void:
 	
 	round_label.text = "回合 %d" % _current_round
 	
-	# 优先用 recorder 的真实事件，没有则用模拟
+	# 日志里加回合标题（暗金颜色，换行）
+	battle_log.append_text("\n[color=#E6C040]━━ 回合 %d ━━[/color]\n" % _current_round)
+	
+	# 播放本回合事件
 	if _recorder != null and _events_by_turn.has(_current_round):
 		var events: Array = _events_by_turn[_current_round]
 		for evt in events:
@@ -214,7 +217,7 @@ func _process_event(evt: Dictionary) -> void:
 			var order: Array = data.get("order", [])
 			if order.size() > 0:
 				var actor: String = order[0].get("name", "???")
-				battle_log.append_text("\n[color=#73737A]%s 的行动[/color]  " % actor)
+				battle_log.append_text("[color=#73737A]▸ %s 的行动[/color]\n" % actor)
 		
 		"action_executed":
 			var actor: String = data.get("actor_name", "???")
@@ -225,11 +228,11 @@ func _process_event(evt: Dictionary) -> void:
 			var value: int = summary.get("value", 0)
 			
 			if is_miss:
-				battle_log.append_text("[color=#73737A]%s → %s 闪避[/color]  " % [actor, target])
+				battle_log.append_text("[color=#73737A]  %s → %s 闪避[/color]\n" % [actor, target])
 			elif is_crit:
-				battle_log.append_text("[color=#F28A3E]%s → %s 暴击 %d！[/color]  " % [actor, target, value])
+				battle_log.append_text("[color=#F28A3E]  %s → %s 暴击 %d！[/color]\n" % [actor, target, value])
 			else:
-				battle_log.append_text("%s → %s %d  " % [actor, target, value])
+				battle_log.append_text("  %s → %s %d\n" % [actor, target, value])
 		
 		"unit_damaged":
 			var unit_id: String = data.get("unit_id", "")
@@ -242,55 +245,70 @@ func _process_event(evt: Dictionary) -> void:
 			else:
 				_enemy_hp = maxi(0, hp)
 				_flash_sprite(false, is_crit)
+			
+			if _hero_hp <= 0:
+				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % hero_name_label.text)
+				_death_flash(true)
+			elif _enemy_hp <= 0:
+				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % enemy_name_label.text)
+				_death_flash(false)
 		
 		"unit_died":
 			var uname: String = data.get("name", "???")
-			battle_log.append_text("[color=#D93826]%s 被击败！[/color]  " % uname)
+			battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % uname)
 		
 		"partner_assist":
 			var pname: String = data.get("partner_name", "???")
-			battle_log.append_text("[color=#BF4DE6]%s 援助攻击！[/color]  " % pname)
+			battle_log.append_text("[color=#BF4DE6]  %s 援助攻击！[/color]\n" % pname)
 		
 		"chain_triggered":
 			var chain_count: int = data.get("chain_count", 0)
 			var pname: String = data.get("partner_name", "???")
 			var dmg: int = data.get("damage", 0)
-			battle_log.append_text("[color=#BF4DE6]CHAIN x%d! %s %d[/color]  " % [chain_count, pname, dmg])
+			battle_log.append_text("[color=#BF4DE6]  CHAIN x%d! %s %d[/color]\n" % [chain_count, pname, dmg])
 		
 		"ultimate_triggered":
 			var log_text: String = data.get("log", "")
-			battle_log.append_text("[color=#E6C040]%s[/color]  " % log_text)
+			battle_log.append_text("[color=#E6C040]  %s[/color]\n" % log_text)
 			_screen_shake()
 
 func _generate_simulated_turn() -> void:
-	var progress: float = float(_current_round) / float(_sim_total_rounds)
+	var progress: float = float(_current_round) / float(max(_sim_total_rounds, 3))
 	
 	# 英雄行动
 	var hero_target_hp: int = int(lerpf(_enemy_max_hp, _sim_enemy_final_hp, progress))
 	var hero_dmg: int = maxi(0, _enemy_hp - hero_target_hp)
-	if hero_dmg > 0:
+	if hero_dmg > 0 and _enemy_hp > 0:
 		var is_crit: bool = randf() < 0.15
 		var is_miss: bool = randf() < 0.10
 		if is_miss:
-			battle_log.append_text("[color=#73737A]%s → %s 闪避[/color]  " % [hero_name_label.text, enemy_name_label.text])
+			battle_log.append_text("[color=#73737A]  %s → %s 闪避[/color]\n" % [hero_name_label.text, enemy_name_label.text])
 		elif is_crit:
-			battle_log.append_text("[color=#F28A3E]%s → %s 暴击 %d！[/color]  " % [hero_name_label.text, enemy_name_label.text, hero_dmg * 2])
+			battle_log.append_text("[color=#F28A3E]  %s → %s 暴击 %d！[/color]\n" % [hero_name_label.text, enemy_name_label.text, hero_dmg * 2])
 			_enemy_hp = maxi(0, _enemy_hp - hero_dmg * 2)
 		else:
-			battle_log.append_text("%s → %s %d  " % [hero_name_label.text, enemy_name_label.text, hero_dmg])
+			battle_log.append_text("  %s → %s %d\n" % [hero_name_label.text, enemy_name_label.text, hero_dmg])
 			_enemy_hp = maxi(0, _enemy_hp - hero_dmg)
+		
+		if _enemy_hp <= 0:
+			battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % enemy_name_label.text)
+			_death_flash(false)
 	
 	# 敌人行动
-	if _current_round < _sim_total_rounds and _hero_hp > 0:
+	if _current_round < maxi(_sim_total_rounds, 3) and _hero_hp > 0 and _enemy_hp > 0:
 		var enemy_target_hp: int = int(lerpf(_hero_max_hp, _sim_hero_final_hp, progress))
 		var enemy_dmg: int = maxi(0, _hero_hp - enemy_target_hp)
 		if enemy_dmg > 0:
 			var is_miss: bool = randf() < 0.10
 			if is_miss:
-				battle_log.append_text("[color=#73737A]%s → %s 闪避[/color]  " % [enemy_name_label.text, hero_name_label.text])
+				battle_log.append_text("[color=#73737A]  %s → %s 闪避[/color]\n" % [enemy_name_label.text, hero_name_label.text])
 			else:
-				battle_log.append_text("%s → %s %d  " % [enemy_name_label.text, hero_name_label.text, enemy_dmg])
+				battle_log.append_text("  %s → %s %d\n" % [enemy_name_label.text, hero_name_label.text, enemy_dmg])
 				_hero_hp = maxi(0, _hero_hp - enemy_dmg)
+			
+			if _hero_hp <= 0:
+				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % hero_name_label.text)
+				_death_flash(true)
 
 func _apply_hp_bar_colors() -> void:
 	hero_hp_bar.add_theme_color_override("theme_fg", COL_BLUE_MAIN)
@@ -363,6 +381,12 @@ func _flash_sprite(is_hero: bool, is_crit: bool) -> void:
 	var tween := create_tween()
 	tween.tween_property(sprite, "modulate", flash_color, 0.1)
 	tween.tween_property(sprite, "modulate", Color(1, 1, 1, 0.3), 0.2)
+
+func _death_flash(is_hero: bool) -> void:
+	var sprite: ColorRect = hero_art if is_hero else enemy_art
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", Color(0.8, 0.1, 0.1), 0.15)
+	tween.tween_property(sprite, "modulate", Color(1, 1, 1, 0.3), 0.3)
 
 func _screen_shake() -> void:
 	var tween := create_tween()
