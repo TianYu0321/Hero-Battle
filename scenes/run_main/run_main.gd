@@ -199,6 +199,7 @@ func _start_full_battle_ui() -> void:
 		"enemy_hp": enemy_cfg.get("hp", enemy_cfg.get("max_hp", 100)),
 		"total_rounds": enemy_cfg.get("estimated_hp_loss", 10) / 5 + 2,
 		"stage_name": selected_node.get("node_name", "深渊斗技场"),
+		"victory": true,
 	}
 	
 	_show_modal_panel(battle_animation_panel)

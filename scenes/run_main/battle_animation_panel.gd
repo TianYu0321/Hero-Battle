@@ -30,12 +30,22 @@ var _playback_generation: int = 0
 var _result_emitted: bool = false
 var _is_playing: bool = false
 var _current_round: int = 0
-var _total_rounds: int = 0
 
 var _hero_hp: int = 0
 var _hero_max_hp: int = 0
 var _enemy_hp: int = 0
 var _enemy_max_hp: int = 0
+
+# Recorder回放模式
+var _recorder: BattlePlaybackRecorder = null
+var _events_by_turn: Dictionary = {}
+var _turn_keys: Array = []
+
+# 摘要模拟模式
+var _sim_total_rounds: int = 0
+var _sim_hero_final_hp: int = 0
+var _sim_enemy_final_hp: int = 0
+var _sim_victory: bool = false
 
 signal confirmed
 
@@ -46,6 +56,9 @@ const COL_RED_DEEP := Color(0.35, 0.06, 0.04)
 const COL_BLUE_MAIN := Color(0.25, 0.55, 0.85)
 const COL_BLUE_DEEP := Color(0.08, 0.18, 0.35)
 const COL_GOLD := Color(0.90, 0.75, 0.35)
+const COL_CRIT := Color(0.95, 0.55, 0.25)
+const COL_MISS := Color(0.50, 0.50, 0.55)
+const COL_CHAIN := Color(0.75, 0.30, 0.90)
 
 func _ready() -> void:
 	turn_timer.timeout.connect(_on_turn_timer_timeout)
@@ -54,7 +67,7 @@ func _ready() -> void:
 	_apply_dark_theme()
 
 func _apply_dark_theme() -> void:
-	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.90)
+	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.92)
 	hero_portrait.color = COL_BLUE_DEEP
 	enemy_portrait.color = COL_RED_DEEP
 	vs_label.add_theme_color_override("font_color", COL_GOLD)
@@ -64,44 +77,73 @@ func _apply_dark_theme() -> void:
 	skip_button.add_theme_color_override("font_color", COL_TEXT_MAIN)
 	skip_button.add_theme_color_override("font_hover_color", COL_GOLD)
 
-# 兼容 PVP 大厅旧版调用
+# === 模式A：Recorder回放（PVP用） ===
+
 func start_playback(recorder, hero_name: String, enemy_name: String,
 					hero_max_hp: int, enemy_max_hp: int,
 					_hero_partners: Array, _enemy_partners: Array) -> void:
-	var total_rounds: int = 5
-	if recorder != null and recorder.has_method("get_events_by_turn"):
-		var turns_dict: Dictionary = recorder.get_events_by_turn()
-		total_rounds = maxi(1, turns_dict.keys().size())
-	elif recorder != null and recorder.has_method("get_events"):
-		var events = recorder.get_events()
-		total_rounds = clampi(events.size() / 3, 3, 15)
+	_playback_generation += 1
+	_result_emitted = false
+	_is_playing = true
+	visible = true
 	
-	var battle_result: Dictionary = {
-		"hero_name": hero_name,
-		"enemy_name": enemy_name,
-		"hero_max_hp": hero_max_hp,
-		"enemy_max_hp": enemy_max_hp,
-		"hero_hp": hero_max_hp,
-		"enemy_hp": enemy_max_hp,
-		"total_rounds": clampi(total_rounds, 3, 15),
-		"stage_name": "PVP 决斗场",
-	}
-	start_battle(battle_result)
+	_recorder = recorder
+	if _recorder != null and _recorder.has_method("get_events_by_turn"):
+		var raw_turns: Dictionary = _recorder.get_events_by_turn()
+		# 重映射为 1-based 连续索引，兼容任意原始 turn 值
+		var sorted_keys: Array = raw_turns.keys().duplicate()
+		sorted_keys.sort()
+		_events_by_turn = {}
+		for i in range(sorted_keys.size()):
+			_events_by_turn[i + 1] = raw_turns[sorted_keys[i]]
+		_turn_keys = _events_by_turn.keys()
+	else:
+		_events_by_turn = {}
+		_turn_keys = []
+	
+	_hero_max_hp = maxi(1, hero_max_hp)
+	_hero_hp = _hero_max_hp
+	_enemy_max_hp = maxi(1, enemy_max_hp)
+	_enemy_hp = _enemy_max_hp
+	_current_round = 0
+	
+	hero_name_label.text = hero_name
+	enemy_name_label.text = enemy_name
+	stage_name_label.text = "PVP 决斗场"
+	
+	hero_art.visible = true
+	enemy_art.visible = true
+	
+	_update_hp_display()
+	_apply_hp_bar_colors()
+	
+	battle_log.text = ""
+	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
+	
+	print("[BattleAnimation] 回放开始: gen=%d, %d回合" % [_playback_generation, _turn_keys.size()])
+	_play_next_turn()
 
-# 新版统一入口
+# === 模式B：摘要模拟（爬塔用） ===
+
 func start_battle(battle_result: Dictionary) -> void:
 	_playback_generation += 1
 	_result_emitted = false
 	_is_playing = true
 	visible = true
 	
-	_total_rounds = maxi(1, battle_result.get("total_rounds", 1))
-	_current_round = 0
+	_recorder = null
+	_events_by_turn = {}
+	_turn_keys = []
 	
 	_hero_max_hp = maxi(1, battle_result.get("hero_max_hp", 100))
 	_hero_hp = clampi(battle_result.get("hero_hp", _hero_max_hp), 0, _hero_max_hp)
 	_enemy_max_hp = maxi(1, battle_result.get("enemy_max_hp", 100))
 	_enemy_hp = clampi(battle_result.get("enemy_hp", _enemy_max_hp), 0, _enemy_max_hp)
+	
+	_sim_total_rounds = maxi(1, battle_result.get("total_rounds", 1))
+	_sim_hero_final_hp = _hero_hp
+	_sim_enemy_final_hp = _enemy_hp
+	_sim_victory = battle_result.get("victory", true)
 	
 	var hero_name: String = battle_result.get("hero_name", "英雄")
 	var enemy_name: String = battle_result.get("enemy_name", "???")
@@ -114,59 +156,157 @@ func start_battle(battle_result: Dictionary) -> void:
 	hero_art.visible = true
 	enemy_art.visible = true
 	
+	_hero_hp = _hero_max_hp
+	_enemy_hp = _enemy_max_hp
 	_update_hp_display()
-	
-	hero_hp_bar.add_theme_color_override("theme_fg", COL_BLUE_MAIN)
-	hero_hp_bar.add_theme_color_override("theme_bg", COL_BLUE_DEEP)
-	enemy_hp_bar.add_theme_color_override("theme_fg", COL_RED_MAIN)
-	enemy_hp_bar.add_theme_color_override("theme_bg", COL_RED_DEEP)
+	_apply_hp_bar_colors()
 	
 	battle_log.text = ""
 	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
 	
-	print("[BattleAnimation] 开始: gen=%d, %d回合, 英雄=%s, 敌人=%s" % [
-		_playback_generation, _total_rounds, hero_name, enemy_name
-	])
-	_play_turn()
+	_current_round = 0
+	print("[BattleAnimation] 模拟开始: gen=%d, %d回合" % [_playback_generation, _sim_total_rounds])
+	_play_next_turn()
 
-func _play_turn() -> void:
+# === 统一回合播放 ===
+
+func _play_next_turn() -> void:
 	if not _is_playing:
 		return
 	
 	_current_round += 1
-	if _current_round > _total_rounds:
-		_show_result()
-		return
 	
-	round_label.text = "回合 %d/%d" % [_current_round, _total_rounds]
-	
-	var progress: float = float(_current_round) / float(_total_rounds)
-	var hero_loss_est: int = int((_hero_max_hp - _hero_hp) * progress * 0.3)
-	var enemy_loss_est: int = int(_enemy_max_hp * progress * 0.7)
-	
-	hero_hp_bar.value = maxi(0, _hero_hp - hero_loss_est)
-	enemy_hp_bar.value = maxi(0, _enemy_hp - enemy_loss_est)
-	_update_hp_display()
-	
-	if _current_round == 1:
-		battle_log.append_text("[color=#5A8FD0]第 %d 回合... [/color]\n" % _current_round)
+	# 检查结束条件
+	if _recorder != null:
+		var max_turn: int = 0
+		for t in _turn_keys:
+			max_turn = maxi(max_turn, int(t))
+		if _current_round > max_turn or max_turn == 0:
+			_show_result()
+			return
 	else:
-		battle_log.append_text("第 %d 回合... \n" % _current_round)
+		if _current_round > _sim_total_rounds or _hero_hp <= 0 or _enemy_hp <= 0:
+			_show_result()
+			return
 	
-	turn_timer.start(1.0)
+	# 只显示当前回合，不显示总数
+	round_label.text = "回合 %d" % _current_round
+	
+	# 播放本回合事件
+	if _recorder != null and _events_by_turn.has(_current_round):
+		var events: Array = _events_by_turn[_current_round]
+		for evt in events:
+			_process_event(evt)
+	elif _recorder == null:
+		_generate_simulated_turn()
+	
+	_update_hp_display()
+	turn_timer.start(1.2)
+
+func _process_event(evt: Dictionary) -> void:
+	var type: String = evt.get("type", "")
+	var data: Dictionary = evt.get("data", {})
+	
+	match type:
+		"turn_started":
+			var order: Array = data.get("order", [])
+			if order.size() > 0:
+				var actor: String = order[0].get("name", "???")
+				battle_log.append_text("\n[color=#73737A]%s 的行动[/color]  " % actor)
+		
+		"action_executed":
+			var actor: String = data.get("actor_name", "???")
+			var target: String = data.get("target_name", "???")
+			var summary: Dictionary = data.get("result_summary", {})
+			var is_miss: bool = summary.get("is_miss", false)
+			var is_crit: bool = summary.get("is_crit", false)
+			var value: int = summary.get("value", 0)
+			
+			if is_miss:
+				battle_log.append_text("[color=#73737A]%s → %s 闪避[/color]  " % [actor, target])
+			elif is_crit:
+				battle_log.append_text("[color=#F28A3E]%s → %s 暴击 %d！[/color]  " % [actor, target, value])
+			else:
+				battle_log.append_text("%s → %s %d  " % [actor, target, value])
+		
+		"unit_damaged":
+			var unit_id: String = data.get("unit_id", "")
+			var hp: int = data.get("hp", 0)
+			var is_crit: bool = data.get("is_crit", false)
+			
+			if unit_id == "hero" or unit_id.begins_with("hero"):
+				_hero_hp = maxi(0, hp)
+				_flash_sprite(true, is_crit)
+			else:
+				_enemy_hp = maxi(0, hp)
+				_flash_sprite(false, is_crit)
+		
+		"unit_died":
+			var uname: String = data.get("name", "???")
+			battle_log.append_text("[color=#D93826]%s 被击败！[/color]  " % uname)
+		
+		"partner_assist":
+			var pname: String = data.get("partner_name", "???")
+			battle_log.append_text("[color=#BF4DE6]%s 援助攻击！[/color]  " % pname)
+		
+		"chain_triggered":
+			var chain_count: int = data.get("chain_count", 0)
+			var pname: String = data.get("partner_name", "???")
+			var dmg: int = data.get("damage", 0)
+			battle_log.append_text("[color=#BF4DE6]CHAIN x%d! %s %d[/color]  " % [chain_count, pname, dmg])
+		
+		"ultimate_triggered":
+			var log_text: String = data.get("log", "")
+			battle_log.append_text("[color=#E6C040]%s[/color]  " % log_text)
+			_screen_shake()
+
+func _generate_simulated_turn() -> void:
+	var progress: float = float(_current_round) / float(_sim_total_rounds)
+	
+	# 英雄行动
+	var hero_target_hp: int = int(lerpf(_enemy_max_hp, _sim_enemy_final_hp, progress))
+	var hero_dmg: int = maxi(0, _enemy_hp - hero_target_hp)
+	if hero_dmg > 0:
+		var is_crit: bool = randf() < 0.15
+		var is_miss: bool = randf() < 0.10
+		if is_miss:
+			battle_log.append_text("[color=#73737A]%s → %s 闪避[/color]  " % [hero_name_label.text, enemy_name_label.text])
+		elif is_crit:
+			battle_log.append_text("[color=#F28A3E]%s → %s 暴击 %d！[/color]  " % [hero_name_label.text, enemy_name_label.text, hero_dmg * 2])
+			_enemy_hp = maxi(0, _enemy_hp - hero_dmg * 2)
+		else:
+			battle_log.append_text("%s → %s %d  " % [hero_name_label.text, enemy_name_label.text, hero_dmg])
+			_enemy_hp = maxi(0, _enemy_hp - hero_dmg)
+	
+	# 敌人行动
+	if _current_round < _sim_total_rounds and _hero_hp > 0:
+		var enemy_target_hp: int = int(lerpf(_hero_max_hp, _sim_hero_final_hp, progress))
+		var enemy_dmg: int = maxi(0, _hero_hp - enemy_target_hp)
+		if enemy_dmg > 0:
+			var is_miss: bool = randf() < 0.10
+			if is_miss:
+				battle_log.append_text("[color=#73737A]%s → %s 闪避[/color]  " % [enemy_name_label.text, hero_name_label.text])
+			else:
+				battle_log.append_text("%s → %s %d  " % [enemy_name_label.text, hero_name_label.text, enemy_dmg])
+				_hero_hp = maxi(0, _hero_hp - enemy_dmg)
+
+func _apply_hp_bar_colors() -> void:
+	hero_hp_bar.add_theme_color_override("theme_fg", COL_BLUE_MAIN)
+	hero_hp_bar.add_theme_color_override("theme_bg", COL_BLUE_DEEP)
+	enemy_hp_bar.add_theme_color_override("theme_fg", COL_RED_MAIN)
+	enemy_hp_bar.add_theme_color_override("theme_bg", COL_RED_DEEP)
 
 func _on_turn_timer_timeout() -> void:
 	if not _is_playing:
 		return
-	_play_turn()
+	_play_next_turn()
 
 func finish_battle() -> void:
 	if _is_playing and not _result_emitted:
-		print("[BattleAnimation] finish_battle 被调用，强制结束动画")
 		_show_result()
 
 func _on_skip() -> void:
-	print("[BattleAnimation] 跳过按钮被点击, gen=%d" % _playback_generation)
+	print("[BattleAnimation] 跳过, gen=%d" % _playback_generation)
 	_is_playing = false
 	turn_timer.stop()
 	_show_result()
@@ -175,32 +315,55 @@ func _show_result() -> void:
 	_is_playing = false
 	turn_timer.stop()
 	if _result_emitted:
-		print("[BattleAnimation] _show_result 已发射过，跳过")
 		return
 	_result_emitted = true
 	
-	hero_hp_bar.value = _hero_hp
-	enemy_hp_bar.value = _enemy_hp
+	if _recorder == null:
+		_hero_hp = _sim_hero_final_hp
+		_enemy_hp = _sim_enemy_final_hp
+	
 	_update_hp_display()
 	
+	if _hero_hp <= 0:
+		battle_log.append_text("\n[color=#D93826]%s 被击败！[/color]" % hero_name_label.text)
+	elif _enemy_hp <= 0:
+		battle_log.append_text("\n[color=#5A8FD0]%s 被击败！[/color]" % enemy_name_label.text)
+	
 	battle_log.append_text("\n[color=#E6C040]=== 战斗结束 ===[/color]")
-	print("[BattleAnimation] confirmed 信号发射, gen=%d" % _playback_generation)
+	print("[BattleAnimation] confirmed, gen=%d" % _playback_generation)
 	confirmed.emit()
 
 func reset_panel() -> void:
 	_is_playing = false
 	turn_timer.stop()
 	_current_round = 0
-	_total_rounds = 0
 	_hero_hp = 0
 	_hero_max_hp = 0
 	_enemy_hp = 0
 	_enemy_max_hp = 0
+	_recorder = null
+	_events_by_turn = {}
+	_turn_keys = []
 	battle_log.text = ""
 	visible = false
 
 func _update_hp_display() -> void:
+	hero_hp_bar.value = float(_hero_hp) / maxi(1, _hero_max_hp) * 100
+	enemy_hp_bar.value = float(_enemy_hp) / maxi(1, _enemy_max_hp) * 100
 	var hero_current: int = maxi(0, _hero_hp)
 	var enemy_current: int = maxi(0, _enemy_hp)
 	hero_hp_meta.text = "%d / %d" % [hero_current, _hero_max_hp]
 	enemy_hp_meta.text = "%d / %d" % [enemy_current, _enemy_max_hp]
+
+func _flash_sprite(is_hero: bool, is_crit: bool) -> void:
+	var sprite: ColorRect = hero_art if is_hero else enemy_art
+	var flash_color: Color = COL_CRIT if is_crit else Color(1, 1, 1)
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", flash_color, 0.1)
+	tween.tween_property(sprite, "modulate", Color(1, 1, 1, 0.3), 0.2)
+
+func _screen_shake() -> void:
+	var tween := create_tween()
+	tween.tween_property(self, "position:x", position.x + 3, 0.05)
+	tween.tween_property(self, "position:x", position.x - 3, 0.05)
+	tween.tween_property(self, "position:x", position.x, 0.05)
