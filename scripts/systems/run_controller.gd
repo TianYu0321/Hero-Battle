@@ -31,6 +31,8 @@ var _character_manager: CharacterManager = null
 var _node_pool_system: NodePoolSystem = null
 var _node_resolver: NodeResolver = null
 var _settlement_system: SettlementSystem = null
+var _training_system: TrainingSystem = null
+var _rescue_system: RescueSystem = null
 
 var _current_node_options: Array[Dictionary] = []
 var _pending_node_type: int = 0
@@ -46,20 +48,20 @@ func _ready() -> void:
 	_node_pool_system.name = "NodePoolSystem"
 	add_child(_node_pool_system)
 
-	var training_system := TrainingSystem.new()
-	training_system.name = "TrainingSystem"
-	add_child(training_system)
-	training_system.initialize(_character_manager)
+	_training_system = TrainingSystem.new()
+	_training_system.name = "TrainingSystem"
+	add_child(_training_system)
+	_training_system.initialize(_character_manager)
 
 	var shop_system := ShopSystem.new()
 	shop_system.name = "ShopSystem"
 	add_child(shop_system)
 	shop_system.initialize(_character_manager)
 
-	var rescue_system := RescueSystem.new()
-	rescue_system.name = "RescueSystem"
-	add_child(rescue_system)
-	rescue_system.initialize(_character_manager)
+	_rescue_system = RescueSystem.new()
+	_rescue_system.name = "RescueSystem"
+	add_child(_rescue_system)
+	_rescue_system.initialize(_character_manager)
 
 	var elite_battle_system := EliteBattleSystem.new()
 	elite_battle_system.name = "EliteBattleSystem"
@@ -217,7 +219,7 @@ func _generate_node_options() -> void:
 	# 固定节点检查
 	if turn in _RESCUE_TURNS:
 		# 救援：3个候选伙伴（只生成一次，避免与NodeResolver重复生成导致不一致）
-		var candidates: Array[Dictionary] = _node_resolver._rescue_system.generate_candidates()
+		var candidates: Array[Dictionary] = _rescue_system.generate_candidates()
 		_current_node_options.clear()
 		for c in candidates:
 			_current_node_options.append({
@@ -297,14 +299,11 @@ func _process_node_result(result: Dictionary) -> void:
 
 	# 更新计数器
 	match _pending_node_type:
-		2, 3:
+		NodePoolSystem.NodeType.BATTLE:
 			_run.battle_win_count += 1
-			if _pending_node_type == 3:
-				_run.elite_win_count += 1
-				_run.elite_total_count += 1
-		4:
+		NodePoolSystem.NodeType.SHOP:
 			_run.shop_visit_count += 1
-		6:
+		NodePoolSystem.NodeType.PVP_CHECK:
 			# PVP结果由 _process_reward 中的 "pvp_result" 分支处理
 			pass
 
@@ -353,6 +352,34 @@ func _process_reward(reward: Dictionary) -> void:
 					_run.pvp_20th_result = 1 if pvp_data.get("won", false) else 2
 				if not pvp_data.get("won", false):
 					_run.pvp_fail_penalty_active = true
+		"hp_heal":
+			var amount: int = reward.get("amount", 0)
+			if _hero != null and amount > 0:
+				var old_hp: int = _hero.current_hp
+				_hero.current_hp = mini(_hero.max_hp, _hero.current_hp + amount)
+				EventBus.emit_signal("stats_changed", _hero.id, {
+					0: {"old": old_hp, "new": _hero.current_hp, "delta": _hero.current_hp - old_hp, "attr_code": 0}
+				})
+		"hp_damage":
+			var amount: int = reward.get("amount", 0)
+			if _hero != null and amount > 0:
+				var old_hp: int = _hero.current_hp
+				_hero.current_hp = maxi(0, _hero.current_hp - amount)
+				if _hero.current_hp <= 0:
+					_hero.current_hp = 10
+				_hero.is_alive = _hero.current_hp > 0
+				EventBus.emit_signal("stats_changed", _hero.id, {
+					0: {"old": old_hp, "new": _hero.current_hp, "delta": old_hp - _hero.current_hp, "attr_code": 0}
+				})
+		"level_up":
+			var partners: Array = _character_manager.get_partners()
+			if partners.size() > 0:
+				var random_partner = partners[randi() % partners.size()]
+				_character_manager.upgrade_partner(random_partner.partner_config_id)
+		"train_lv5":
+			var attr_type: int = reward.get("attr", -1)
+			if attr_type > 0 and _training_system != null:
+				_training_system.execute_training(attr_type, _run.current_turn)
 
 
 func _execute_final_battle() -> void:
@@ -491,14 +518,7 @@ func close_shop_panel() -> void:
 func select_training_attr(attr_type: int) -> void:
 	## 玩家从训练面板选择了具体属性
 	if _state == RunState.RUNNING_NODE_SELECT:
-		var gain: int = 5 + randi() % 3
-		_hero.current_vit += gain if attr_type == 1 else 0
-		_hero.current_str += gain if attr_type == 2 else 0
-		_hero.current_agi += gain if attr_type == 3 else 0
-		_hero.current_tec += gain if attr_type == 4 else 0
-		_hero.current_mnd += gain if attr_type == 5 else 0
-		EventBus.emit_signal("stats_changed", "hero", {
-			str(attr_type): {"new": _hero.get_attr_value(attr_type), "delta": gain}
-		})
-		_change_state(RunState.TURN_ADVANCE)
-		advance_turn()
+		var result: Dictionary = _training_system.execute_training(attr_type, _run.current_turn)
+		if not result.is_empty():
+			_change_state(RunState.TURN_ADVANCE)
+			advance_turn()

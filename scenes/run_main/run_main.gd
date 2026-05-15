@@ -13,6 +13,16 @@ extends Control
 	$HudContainer/AttrBar5,
 ]
 
+@onready var attr_labels: Array[Label] = [
+	$HudContainer/AttrLabel1,
+	$HudContainer/AttrLabel2,
+	$HudContainer/AttrLabel3,
+	$HudContainer/AttrLabel4,
+	$HudContainer/AttrLabel5,
+]
+
+const _ATTR_NAMES: Array[String] = ["体魄", "力量", "敏捷", "技巧", "精神"]
+
 @onready var option_buttons: Array[Button] = [
 	$OptionContainer/TrainButton,
 	$OptionContainer/BattleButton,
@@ -35,11 +45,13 @@ extends Control
 
 @onready var combat_confirm_panel: CombatConfirmPanel = $CombatConfirmPanel
 @onready var battle_animation_panel: BattleAnimationPanel = $BattleAnimationPanel
+@onready var training_popup: TrainingPopup = $TrainingPopup
 @onready var option_container: Control = $OptionContainer
 
 var _run_controller: RunController = null
 var _combat_selected_index: int = -1
 var _is_combat_preview: bool = false
+var _pending_combat_index: int = -1
 
 
 func _ready() -> void:
@@ -53,6 +65,14 @@ func _ready() -> void:
 	# --- 选项按钮点击绑定 ---
 	for i in range(option_buttons.size()):
 		option_buttons[i].pressed.connect(_on_node_button_pressed.bind(i))
+	
+	# === 新增：属性条点击绑定 ===
+	for i in range(attr_bars.size()):
+		attr_bars[i].gui_input.connect(_on_attr_bar_clicked.bind(i))
+	
+	# --- TrainingPopup 信号绑定 ---
+	training_popup.attr_selected.connect(_on_training_attr_selected)
+	training_popup.cancelled.connect(_on_training_cancelled)
 
 	# --- EventBus 信号订阅 ---
 	EventBus.gold_changed.connect(_on_gold_changed)
@@ -103,6 +123,7 @@ func _update_hud() -> void:
 	]
 	for i in range(attr_bars.size()):
 		attr_bars[i].value = float(attrs[i])
+		attr_labels[i].text = "%s: %d" % [_ATTR_NAMES[i], attrs[i]]
 
 
 # ============================================================================
@@ -142,6 +163,10 @@ func _on_node_button_pressed(index: int) -> void:
 	match node_type:
 		NodePoolSystem.NodeType.BATTLE, NodePoolSystem.NodeType.FINAL_BOSS:
 			_show_combat_preview(selected_node, index)
+		NodePoolSystem.NodeType.TRAINING:
+			# 显示训练属性选择面板
+			option_container.visible = false
+			training_popup.show_popup()
 		_:
 			_run_controller.select_node(index)
 
@@ -207,7 +232,7 @@ func _start_full_battle_ui() -> void:
 		"hero_max_hp": hero_data.get("max_hp", 100),
 		"enemy_max_hp": enemy_cfg.get("max_hp", 100),
 		"hero_hp": hero_data.get("current_hp", hero_data.get("max_hp", 100)),
-		"enemy_hp": enemy_cfg.get("hp", enemy_cfg.get("max_hp", 100)),
+		"enemy_hp": 0,
 		"total_rounds": enemy_cfg.get("estimated_hp_loss", 10) / 5 + 2,
 		"stage_name": selected_node.get("node_name", "深渊斗技场"),
 		"victory": true,
@@ -218,19 +243,20 @@ func _start_full_battle_ui() -> void:
 	_show_modal_panel(battle_animation_panel)
 	battle_animation_panel.start_battle(battle_result)
 	
-	call_deferred("_execute_combat_deferred", _combat_selected_index)
+	_pending_combat_index = _combat_selected_index
 	_combat_selected_index = -1
 	_is_combat_preview = false
-
-
-func _execute_combat_deferred(index: int) -> void:
-	_run_controller.select_node(index)
 
 
 func _on_battle_animation_finished() -> void:
 	print("[RunMain] 战斗动画结束，恢复界面")
 	_hide_modal_panel(battle_animation_panel)
 	battle_animation_panel.reset_panel()
+	
+	# 动画结束后执行实际战斗
+	if _pending_combat_index >= 0:
+		_run_controller.select_node(_pending_combat_index)
+		_pending_combat_index = -1
 
 
 # ============================================================================
@@ -306,7 +332,9 @@ func _on_stats_changed(_unit_id: String, stat_changes: Dictionary) -> void:
 			1, 2, 3, 4, 5:
 				var bar_index: int = code - 1
 				if bar_index >= 0 and bar_index < attr_bars.size():
-					attr_bars[bar_index].value = float(change.get("new", 0))
+					var new_val: int = change.get("new", 0)
+					attr_bars[bar_index].value = float(new_val)
+					attr_labels[bar_index].text = "%s: %d" % [_ATTR_NAMES[bar_index], new_val]
 
 
 func _on_pvp_result(result: Dictionary) -> void:
@@ -338,3 +366,26 @@ func _on_battle_node_entered(enemy_data: Dictionary) -> void:
 	var estimated_loss: int = enemy_data.get("estimated_hp_loss", 0)
 	estimated_loss_label.text = "预计损失: %d" % estimated_loss
 	print("[RunMain] Battle node entered: %s" % enemy_data.get("enemy_name", "???"))
+
+
+func _on_attr_bar_clicked(event: InputEvent, index: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var attr_names: Array[String] = ["体魄", "力量", "敏捷", "技巧", "精神"]
+		var attr_name: String = attr_names[index] if index < attr_names.size() else "???"
+		var summary: Dictionary = _run_controller.get_current_run_summary()
+		var hero_data: Dictionary = summary.get("hero", {})
+		var attr_keys: Array[String] = ["current_vit", "current_str", "current_agi", "current_tec", "current_mnd"]
+		var attr_val: int = hero_data.get(attr_keys[index], 0) if index < attr_keys.size() else 0
+		print("[RunMain] %s: %d" % [attr_name, attr_val])
+		# 可以在这里弹属性详情窗，目前先打日志
+
+
+func _on_training_attr_selected(attr_type: int) -> void:
+	print("[RunMain] 训练选择: attr_type=%d" % attr_type)
+	_run_controller.select_training_attr(attr_type)
+	option_container.visible = true
+
+
+func _on_training_cancelled() -> void:
+	print("[RunMain] 训练取消")
+	option_container.visible = true

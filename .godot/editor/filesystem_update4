@@ -13,3 +13,5 @@ res://assets/characters/gorgen/gorgen.tres
 res://assets/characters/shinobi/hero_frames.tres
 res://scenes/pvp_lobby/pvp_lobby.gd
 res://scenes/run_main/run_main.gd
+res://scenes/training/training_popup.gd
+res://scripts/systems/run_controller.gd
