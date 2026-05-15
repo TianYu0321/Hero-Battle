@@ -189,18 +189,21 @@ func _start_full_battle_ui() -> void:
 	var enemy_cfg: Dictionary = selected_node.get("enemy_config", {})
 	var hero_data: Dictionary = summary.get("hero", {})
 	
-	# 启动战斗动画面板
-	_show_modal_panel(battle_animation_panel)
-	battle_animation_panel.start_battle({
-		"enemy_max_hp": enemy_cfg.get("max_hp", 100),
-		"enemy_hp": enemy_cfg.get("current_hp", 100),
+	# 构建 battle_result 字典，符合 battle_animation_panel.start_battle() 的期望
+	var battle_result: Dictionary = {
+		"hero_name": hero_data.get("hero_name", "英雄"),
+		"enemy_name": enemy_cfg.get("name", "???"),
 		"hero_max_hp": hero_data.get("max_hp", 100),
-		"hero_hp": hero_data.get("current_hp", 100),
-		"hero_name": hero_data.get("name", "英雄"),
-		"enemy_name": enemy_cfg.get("name", "敌人"),
-	})
+		"enemy_max_hp": enemy_cfg.get("max_hp", 100),
+		"hero_hp": hero_data.get("current_hp", hero_data.get("max_hp", 100)),
+		"enemy_hp": enemy_cfg.get("hp", enemy_cfg.get("max_hp", 100)),
+		"total_rounds": enemy_cfg.get("estimated_hp_loss", 10) / 5 + 2,
+		"stage_name": selected_node.get("node_name", "深渊斗技场"),
+	}
 	
-	# 延迟执行战斗（给面板时间初始化显示，避免第一回合卡住）
+	_show_modal_panel(battle_animation_panel)
+	battle_animation_panel.start_battle(battle_result)
+	
 	call_deferred("_execute_combat_deferred", _combat_selected_index)
 	_combat_selected_index = -1
 	_is_combat_preview = false

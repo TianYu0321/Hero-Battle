@@ -54,7 +54,7 @@ func _ready() -> void:
 	_apply_dark_theme()
 
 func _apply_dark_theme() -> void:
-	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.70)
+	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.85)
 	hero_portrait.color = COL_BLUE_DEEP
 	enemy_portrait.color = COL_RED_DEEP
 	vs_label.add_theme_color_override("font_color", COL_GOLD)
@@ -64,23 +64,27 @@ func _apply_dark_theme() -> void:
 	skip_button.add_theme_color_override("font_color", COL_TEXT_MAIN)
 	skip_button.add_theme_color_override("font_hover_color", COL_GOLD)
 
-func start_playback(recorder: BattlePlaybackRecorder, hero_name: String, enemy_name: String, hero_max_hp: int, enemy_max_hp: int, _allies: Array, _enemies: Array) -> void:
-	var events: Array[Dictionary] = recorder.get_events()
-	var turn_count: int = 1
-	for evt in events:
-		var t: int = evt.get("data", {}).get("turn", 0)
-		if t > turn_count:
-			turn_count = t
-	start_battle({
-		"total_rounds": maxi(1, turn_count),
-		"hero_max_hp": hero_max_hp,
-		"hero_hp": hero_max_hp,
-		"enemy_max_hp": enemy_max_hp,
-		"enemy_hp": enemy_max_hp,
+## 兼容 PVP 大厅的旧版调用
+func start_playback(recorder, hero_name: String, enemy_name: String,
+					hero_max_hp: int, enemy_max_hp: int,
+					_hero_partners: Array, _enemy_partners: Array) -> void:
+	# 从 recorder 提取回合数
+	var total_rounds: int = 1
+	if recorder != null and recorder.has_method("get_events"):
+		var events = recorder.get_events()
+		total_rounds = maxi(1, events.size() / 2)
+	
+	var battle_result: Dictionary = {
 		"hero_name": hero_name,
 		"enemy_name": enemy_name,
-		"stage_name": "PVP 对决",
-	})
+		"hero_max_hp": hero_max_hp,
+		"enemy_max_hp": enemy_max_hp,
+		"hero_hp": hero_max_hp,
+		"enemy_hp": 0,
+		"total_rounds": clampi(total_rounds, 3, 20),
+		"stage_name": "PVP 决斗场",
+	}
+	start_battle(battle_result)
 
 func start_battle(battle_result: Dictionary) -> void:
 	_playback_generation += 1
@@ -88,21 +92,25 @@ func start_battle(battle_result: Dictionary) -> void:
 	_is_playing = true
 	visible = true
 	
-	_total_rounds = battle_result.get("total_rounds", 1)
+	_total_rounds = maxi(1, battle_result.get("total_rounds", 1))
 	_current_round = 0
 	
-	_hero_max_hp = battle_result.get("hero_max_hp", 100)
-	_hero_hp = battle_result.get("hero_hp", _hero_max_hp)
-	_enemy_max_hp = battle_result.get("enemy_max_hp", 100)
-	_enemy_hp = battle_result.get("enemy_hp", _enemy_max_hp)
+	_hero_max_hp = maxi(1, battle_result.get("hero_max_hp", 100))
+	_hero_hp = clampi(battle_result.get("hero_hp", _hero_max_hp), 0, _hero_max_hp)
+	_enemy_max_hp = maxi(1, battle_result.get("enemy_max_hp", 100))
+	_enemy_hp = clampi(battle_result.get("enemy_hp", _enemy_max_hp), 0, _enemy_max_hp)
 	
 	var hero_name: String = battle_result.get("hero_name", "英雄")
-	var enemy_name: String = battle_result.get("enemy_name", "敌人")
+	var enemy_name: String = battle_result.get("enemy_name", "???")
 	var stage_name: String = battle_result.get("stage_name", "深渊斗技场")
 	
 	hero_name_label.text = hero_name
 	enemy_name_label.text = enemy_name
 	stage_name_label.text = stage_name
+	
+	# 确保舞台剪影可见
+	hero_art.visible = true
+	enemy_art.visible = true
 	
 	_update_hp_display()
 	
@@ -114,7 +122,9 @@ func start_battle(battle_result: Dictionary) -> void:
 	battle_log.text = ""
 	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
 	
-	print("[BattleAnimation] 开始: gen=%d, %d回合" % [_playback_generation, _total_rounds])
+	print("[BattleAnimation] 开始: gen=%d, %d回合, 英雄=%s, 敌人=%s" % [
+		_playback_generation, _total_rounds, hero_name, enemy_name
+	])
 	_play_turn()
 
 func _play_turn() -> void:
