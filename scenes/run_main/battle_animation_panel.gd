@@ -64,6 +64,15 @@ const COL_CHAIN := Color(0.75, 0.30, 0.90)
 func _ready() -> void:
 	turn_timer.timeout.connect(_on_turn_timer_timeout)
 	skip_button.pressed.connect(_on_skip)
+	
+	# 按钮回弹效果
+	skip_button.mouse_entered.connect(func():
+		TweenFX.snap(skip_button, 0.1, Vector2.ONE * 1.1, TweenFX.PlayState.ENTER)
+	)
+	skip_button.mouse_exited.connect(func():
+		TweenFX.snap(skip_button, 0.1, Vector2.ONE, TweenFX.PlayState.EXIT)
+	)
+	
 	visible = false
 	battle_log.scroll_following = true
 	_apply_dark_theme()
@@ -275,9 +284,13 @@ func _process_event(evt: Dictionary) -> void:
 			if unit_id == "hero" or unit_id.begins_with("hero"):
 				_hero_hp = maxi(0, hp)
 				_flash_sprite(true, is_crit)
+				if is_crit:
+					TweenFX.shake(self, 0.3, 10.0, 4)
 			else:
 				_enemy_hp = maxi(0, hp)
 				_flash_sprite(false, is_crit)
+				if is_crit:
+					TweenFX.shake(self, 0.3, 10.0, 4)
 			
 			if _hero_hp <= 0:
 				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % hero_name_label.text)

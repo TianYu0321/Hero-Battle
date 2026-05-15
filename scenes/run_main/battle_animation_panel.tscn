@@ -1,17 +1,20 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://c5c25kbikw2a"]
 
-[ext_resource type="Script" path="res://scenes/run_main/battle_animation_panel.gd" id="1_bap"]
+[ext_resource type="Script" uid="uid://biocnv2v3sp7t" path="res://scenes/run_main/battle_animation_panel.gd" id="1_bap"]
 
-[node name="BattleAnimationPanel" type="Control"]
+[sub_resource type="Theme" id="Theme_x4ly3"]
+
+[node name="BattleAnimationPanel" type="Control" unique_id=921046957]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = SubResource("Theme_x4ly3")
 script = ExtResource("1_bap")
 
-[node name="SemiTransparentBg" type="ColorRect" parent="."]
+[node name="SemiTransparentBg" type="ColorRect" parent="." unique_id=320208502]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -20,27 +23,27 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.05, 0.08, 0.92)
 
-[node name="HudContainer" type="Control" parent="."]
+[node name="HudContainer" type="Control" parent="." unique_id=282685133]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 160.0
 grow_horizontal = 2
 
-[node name="HeroCard" type="Control" parent="HudContainer"]
-layout_mode = 0
+[node name="HeroCard" type="Control" parent="HudContainer" unique_id=1587200478]
+anchors_preset = 0
 offset_left = 30.0
 offset_top = 15.0
 offset_right = 350.0
 offset_bottom = 145.0
 
-[node name="Portrait" type="ColorRect" parent="HudContainer/HeroCard"]
+[node name="Portrait" type="ColorRect" parent="HudContainer/HeroCard" unique_id=1982153985]
 layout_mode = 0
 offset_right = 100.0
 offset_bottom = 110.0
 color = Color(0.08, 0.18, 0.35, 1)
 
-[node name="NameLabel" type="Label" parent="HudContainer/HeroCard"]
+[node name="NameLabel" type="Label" parent="HudContainer/HeroCard" unique_id=1272777026]
 layout_mode = 0
 offset_left = 115.0
 offset_top = 8.0
@@ -48,7 +51,7 @@ offset_right = 310.0
 offset_bottom = 36.0
 text = "英雄"
 
-[node name="HpBar" type="ProgressBar" parent="HudContainer/HeroCard"]
+[node name="HpBar" type="ProgressBar" parent="HudContainer/HeroCard" unique_id=2035740620]
 layout_mode = 0
 offset_left = 115.0
 offset_top = 45.0
@@ -56,7 +59,7 @@ offset_right = 310.0
 offset_bottom = 68.0
 value = 100.0
 
-[node name="HpMeta" type="Label" parent="HudContainer/HeroCard"]
+[node name="HpMeta" type="Label" parent="HudContainer/HeroCard" unique_id=2142487398]
 layout_mode = 0
 offset_left = 115.0
 offset_top = 72.0
@@ -64,73 +67,67 @@ offset_right = 310.0
 offset_bottom = 96.0
 text = "100 / 100"
 
-[node name="CenterBadge" type="Control" parent="HudContainer"]
-layout_mode = 0
+[node name="CenterBadge" type="Control" parent="HudContainer" unique_id=1582829730]
+anchors_preset = 0
 offset_left = 500.0
 offset_top = 15.0
 offset_right = 700.0
 offset_bottom = 145.0
 
-[node name="VsLabel" type="Label" parent="HudContainer/CenterBadge"]
+[node name="VsLabel" type="Label" parent="HudContainer/CenterBadge" unique_id=265606832]
 layout_mode = 0
-offset_left = 0.0
 offset_top = 5.0
 offset_right = 200.0
 offset_bottom = 60.0
 text = "VS"
 horizontal_alignment = 1
 
-[node name="RoundLabel" type="Label" parent="HudContainer/CenterBadge"]
+[node name="RoundLabel" type="Label" parent="HudContainer/CenterBadge" unique_id=24890720]
 layout_mode = 0
-offset_left = 0.0
 offset_top = 70.0
 offset_right = 200.0
 offset_bottom = 100.0
 text = "回合 1/10"
 horizontal_alignment = 1
 
-[node name="EnemyCard" type="Control" parent="HudContainer"]
-layout_mode = 0
+[node name="EnemyCard" type="Control" parent="HudContainer" unique_id=717432503]
+anchors_preset = 0
 offset_left = 860.0
 offset_top = 15.0
 offset_right = 1180.0
 offset_bottom = 145.0
 
-[node name="Portrait" type="ColorRect" parent="HudContainer/EnemyCard"]
+[node name="Portrait" type="ColorRect" parent="HudContainer/EnemyCard" unique_id=1452233566]
 layout_mode = 0
 offset_left = 220.0
-offset_top = 0.0
 offset_right = 320.0
 offset_bottom = 110.0
 color = Color(0.35, 0.06, 0.04, 1)
 
-[node name="NameLabel" type="Label" parent="HudContainer/EnemyCard"]
+[node name="NameLabel" type="Label" parent="HudContainer/EnemyCard" unique_id=1470198696]
 layout_mode = 0
-offset_left = 0.0
 offset_top = 8.0
 offset_right = 205.0
 offset_bottom = 36.0
 text = "敌人"
 horizontal_alignment = 2
 
-[node name="HpBar" type="ProgressBar" parent="HudContainer/EnemyCard"]
+[node name="HpBar" type="ProgressBar" parent="HudContainer/EnemyCard" unique_id=2078358758]
 layout_mode = 0
-offset_left = 0.0
 offset_top = 45.0
 offset_right = 205.0
 offset_bottom = 68.0
 value = 100.0
 
-[node name="HpMeta" type="Label" parent="HudContainer/EnemyCard"]
+[node name="HpMeta" type="Label" parent="HudContainer/EnemyCard" unique_id=1671927945]
 layout_mode = 0
-offset_left = 0.0
 offset_top = 72.0
 offset_right = 205.0
 offset_bottom = 96.0
 text = "100 / 100"
 horizontal_alignment = 2
 
-[node name="StageArea" type="Control" parent="."]
+[node name="StageArea" type="Control" parent="." unique_id=292252640]
 layout_mode = 1
 anchors_preset = 14
 anchor_top = 0.5
@@ -139,8 +136,9 @@ anchor_bottom = 0.5
 offset_top = -160.0
 offset_bottom = 160.0
 grow_horizontal = 2
+grow_vertical = 2
 
-[node name="HeroArt" type="ColorRect" parent="StageArea"]
+[node name="HeroArt" type="ColorRect" parent="StageArea" unique_id=1604219356]
 layout_mode = 0
 offset_left = 100.0
 offset_top = 20.0
@@ -148,7 +146,7 @@ offset_right = 260.0
 offset_bottom = 260.0
 color = Color(0.25, 0.55, 0.85, 0.3)
 
-[node name="EnemyArt" type="ColorRect" parent="StageArea"]
+[node name="EnemyArt" type="ColorRect" parent="StageArea" unique_id=109318882]
 layout_mode = 0
 offset_left = 1020.0
 offset_top = 20.0
@@ -156,7 +154,7 @@ offset_right = 1180.0
 offset_bottom = 260.0
 color = Color(0.85, 0.22, 0.15, 0.3)
 
-[node name="StageName" type="Label" parent="StageArea"]
+[node name="StageName" type="Label" parent="StageArea" unique_id=53564804]
 layout_mode = 0
 offset_left = 440.0
 offset_top = 120.0
@@ -165,7 +163,7 @@ offset_bottom = 155.0
 text = "深渊斗技场"
 horizontal_alignment = 1
 
-[node name="LogPanel" type="Control" parent="."]
+[node name="LogPanel" type="Control" parent="." unique_id=1876155766]
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
@@ -173,8 +171,9 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_top = -220.0
 grow_horizontal = 2
+grow_vertical = 0
 
-[node name="LogHead" type="Label" parent="LogPanel"]
+[node name="LogHead" type="Label" parent="LogPanel" unique_id=97218405]
 layout_mode = 0
 offset_left = 140.0
 offset_top = 8.0
@@ -182,7 +181,7 @@ offset_right = 740.0
 offset_bottom = 38.0
 text = "战 斗 日 志"
 
-[node name="BattleLog" type="RichTextLabel" parent="LogPanel"]
+[node name="BattleLog" type="RichTextLabel" parent="LogPanel" unique_id=243548439]
 layout_mode = 0
 offset_left = 140.0
 offset_top = 45.0
@@ -190,7 +189,7 @@ offset_right = 740.0
 offset_bottom = 170.0
 bbcode_enabled = true
 
-[node name="SkipButton" type="Button" parent="LogPanel"]
+[node name="SkipButton" type="Button" parent="LogPanel" unique_id=521647677]
 layout_mode = 0
 offset_left = 800.0
 offset_top = 45.0
@@ -198,12 +197,13 @@ offset_right = 960.0
 offset_bottom = 80.0
 text = "跳过"
 
-[node name="TurnTimer" type="Timer" parent="."]
+[node name="TurnTimer" type="Timer" parent="." unique_id=903184029]
 process_callback = 0
-wait_time = 1.0
 one_shot = true
 
-[node name="ResultTimer" type="Timer" parent="."]
+[node name="ResultTimer" type="Timer" parent="." unique_id=653165749]
 process_callback = 0
-wait_time = 1.0
 one_shot = true
+
+[node name="CanvasModulate" type="CanvasModulate" parent="."]
+color = Color(0.7, 0.7, 0.8, 1)
