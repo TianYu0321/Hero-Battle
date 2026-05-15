@@ -72,12 +72,6 @@ func _apply_dark_theme() -> void:
 	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.92)
 	hero_portrait.color = COL_BLUE_DEEP
 	enemy_portrait.color = COL_RED_DEEP
-	vs_label.add_theme_color_override("font_color", COL_GOLD)
-	round_label.add_theme_color_override("font_color", COL_TEXT_MAIN)
-	log_head.add_theme_color_override("font_color", COL_GOLD)
-	stage_name_label.add_theme_color_override("font_color", COL_TEXT_SECOND)
-	skip_button.add_theme_color_override("font_color", COL_TEXT_MAIN)
-	skip_button.add_theme_color_override("font_hover_color", COL_GOLD)
 
 # === 模式A：Recorder回放（PVP用） ===
 
