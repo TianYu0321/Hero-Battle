@@ -136,6 +136,7 @@ const _FALLBACK_HERO_CONFIGS: Dictionary = {
 		"skill_list": ["skill_brave_pursuit", "skill_brave_ultimate"],
 		"portrait_color": "#C0392B",
 		"is_default_unlock": true,
+		"unlock_condition": "none",
 	},
 	"hero_shadow_dancer": {
 		"hero_id": "hero_shadow_dancer",
@@ -147,6 +148,7 @@ const _FALLBACK_HERO_CONFIGS: Dictionary = {
 		"skill_list": ["skill_shadow_wind", "skill_shadow_ultimate"],
 		"portrait_color": "#8E44AD",
 		"is_default_unlock": false,
+		"unlock_condition": "clear_with_hero_warrior",
 	},
 	"hero_iron_guard": {
 		"hero_id": "hero_iron_guard",
@@ -158,6 +160,7 @@ const _FALLBACK_HERO_CONFIGS: Dictionary = {
 		"skill_list": ["skill_iron_counter", "skill_iron_ultimate"],
 		"portrait_color": "#2980B9",
 		"is_default_unlock": false,
+		"unlock_condition": "clear_with_hero_shadow_dancer",
 	},
 }
 
@@ -380,11 +383,7 @@ func get_all_partner_config_ids() -> Array[int]:
 
 
 func get_hero_id_by_config_id(config_id: int) -> String:
-	for hero_id in _hero_configs:
-		var cfg: Dictionary = _hero_configs[hero_id]
-		if cfg.get("hero_id", 0) == config_id:
-			return hero_id
-	return ""
+	return _HERO_ID_MAP.get(str(config_id), "")
 
 
 func get_final_boss_configs() -> Dictionary:

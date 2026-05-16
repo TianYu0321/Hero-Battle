@@ -70,12 +70,12 @@ extends Control
 ]
 
 var _run_controller: RunController = null
-var _last_rescue_candidates: Array[Dictionary] = []
+var _last_rescue_candidates: Array = []
 var _shop_item_buttons: Array = []
 var _selected_rescue_partner_id: int = -1
 var _combat_selected_index: int = -1
 var _pending_battle_result: Dictionary = {}
-var _cached_node_options: Array[Dictionary] = []
+var _cached_node_options: Array = []
 
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
@@ -163,8 +163,10 @@ func _ready() -> void:
 			# 让 _change_state -> _generate_node_options -> node_options_presented 信号来驱动UI显示
 			return
 		else:
-			print("[RunMain] 存档恢复失败或未实现，继续新游戏")
+			print("[RunMain] 存档恢复失败，返回主菜单")
 			GameManager.pending_save_data = {}
+			get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")
+			return
 
 	# 正常新开局，确保清空残留存档数据
 	GameManager.pending_save_data = {}
@@ -258,7 +260,7 @@ func _on_node_button_pressed(index: int) -> void:
 		return
 	
 	var summary: Dictionary = _run_controller.get_current_run_summary()
-	var node_options: Array[Dictionary] = summary.get("node_options", [])
+	var node_options: Array = summary.get("node_options", [])
 	
 	if index < 0 or index >= node_options.size():
 		return
@@ -346,7 +348,7 @@ func _on_run_started(run_config: Dictionary) -> void:
 	])
 
 
-func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
+func _on_node_options_presented(node_options: Array) -> void:
 	print("[RunMain] _on_node_options_presented: 选项数=%d, 当前blocker=%s" % [node_options.size(), ui_modal_blocker.visible])
 	
 	# 保护：如果战斗动画还在播放，缓存选项但不切换UI状态
@@ -474,7 +476,7 @@ func _show_training_panel_details(_panel_data: Dictionary) -> void:
 		training_lv_labels[i].text = "LV:%d" % level
 
 
-func _show_rescue_panel_details(candidates: Array[Dictionary]) -> void:
+func _show_rescue_panel_details(candidates: Array) -> void:
 	_selected_rescue_partner_id = -1
 	for i in range(rescue_candidate_buttons.size()):
 		if i < candidates.size():
@@ -515,7 +517,7 @@ func _on_shop_close_pressed() -> void:
 		_run_controller.close_shop_panel()
 
 
-func _show_shop_panel(items: Array[Dictionary]) -> void:
+func _show_shop_panel(items: Array) -> void:
 	# 清空旧按钮
 	for btn in _shop_item_buttons:
 		btn.queue_free()
@@ -611,8 +613,21 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		
 		# battle_animation_panel 已经在 _on_combat_confirmed 里显示了
 		# 直接设置播放参数
+		# 根据英雄配置ID加载对应sprite
+		var hero_sprite_path: String = ""
+		var summary: Dictionary = _run_controller.get_current_run_summary()
+		var runtime_hero: Dictionary = summary.get("hero", {})
+		var hero_config_id: int = runtime_hero.get("hero_config_id", 0)
+		match hero_config_id:
+			2:
+				hero_sprite_path = "res://assets/characters/shinobi/hero_frames.tres"
+		
+		# battle_animation_panel 已经在 _on_combat_confirmed 里显示了
+		# 直接设置播放参数
 		battle_animation_panel.start_playback(
-			recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], []
+			recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [],
+			battle_result.get("turns_elapsed", 0),
+			hero_sprite_path, ""
 		)
 		
 		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
@@ -643,10 +658,7 @@ func _on_battle_summary_confirmed() -> void:
 	
 	# 推进游戏状态
 	if _run_controller != null:
-		if not _run_controller._pending_battle_result.is_empty():
-			_run_controller.confirm_battle_result()
-		else:
-			print("[RunMain] _pending_battle_result 为空，跳过 confirm_battle_result")
+		_run_controller.confirm_battle_result()
 	
 	# 清理缓存
 	_pending_battle_result = {}
@@ -748,7 +760,7 @@ func update_enemy_info(enemy_data: Dictionary) -> void:
 
 
 ## v2: 更新怪物信息和预计损失血量
-func _update_monster_info(node_options: Array[Dictionary]) -> void:
+func _update_monster_info(node_options: Array) -> void:
 	## 查找包含敌人信息的节点
 	var has_enemy: bool = false
 	var enemy_name: String = "???"

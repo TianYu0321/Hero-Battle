@@ -20,14 +20,7 @@ func _ready() -> void:
 	_populate_hero_cards()
 
 func _populate_hero_cards() -> void:
-	var user_id: String = SaveManager.get_user_id()
-	var unlock_state: Dictionary = SaveManager.load_unlock_state(user_id)
-	var unlocked_ids: Array = unlock_state.get("unlocked_heroes", [1])
-	var unlocked: Array = []
-	for hid in unlocked_ids:
-		var key: String = ConfigManager.get_hero_id_by_config_id(hid)
-		if not key.is_empty():
-			unlocked.append(key)
+	var unlocked: Array[String] = ConfigManager.get_unlocked_hero_ids()
 
 	var card_index: int = 0
 	for hero_id in _hero_ids:

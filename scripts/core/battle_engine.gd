@@ -126,6 +126,10 @@ func _process_state() -> void:
 			_current_action_index = 0
 			EventBus.battle_turn_started.emit(_turn_number, [], _battle_config.get("playback_mode", "standard"))
 			_result.add_log("=== 回合 %d ===" % _turn_number)
+			# 记录回合开始事件（供战斗回放）
+			var recorder = _battle_config.get("playback_recorder", null)
+			if recorder != null:
+				recorder.record_event("turn_started", {"turn": _turn_number, "order": []})
 			# Buff回合减1（通用化）
 			var buff_list: Array = _hero.get("buff_list", [])
 			for i in range(buff_list.size() - 1, -1, -1):
@@ -243,6 +247,9 @@ func _process_state() -> void:
 			if ult_result.triggered:
 				_result.add_log(ult_result.log)
 				EventBus.ultimate_triggered.emit(_hero.hero_id, _hero.name, _turn_number, "", ult_result.log)
+				var recorder = _battle_config.get("playback_recorder", null)
+				if recorder != null:
+					recorder.record_event("ultimate_triggered", {"hero_name": _hero.name, "turn": _turn_number, "log": ult_result.log})
 				for pkt in ult_result.packets:
 					var target = _get_front_enemy()
 					if target:
@@ -288,10 +295,13 @@ func _next_action_state() -> BattleState:
 
 func _process_partner_assist(ctx: Dictionary) -> void:
 	var assists: Array = _partner_assist.execute_assist(ctx)
+	var recorder = _battle_config.get("playback_recorder", null)
 	for a in assists:
 		_result.record_partner_assist(a.partner_id)
 		EventBus.partner_assist_triggered.emit(a.partner_id, a.partner_name, "AFTER_HERO_ATTACK", a, 0)
 		_result.add_log(a.log)
+		if recorder != null:
+			recorder.record_event("partner_assist", {"partner_name": a.partner_name})
 
 func _process_chain_check() -> void:
 	while true:
@@ -306,6 +316,9 @@ func _process_chain_check() -> void:
 			_emit_damage_signals(_get_partner_unit(chain_result.partner_id), target, pkt, "CHAIN")
 		EventBus.chain_triggered.emit(_turn_chain_count, chain_result.partner_id, chain_result.partner_name, pkt.value, 1.0, _result.chain_stats.total_chains)
 		_result.add_log("CHAIN x%d! %s 造成 %d 伤害" % [_turn_chain_count, chain_result.partner_name, pkt.value])
+		var recorder = _battle_config.get("playback_recorder", null)
+		if recorder != null:
+			recorder.record_event("chain_triggered", {"chain_count": _turn_chain_count, "partner_name": chain_result.partner_name, "damage": pkt.value})
 	if _turn_chain_count > 0:
 		EventBus.chain_ended.emit(_turn_chain_count, _result.chain_stats.total_chains, "resolved")
 
@@ -336,6 +349,9 @@ func _check_battle_end() -> bool:
 func _emit_damage_signals(attacker: Dictionary, defender: Dictionary, pkt: Dictionary, action_type: String) -> void:
 	if pkt.get("is_stunned", false):
 		return
+	
+	var recorder = _battle_config.get("playback_recorder", null)
+	
 	EventBus.action_executed.emit({
 		"actor_id": attacker.get("unit_id", ""),
 		"actor_name": attacker.get("name", ""),
@@ -346,6 +362,13 @@ func _emit_damage_signals(attacker: Dictionary, defender: Dictionary, pkt: Dicti
 		"result_summary": pkt,
 		"damage_type": pkt.get("damage_type", "NORMAL"),
 	})
+	if recorder != null:
+		recorder.record_event("action_executed", {
+			"actor_name": attacker.get("name", ""),
+			"target_name": defender.get("name", ""),
+			"result_summary": pkt,
+		})
+	
 	var def_id: String = defender.get("unit_id", "")
 	var def_hp: int = defender.get("hp", 0)
 	var def_max_hp: int = defender.get("max_hp", 0)
@@ -353,10 +376,16 @@ func _emit_damage_signals(attacker: Dictionary, defender: Dictionary, pkt: Dicti
 	var dmg_type: String = pkt.get("damage_type", "NORMAL")
 	if pkt.get("is_miss", false):
 		EventBus.unit_damaged.emit(def_id, 0, def_hp, def_max_hp, dmg_type, false, true, atk_id)
+		if recorder != null:
+			recorder.record_event("unit_damaged", {"unit_id": def_id, "hp": def_hp, "is_crit": false, "damage": 0})
 	else:
 		EventBus.unit_damaged.emit(def_id, pkt.get("value", 0), def_hp, def_max_hp, dmg_type, pkt.get("is_crit", false), false, atk_id)
+		if recorder != null:
+			recorder.record_event("unit_damaged", {"unit_id": def_id, "hp": def_hp, "is_crit": pkt.get("is_crit", false), "damage": pkt.get("value", 0)})
 		if not defender.get("is_alive", false):
 			EventBus.unit_died.emit(def_id, defender.get("name", ""), defender.get("unit_type", ""), atk_id)
+			if recorder != null:
+				recorder.record_event("unit_died", {"unit_id": def_id, "name": defender.get("name", ""), "killer_id": atk_id})
 
 func _state_name(s: BattleState) -> String:
 	match s:

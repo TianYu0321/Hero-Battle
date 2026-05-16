@@ -103,8 +103,13 @@ func load_hero_from_snapshot(snapshot: RunSnapshot) -> RuntimeHero:
 	hero.current_agi = snapshot.hero_agi
 	hero.current_tec = snapshot.hero_tec
 	hero.current_mnd = snapshot.hero_mnd
-	hero.current_hp = snapshot.hero_hp
-	hero.max_hp = snapshot.hero_max_hp
+	# 若存档中 HP 为 0（旧存档兼容），保留 initialize_hero 计算的默认值
+	if snapshot.hero_max_hp > 0:
+		hero.max_hp = snapshot.hero_max_hp
+	if snapshot.hero_hp > 0:
+		hero.current_hp = snapshot.hero_hp
+	elif hero.max_hp > 0:
+		hero.current_hp = hero.max_hp
 	hero.training_counts = snapshot.training_counts.duplicate()
 	return hero
 
