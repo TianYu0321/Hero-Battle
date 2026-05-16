@@ -139,7 +139,10 @@ func purchase_shop_item(item_data: Dictionary) -> Dictionary:
 
 
 func select_rescue_partner(partner_config_id: int) -> void:
-	_node_resolver.process_rescue_selection(partner_config_id, _run.current_turn, _run)
+	var rescued: RuntimePartner = _rescue_system.rescue_partner(partner_config_id, _run.current_turn)
+	if rescued != null:
+		var pcfg: Dictionary = ConfigManager.get_partner_config(str(partner_config_id))
+		EventBus.emit_signal("partner_unlocked", str(partner_config_id), pcfg.get("name", ""), _rescue_system.get_rescue_slot(_run.current_turn), _run.current_turn, pcfg.get("role", ""))
 
 
 func advance_turn() -> void:
@@ -421,14 +424,22 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 
 	var battle_partners: Array = []
 	for p in _character_manager.get_partners():
-		var pstats: Dictionary = {
-			"physique": p.current_vit, "strength": p.current_str,
-			"agility": p.current_agi, "technique": p.current_tec, "spirit": p.current_mnd,
+		var p_level: int = p.current_level
+		var assist_cfg: Dictionary = ConfigManager.get_partner_assist_by_partner_id(str(p.partner_config_id))
+		var base_stats: Dictionary = {
+			"physique": assist_cfg.get("base_physique", 10),
+			"strength": assist_cfg.get("base_strength", 10),
+			"agility": assist_cfg.get("base_agility", 10),
+			"technique": assist_cfg.get("base_technique", 10),
+			"spirit": assist_cfg.get("base_spirit", 10),
 		}
+		var level_multiplier: float = 1.0 + (p_level - 1) * 0.2
+		for key in base_stats.keys():
+			base_stats[key] = int(base_stats[key] * level_multiplier)
 		var pid: String = ConfigManager._PARTNER_ID_MAP.get(str(p.partner_config_id), str(p.partner_config_id))
 		var pcfg: Dictionary = ConfigManager.get_partner_config(pid)
 		var p_name: String = pcfg.get("name", pid)
-		battle_partners.append(PartnerAssist.make_partner_battle_unit(pid, p_name, pstats))
+		battle_partners.append(PartnerAssist.make_partner_battle_unit(pid, p_name, base_stats))
 
 	var battle_engine: BattleEngine = BattleEngine.new()
 	add_child(battle_engine)
