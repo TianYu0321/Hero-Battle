@@ -172,6 +172,16 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 	_update_hp_display()
 	_apply_hp_bar_colors()
 	
+	# 开场HP检查：负数/零HP直接结算，避免空Tween卡死
+	if _hero_hp <= 0 or _enemy_hp <= 0:
+		battle_log.text = ""
+		if _hero_hp <= 0:
+			battle_log.append_text("[color=#D93826]%s 体力不支，无法战斗！[/color]\n" % hero_name_label.text)
+		else:
+			battle_log.append_text("[color=#5A8FD0]%s 已被击败！[/color]\n" % enemy_name_label.text)
+		_show_result()
+		return
+	
 	battle_log.text = ""
 	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
 	
@@ -217,10 +227,18 @@ func start_battle(battle_result: Dictionary) -> void:
 	_load_sprite(hero_art, battle_result.get("hero_sprite_path", ""))
 	_load_sprite(enemy_art, battle_result.get("enemy_sprite_path", ""))
 	
-	_hero_hp = _hero_max_hp
-	_enemy_hp = _enemy_max_hp
 	_update_hp_display()
 	_apply_hp_bar_colors()
+	
+	# 开场HP检查：负数/零HP直接结算，避免空Tween卡死
+	if _hero_hp <= 0 or _enemy_hp <= 0:
+		battle_log.text = ""
+		if _hero_hp <= 0:
+			battle_log.append_text("[color=#D93826]%s 体力不支，无法战斗！[/color]\n" % hero_name_label.text)
+		else:
+			battle_log.append_text("[color=#5A8FD0]%s 已被击败！[/color]\n" % enemy_name_label.text)
+		_show_result()
+		return
 	
 	battle_log.text = ""
 	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
@@ -260,7 +278,7 @@ func _play_next_turn() -> void:
 				_event_tween.kill()
 			_event_tween = create_tween()
 			for i in range(events.size()):
-				_event_tween.tween_callback(_process_event.bind(events[i]))
+				_event_tween.tween_callback(_safe_process_event.bind(events[i]))
 				_event_tween.tween_callback(_update_hp_display)
 				_event_tween.tween_interval(0.5)
 			_event_tween.tween_callback(func(): turn_timer.start(1.0))
@@ -270,6 +288,11 @@ func _play_next_turn() -> void:
 		_generate_simulated_turn()
 		_update_hp_display()
 		turn_timer.start(1.0)
+
+func _safe_process_event(evt: Dictionary) -> void:
+	if evt == null or evt.is_empty():
+		return
+	_process_event(evt)
 
 func _process_event(evt: Dictionary) -> void:
 	var type: String = evt.get("type", "")
@@ -513,6 +536,8 @@ func finish_battle() -> void:
 		_show_result()
 
 func _on_skip() -> void:
+	if _result_emitted or not visible:
+		return
 	print("[BattleAnimation] 跳过, gen=%d" % _playback_generation)
 	_is_playing = false
 	turn_timer.stop()

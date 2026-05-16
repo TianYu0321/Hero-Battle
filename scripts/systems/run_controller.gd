@@ -80,6 +80,10 @@ func _ready() -> void:
 	add_child(_settlement_system)
 
 
+func continue_from_save(_save_data: Dictionary) -> bool:
+	## TODO: 从存档恢复完整状态
+	return false
+
 func start_new_run(hero_config_id: int, starter_partner_ids: Array[int]) -> void:
 	_run = RuntimeRun.new()
 	_run.hero_config_id = hero_config_id
@@ -143,6 +147,9 @@ func select_rescue_partner(partner_config_id: int) -> void:
 	if rescued != null:
 		var pcfg: Dictionary = ConfigManager.get_partner_config(str(partner_config_id))
 		EventBus.emit_signal("partner_unlocked", str(partner_config_id), pcfg.get("name", ""), _rescue_system.get_rescue_slot(_run.current_turn), _run.current_turn, pcfg.get("role", ""))
+	EventBus.emit_signal("panel_closed", "RESCUE_PANEL", "completed" if rescued != null else "failed")
+	_change_state(RunState.TURN_ADVANCE)
+	advance_turn()
 
 
 func advance_turn() -> void:
@@ -237,7 +244,7 @@ func _generate_node_options() -> void:
 
 	if turn in _PVP_TURNS:
 		_current_node_options = [{
-			"node_type": 6,
+			"node_type": NodePoolSystem.NodeType.PVP_CHECK,
 			"node_name": "PVP检定",
 			"description": "与其他斗士进行对战检定",
 			"node_id": "pvp_%d" % turn,
@@ -246,7 +253,7 @@ func _generate_node_options() -> void:
 
 	if turn == _FINAL_TURN:
 		_current_node_options = [{
-			"node_type": 7,
+			"node_type": NodePoolSystem.NodeType.FINAL_BOSS,
 			"node_name": "终局战",
 			"description": "最终决战",
 			"node_id": "final_%d" % turn,
@@ -276,11 +283,31 @@ func _process_node_result(result: Dictionary) -> void:
 		"result": result,
 	})
 
-	# 如果是战斗节点，保存战斗摘要供UI回放
+	# 如果是需要UI交互的节点，发射 panel_opened 并暂停状态推进
+	if result.get("requires_ui_selection", false):
+		match _pending_node_type:
+			NodePoolSystem.NodeType.TRAINING:
+				EventBus.emit_signal("panel_opened", "TRAINING_PANEL", {})
+			NodePoolSystem.NodeType.RESCUE:
+				EventBus.emit_signal("panel_opened", "RESCUE_PANEL", {
+					"candidates": result.get("candidates", [])
+				})
+			NodePoolSystem.NodeType.SHOP:
+				EventBus.emit_signal("panel_opened", "SHOP_PANEL", {
+					"items": result.get("items", [])
+				})
+		return  # 等待用户交互完成后再推进
+
+	# 如果是战斗节点，执行真实战斗并保存摘要供UI回放
 	if _pending_node_type == NodePoolSystem.NodeType.BATTLE or _pending_node_type == NodePoolSystem.NodeType.FINAL_BOSS:
 		var battle_result: Dictionary = result.get("battle_result", {})
 		if battle_result.is_empty() and result.has("winner"):
 			battle_result = result
+		# 若 battle_result 仍为空（普通战斗未执行 BattleEngine），补执行
+		if battle_result.is_empty():
+			var enemy_config_id: int = result.get("enemy_config_id", 2001)
+			battle_result = _run_battle_engine(enemy_config_id)
+			result["battle_result"] = battle_result
 		var hero_name: String = "英雄"
 		if _hero != null:
 			var hero_cfg: Dictionary = ConfigManager.get_hero_config(ConfigManager.get_hero_id_by_config_id(_hero.hero_config_id))
@@ -299,6 +326,8 @@ func _process_node_result(result: Dictionary) -> void:
 			"log": result.get("log", ""),
 			"winner": battle_result.get("winner", "player"),
 		}
+		# 发射 battle_ended 信号，驱动 UI 播放战斗动画
+		EventBus.emit_signal("battle_ended", battle_result)
 
 	# 更新计数器
 	match _pending_node_type:
@@ -441,6 +470,10 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 		var p_name: String = pcfg.get("name", pid)
 		battle_partners.append(PartnerAssist.make_partner_battle_unit(pid, p_name, base_stats))
 
+	var recorder: BattlePlaybackRecorder = BattlePlaybackRecorder.new()
+	recorder.start_recording()
+	add_child(recorder)
+	
 	var battle_engine: BattleEngine = BattleEngine.new()
 	add_child(battle_engine)
 	var config: Dictionary = {
@@ -449,9 +482,13 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 		"partners": battle_partners,
 		"battle_seed": randi(),
 		"playback_mode": "fast_forward",
+		"playback_recorder": recorder,
 	}
 	var result: Dictionary = battle_engine.execute_battle(config)
 	battle_engine.queue_free()
+	
+	recorder.stop_recording()
+	result["playback_recorder"] = recorder
 
 	# 同步战斗后的 HP 回写到 RuntimeHero
 	_hero.current_hp = battle_hero.get("hp", _hero.current_hp)
@@ -523,13 +560,16 @@ func confirm_battle_result() -> void:
 	pass
 
 func close_shop_panel() -> void:
-	## v1 compat: 商店面板关闭回调
-	pass
+	## 商店面板关闭后推进回合
+	EventBus.emit_signal("panel_closed", "SHOP_PANEL", "closed")
+	_change_state(RunState.TURN_ADVANCE)
+	advance_turn()
 
 func select_training_attr(attr_type: int) -> void:
 	## 玩家从训练面板选择了具体属性
-	if _state == RunState.RUNNING_NODE_SELECT:
-		var result: Dictionary = _training_system.execute_training(attr_type, _run.current_turn)
-		if not result.is_empty():
-			_change_state(RunState.TURN_ADVANCE)
-			advance_turn()
+	var result: Dictionary = _training_system.execute_training(attr_type, _run.current_turn)
+	if not result.is_empty():
+		# training_completed 信号已由 TrainingSystem.execute_training() 内部发射，此处不再重复发射
+		EventBus.emit_signal("panel_closed", "TRAINING_PANEL", "completed")
+		_change_state(RunState.TURN_ADVANCE)
+		advance_turn()

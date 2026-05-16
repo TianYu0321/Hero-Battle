@@ -75,6 +75,7 @@ var _shop_item_buttons: Array = []
 var _selected_rescue_partner_id: int = -1
 var _combat_selected_index: int = -1
 var _pending_battle_result: Dictionary = {}
+var _cached_node_options: Array[Dictionary] = []
 
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
@@ -160,20 +161,21 @@ func _ready() -> void:
 			_update_hud()
 			# 不要在这里手动调用 _show_option_container()
 			# 让 _change_state -> _generate_node_options -> node_options_presented 信号来驱动UI显示
-		else:
-			push_error("[RunMain] 存档恢复失败，回到主菜单")
-			get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")
-	else:
-		# 正常新开局，确保清空残留存档数据
-		GameManager.pending_save_data = {}
-		var hero_config_id: int = GameManager.selected_hero_config_id
-		var partner_config_ids: Array[int] = GameManager.selected_partner_config_ids.duplicate()
-
-		if hero_config_id <= 0:
-			push_error("[RunMain] No hero selected, cannot start run")
 			return
+		else:
+			print("[RunMain] 存档恢复失败或未实现，继续新游戏")
+			GameManager.pending_save_data = {}
 
-		_run_controller.start_new_run(hero_config_id, partner_config_ids)
+	# 正常新开局，确保清空残留存档数据
+	GameManager.pending_save_data = {}
+	var hero_config_id: int = GameManager.selected_hero_config_id
+	var partner_config_ids: Array[int] = GameManager.selected_partner_config_ids.duplicate()
+
+	if hero_config_id <= 0:
+		push_error("[RunMain] No hero selected, cannot start run")
+		return
+
+	_run_controller.start_new_run(hero_config_id, partner_config_ids)
 
 
 func _transition_ui_state(new_state: UISceneState) -> void:
@@ -346,6 +348,13 @@ func _on_run_started(run_config: Dictionary) -> void:
 
 func _on_node_options_presented(node_options: Array[Dictionary]) -> void:
 	print("[RunMain] _on_node_options_presented: 选项数=%d, 当前blocker=%s" % [node_options.size(), ui_modal_blocker.visible])
+	
+	# 保护：如果战斗动画还在播放，缓存选项但不切换UI状态
+	if battle_animation_panel.visible and battle_animation_panel._is_playing:
+		print("[RunMain] 动画播放中，缓存 node_options")
+		_cached_node_options = node_options.duplicate()
+		return
+	
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 	
 	# 获取事件透视系统
@@ -641,6 +650,12 @@ func _on_battle_summary_confirmed() -> void:
 	
 	# 清理缓存
 	_pending_battle_result = {}
+	
+	# 如果有缓存的选项（动画播放期间到达的 node_options），现在处理
+	if _cached_node_options.size() > 0:
+		var cached = _cached_node_options.duplicate()
+		_cached_node_options.clear()
+		_on_node_options_presented(cached)
 
 func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	if node_type == "OUTING":
@@ -754,7 +769,7 @@ func _update_monster_info(node_options: Array[Dictionary]) -> void:
 			if enemy_cfg.is_empty():
 				enemy_cfg = _fetch_enemy_config_for_option(opt)
 			enemy_name = enemy_cfg.get("name", "???")
-			enemy_hp = enemy_cfg.get("hp", 0)
+			enemy_hp = maxi(0, enemy_cfg.get("hp", enemy_cfg.get("max_hp", 100)))
 			enemy_stats = enemy_cfg
 			break
 
