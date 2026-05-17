@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://menu_bg01"]
-
-[ext_resource type="Script" path="res://scenes/main_menu/menu_background.gd" id="1_mbg"]
-
-[node name="MenuBackground" type="CanvasLayer"]
-script = ExtResource("1_mbg")

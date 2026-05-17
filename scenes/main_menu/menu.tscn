@@ -1,11 +1,12 @@
 [gd_scene format=3 uid="uid://c0m8q1p2x3y40"]
 
-[ext_resource type="Script" path="res://scenes/main_menu/menu.gd" id="1_menu"]
+[ext_resource type="Script" uid="uid://imvrvpyuknvu" path="res://scenes/main_menu/menu.gd" id="1_menu"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 [ext_resource type="PackedScene" path="res://scenes/leaderboard/leaderboard_panel.tscn" id="3_lbp"]
 [ext_resource type="PackedScene" path="res://scenes/shop/shop_popup.tscn" id="4_sp"]
+[ext_resource type="Texture2D" path="res://assets/backgrounds/menu_bg.png" id="5_bg"]
 
-[node name="MainMenu" type="Control"]
+[node name="MainMenu" type="Control" unique_id=1795506737]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,16 +15,37 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="BgPanel" type="ColorRect" parent="."]
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = 0
+
+[node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.172549, 0.243137, 0.313726, 1)
+expand_mode = 1
+stretch_mode = 4
+texture = ExtResource("5_bg")
 
-[node name="TitleLabel" type="Label" parent="."]
+[node name="FloorLightOverlay" type="ColorRect" parent="BackgroundLayer"]
+layout_mode = 1
+anchors_preset = 7
+anchor_top = 0.75
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.90, 0.75, 0.35, 0.05)
+
+[node name="RainParent" type="Node2D" parent="BackgroundLayer"]
+position = Vector2(960, -100)
+
+[node name="CharacterLayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="TitleLabel" type="Label" parent="." unique_id=1691243069]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -38,7 +60,7 @@ text = "赛马娘版Q宠大乐斗"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="MenuButtons" type="VBoxContainer" parent="."]
+[node name="MenuButtons" type="VBoxContainer" parent="." unique_id=535879365]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -53,60 +75,63 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
 
-[node name="BtnNewGame" type="Button" parent="MenuButtons"]
+[node name="BtnNewGame" type="Button" parent="MenuButtons" unique_id=783483649]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 text = "开始新局"
 
-[node name="BtnContinue" type="Button" parent="MenuButtons"]
+[node name="BtnContinue" type="Button" parent="MenuButtons" unique_id=1206341204]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 text = "继续游戏"
 
-[node name="BtnArchive" type="Button" parent="MenuButtons"]
+[node name="BtnArchive" type="Button" parent="MenuButtons" unique_id=1117886865]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 text = "斗士档案"
 
-[node name="BtnQuit" type="Button" parent="MenuButtons"]
+[node name="BtnQuit" type="Button" parent="MenuButtons" unique_id=462298988]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 text = "退出游戏"
 
-[node name="BtnPVP" type="Button" parent="MenuButtons"]
+[node name="BtnPVP" type="Button" parent="MenuButtons" unique_id=1301902876]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 text = "PVP对战"
 
-[node name="BtnShop" type="Button" parent="MenuButtons"]
+[node name="BtnShop" type="Button" parent="MenuButtons" unique_id=1818890231]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 text = "商店"
 
-[node name="BtnLeaderboard" type="Button" parent="MenuButtons"]
+[node name="BtnLeaderboard" type="Button" parent="MenuButtons" unique_id=1814472937]
 unique_name_in_owner = true
-layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 text = "排行榜"
 
-[node name="MenuButton" type="Button" parent="."]
+[node name="MenuButton" type="Button" parent="." unique_id=2024501554]
 layout_mode = 1
 anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
 offset_left = 1160.0
 offset_top = 20.0
 offset_right = 1260.0
 offset_bottom = 60.0
+grow_horizontal = 0
 text = "设置"
 
-[node name="PauseMenu" parent="." instance=ExtResource("2_pause")]
+[node name="PauseMenu" parent="." unique_id=128202323 instance=ExtResource("2_pause")]
 
-[node name="PVPHintLabel" type="Label" parent="."]
+[node name="PVPHintLabel" type="Label" parent="." unique_id=62247608]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -116,19 +141,20 @@ offset_top = 540.0
 offset_right = 200.0
 offset_bottom = 570.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.8, 0.6, 0.3, 1)
-text = ""
+theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LeaderboardPanel" parent="." instance=ExtResource("3_lbp")]
+[node name="LeaderboardPanel" parent="." unique_id=1817026908 instance=ExtResource("3_lbp")]
 visible = false
+layout_mode = 1
 
-[node name="ShopPopup" parent="." instance=ExtResource("4_sp")]
+[node name="ShopPopup" parent="." unique_id=1226683992 instance=ExtResource("4_sp")]
 visible = false
+layout_mode = 1
 
-[node name="VersionLabel" type="Label" parent="."]
+[node name="VersionLabel" type="Label" parent="." unique_id=841931558]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -141,7 +167,7 @@ offset_right = -20.0
 offset_bottom = -10.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
+theme_override_font_sizes/font_size = 14
 text = "v0.1.0"
 horizontal_alignment = 2

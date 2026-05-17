@@ -127,30 +127,23 @@ func continue_from_save(save_data: Dictionary) -> bool:
 		push_error("[RunController] Cannot continue from empty save data")
 		return false
 	
-	var snapshot = RunSnapshot.from_dict(save_data)
-	print("[RunController] 存档解析: floor=%d, hero_id=%d, gold=%d" % [snapshot.current_floor, snapshot.hero_config_id, snapshot.gold])
-	
-	# 恢复 RuntimeRun（手动逐个字段恢复，更可控）
-	_run = RuntimeRun.new()
-	_run.hero_config_id = snapshot.hero_config_id
-	_run.current_turn = snapshot.current_floor
-	_run.gold_owned = snapshot.gold
-	_run.node_history = snapshot.node_history.duplicate()
-	_run.battle_win_count = snapshot.battle_win_count
-	_run.elite_win_count = snapshot.elite_win_count
-	
-	# 恢复英雄（通过 CharacterManager 的公共接口，不直接操作私有字段）
-	if _character_manager != null:
-		_hero = _character_manager.load_hero_from_snapshot(snapshot)
-	else:
-		push_error("[RunController] CharacterManager not initialized")
+	var result: Dictionary = RunSaveData.to_runtime(save_data)
+	if result.is_empty():
+		push_error("[RunController] Failed to restore save data")
 		return false
 	
-	# 恢复伙伴
-	_character_manager.clear_partners()
-	for p in snapshot.partners:
-		var partner = RuntimePartner.from_dict(p)
-		_character_manager.add_partner_runtime(partner)
+	_run = result.get("run") as RuntimeRun
+	_hero = result.get("hero") as RuntimeHero
+	var partners: Array = result.get("partners", [])
+	var node_options: Array = result.get("node_options", [])
+	var forecast_charges: int = result.get("event_forecast_charges", 0)
+	
+	# 恢复伙伴到 CharacterManager
+	if _character_manager != null:
+		_character_manager.clear_partners()
+		for p in partners:
+			if p is RuntimePartner:
+				_character_manager.add_partner_runtime(p)
 	
 	print("[RunController] 英雄恢复: VIT=%d STR=%d AGI=%d TEC=%d MND=%d HP=%d/%d" % [
 		_hero.current_vit, _hero.current_str, _hero.current_agi,
@@ -161,23 +154,27 @@ func continue_from_save(save_data: Dictionary) -> bool:
 	_node_pool_system.reset()
 	
 	# 恢复事件透视次数
-	var forecast_charges: int = save_data.get("event_forecast_charges", 0)
 	if forecast_charges > 0:
 		var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
 		if forecast_system != null:
 			forecast_system.set_charges(forecast_charges)
 			print("[RunController] 恢复事件透视次数: %d" % forecast_charges)
 	
+	# 恢复特殊层阶段（兼容旧存档）
+	_special_floor_phase = result.get("special_floor_phase", SpecialFloorPhase.NONE)
+	if _run.current_turn in _RESCUE_TURNS and _special_floor_phase == SpecialFloorPhase.NONE:
+		_special_floor_phase = SpecialFloorPhase.RESCUE_SELECT
+	
 	# 恢复状态
 	_state = RunState.RUNNING_NODE_SELECT
+	_battle_result_phase = BattleResultPhase.NONE
 	
 	# 恢复当前层的选项（如果有）—— 关键：SL后选项不变
-	var saved_options: Array = save_data.get("node_options", [])
-	if not saved_options.is_empty():
-		_current_node_options = saved_options.duplicate(true)
+	_current_node_options = node_options.duplicate(true)
+	if not _current_node_options.is_empty():
 		EventBus.emit_signal("floor_changed", _run.current_turn, _MAX_TURNS, _get_phase_name())
 		EventBus.emit_signal("node_options_presented", _current_node_options)
-		print("[RunController] 恢复存档选项: %d 个" % _current_node_options.size())
+		print("[RunController] 恢复存档选项: %d 个, 当前层=%d" % [_current_node_options.size(), _run.current_turn])
 	else:
 		# 没有保存的选项，重新生成
 		_change_state(RunState.RUNNING_NODE_SELECT)
@@ -434,6 +431,9 @@ func _process_node_result(result: Dictionary) -> void:
 		var battle_result: Dictionary = result.get("battle_result", {})
 		if battle_result.is_empty() and result.has("winner"):
 			battle_result = result
+		# 记录开场 HP（BattleEngine 执行后会改写 _hero.current_hp）
+		var hero_start_hp: int = _hero.current_hp if _hero != null else 100
+		
 		# 若 battle_result 仍为空（普通战斗未执行 BattleEngine），补执行
 		if battle_result.is_empty():
 			battle_result = _run_battle_engine(enemy_config_id)
@@ -461,15 +461,32 @@ func _process_node_result(result: Dictionary) -> void:
 			var hero_cfg: Dictionary = ConfigManager.get_hero_config(ConfigManager.get_hero_id_by_config_id(_hero.hero_config_id))
 			hero_name = hero_cfg.get("name", "英雄")
 		var enemy_name: String = "敌人"
+		var enemy_max_hp: int = 100
 		if result.has("enemy_config"):
 			enemy_name = result["enemy_config"].get("name", "敌人")
+			enemy_max_hp = result["enemy_config"].get("max_hp", 100)
+		
+		# 补充 battle_result 供 UI 层统一使用
+		battle_result["hero"] = {
+			"name": hero_name,
+			"max_hp": _hero.max_hp if _hero != null else 100,
+			"hp": hero_start_hp,
+		}
+		battle_result["enemies"] = [{
+			"name": enemy_name,
+			"max_hp": enemy_max_hp,
+			"hp": enemy_max_hp,  # 敌人开场满血
+			"config_id": enemy_config_id,
+		}]
+		
 		_last_battle_summary = {
+			"playback_recorder": battle_result.get("playback_recorder", null),
 			"hero_name": hero_name,
 			"enemy_name": enemy_name,
 			"hero_max_hp": _hero.max_hp if _hero != null else 100,
-			"enemy_max_hp": 100,
+			"enemy_max_hp": enemy_max_hp,
 			"hero_final_hp": battle_result.get("hero_remaining_hp", _hero.current_hp if _hero != null else 100),
-			"enemy_final_hp": 0 if battle_result.get("winner", "") == "player" else 100,
+			"enemy_final_hp": 0 if battle_result.get("winner", "") == "player" else enemy_max_hp,
 			"rounds": battle_result.get("turns_elapsed", 1),
 			"log": result.get("log", ""),
 			"winner": battle_result.get("winner", "player"),
@@ -717,24 +734,25 @@ func _check_hero_unlocks() -> void:
 
 
 func _save_at_floor_entrance() -> void:
-	## 层入口存档：包含当前层的选项（种子模式，确保SL后选项不变）
-	if SaveManager != null and _run != null:
-		var data = _run.to_dict()
-		data["hero"] = _hero.to_dict() if _hero != null else {}
-		data["partners"] = _get_partner_dicts()
-		data["gold"] = _run.gold_owned
-		data["node_options"] = _current_node_options.duplicate(true)
-		
-		# 额外跨局字段
-		var player_data = SaveManager.load_player_data()
-		data["pvp_net_wins"] = player_data.get("net_wins", 0)
-		data["mocheng_coin"] = player_data.get("mocheng_coin", 0)
+	## 层入口存档：使用独立数据层 RunSaveData，与 RuntimeRun/RuntimeHero 解耦
+	if SaveManager != null and _run != null and _hero != null:
 		var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+		var forecast_charges: int = 0
 		if forecast_system != null:
-			data["event_forecast_charges"] = forecast_system.get_charges()
+			forecast_charges = forecast_system.get_charges()
 		
-		SaveManager.save_run_state(data, true)
-		print("[RunController] 层入口存档: 第%d层, 选项数=%d" % [_run.current_turn, _current_node_options.size()])
+		var save_data: Dictionary = RunSaveData.from_runtime(
+			_run, _hero,
+			_character_manager.get_partners(),
+			_current_node_options,
+			forecast_charges,
+			_special_floor_phase
+		)
+		
+		SaveManager.save_run_state(save_data, true)
+		print("[RunController] 层入口存档: 第%d层, 选项数=%d, 版本=%d" % [
+			save_data.get("current_floor", 0), _current_node_options.size(), save_data.get("version", 0)
+		])
 
 
 func _auto_save() -> void:

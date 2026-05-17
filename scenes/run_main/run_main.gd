@@ -76,6 +76,7 @@ var _selected_rescue_partner_id: int = -1
 var _combat_selected_index: int = -1
 var _pending_battle_result: Dictionary = {}
 var _cached_node_options: Array = []
+var _cached_enemy_data: Dictionary = {}
 
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
@@ -284,13 +285,26 @@ func _show_combat_preview(opt: Dictionary, index: int) -> void:
 	
 	# 显示敌人剪影预览（半透明）
 	var enemy_cfg: Dictionary = opt.get("enemy_config", {})
+	if enemy_cfg.is_empty() and not _cached_enemy_data.is_empty():
+		enemy_cfg = _cached_enemy_data
+	
 	if not enemy_cfg.is_empty():
 		enemy_info_panel.visible = true
 		enemy_info_panel.modulate = Color(1, 1, 1, 0.6)  # 半透明
-		enemy_name_label.text = "敌人: %s" % enemy_cfg.get("name", "???")
+		## 复用 update_enemy_info 显示基础信息
+		update_enemy_info(enemy_cfg)
+		## 剪影模式：隐藏具体 HP，显示 ???
 		enemy_hp_label.text = "HP: ???"
 		predicted_damage_label.text = ""
-		risk_label.text = ""
+		
+		## 补充风险预测
+		var hero_stats: Dictionary = _get_current_hero_stats()
+		var prediction: Dictionary = DamagePredictor.predict_battle_outcome(
+			_get_current_hero_hp(), hero_stats, enemy_cfg
+		)
+		var risk: String = prediction.get("risk_level", "unknown")
+		risk_label.text = DamagePredictor.get_risk_display_text(risk)
+		risk_label.modulate = DamagePredictor.get_risk_color(risk)
 	else:
 		enemy_info_panel.visible = false
 	
@@ -308,11 +322,7 @@ func _on_combat_confirmed() -> void:
 	enemy_info_panel.visible = false
 	battle_summary_panel.visible = false  # 确保结算面板隐藏
 	
-	# 先进入战斗画面（空状态）
-	battle_animation_panel.reset_panel()
-	_show_modal_panel(battle_animation_panel)
-	
-	# 再执行战斗
+	# 执行战斗（战斗面板由 _on_battle_ended 统一打开）
 	if _combat_selected_index >= 0:
 		_run_controller.select_node(_combat_selected_index)
 		_combat_selected_index = -1
@@ -450,6 +460,7 @@ func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
 func _on_panel_closed(_panel_name: String, _close_reason: String) -> void:
 	# 面板关闭后回到选项状态
 	_transition_ui_state(UISceneState.OPTION_SELECT)
+	_update_hud()
 
 
 func _on_training_completed(_attr_code: int, attr_name: String, gain_value: int, new_total: int, proficiency_stage: String, bonus_applied: int) -> void:
@@ -598,36 +609,50 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		battle_result.get("winner", "???"),
 		battle_result.get("turns_elapsed", 0)
 	])
-	# ❌ 删除这行：_update_hud()
 	# HUD 在结算确认后再统一更新！
 	_pending_battle_result = battle_result
+	
+	# 补充 sprite_path（爬塔/PVP 统一）
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var runtime_hero: Dictionary = summary.get("hero", {})
+	var hero_config_id: int = runtime_hero.get("hero_config_id", 0)
+	var hero_sprite_path: String = ConfigManager.get_hero_sprite_path(hero_config_id)
+	battle_result["hero_sprite_path"] = hero_sprite_path
+	
+	var enemies_arr: Array = battle_result.get("enemies", [{}])
+	var enemy_data_for_sprite: Dictionary = enemies_arr[0] if enemies_arr.size() > 0 else {}
+	var enemy_sprite_path: String = enemy_data_for_sprite.get("sprite_path", "")
+	## fallback：如果 enemy_data 没有，再查 ConfigManager
+	if enemy_sprite_path.is_empty():
+		var enemy_config_id: int = enemy_data_for_sprite.get("config_id", 2001)
+		enemy_sprite_path = ConfigManager.get_enemy_sprite_path(enemy_config_id)
+	battle_result["enemy_sprite_path"] = enemy_sprite_path
 	
 	var recorder = battle_result.get("playback_recorder", null)
 	if recorder != null and recorder.get_events().size() > 0:
 		var hero_data = battle_result.get("hero", {})
-		var enemy_data = battle_result.get("enemies", [{}])[0]
+		var enemies: Array = battle_result.get("enemies", [{}])
+		var enemy_data: Dictionary = enemies[0] if enemies.size() > 0 else {}
 		var hero_name = hero_data.get("name", "英雄")
 		var enemy_name = enemy_data.get("name", "敌人")
 		var hero_max_hp = hero_data.get("max_hp", 100)
 		var enemy_max_hp = enemy_data.get("max_hp", 100)
+		var turns_elapsed = battle_result.get("turns_elapsed", 0)
+		var hero_start_hp = hero_data.get("hp", hero_max_hp)
+		var enemy_start_hp = enemy_data.get("hp", enemy_max_hp)
 		
-		# battle_animation_panel 已经在 _on_combat_confirmed 里显示了
-		# 直接设置播放参数
-		# 根据英雄配置ID加载对应sprite
-		var hero_sprite_path: String = ""
-		var summary: Dictionary = _run_controller.get_current_run_summary()
-		var runtime_hero: Dictionary = summary.get("hero", {})
-		var hero_config_id: int = runtime_hero.get("hero_config_id", 0)
-		match hero_config_id:
-			2:
-				hero_sprite_path = "res://assets/characters/shinobi/hero_frames.tres"
+		battle_animation_panel.reset_panel()
+		_show_modal_panel(battle_animation_panel)
 		
-		# battle_animation_panel 已经在 _on_combat_confirmed 里显示了
-		# 直接设置播放参数
 		battle_animation_panel.start_playback(
-			recorder, hero_name, enemy_name, hero_max_hp, enemy_max_hp, [], [],
-			battle_result.get("turns_elapsed", 0),
-			hero_sprite_path, ""
+			recorder, hero_name, enemy_name,
+			hero_max_hp, enemy_max_hp,
+			[], [],
+			turns_elapsed,
+			hero_start_hp,
+			enemy_start_hp,
+			battle_result.get("hero_sprite_path", ""),
+			battle_result.get("enemy_sprite_path", "")
 		)
 		
 		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
@@ -746,10 +771,13 @@ func _on_return_main_menu() -> void:
 
 
 func _on_enemy_encountered(enemy_data: Dictionary) -> void:
-	update_enemy_info(enemy_data)
+	## 只缓存数据，不直接显示面板（默认界面不承载怪物信息）
+	_cached_enemy_data = enemy_data.duplicate()
+	print("[RunMain] 缓存敌人数据: %s" % enemy_data.get("name", "???"))
 
 
 func update_enemy_info(enemy_data: Dictionary) -> void:
+	## 此函数保留供 CombatConfirmPanel / BattleAnimationPanel 显式调用
 	enemy_info_panel.visible = true
 	enemy_name_label.text = "敌人: %s" % enemy_data.get("name", "???")
 	var max_hp: int = enemy_data.get("max_hp", 0)
@@ -757,73 +785,6 @@ func update_enemy_info(enemy_data: Dictionary) -> void:
 	enemy_hp_label.text = "HP: %d/%d" % [current_hp, max_hp]
 	var estimated_damage: int = enemy_data.get("estimated_damage", 0)
 	predicted_damage_label.text = "预计损失血量: %d" % estimated_damage
-
-
-## v2: 更新怪物信息和预计损失血量
-func _update_monster_info(node_options: Array) -> void:
-	## 查找包含敌人信息的节点
-	var has_enemy: bool = false
-	var enemy_name: String = "???"
-	var enemy_hp: int = 0
-	var enemy_stats: Dictionary = {}
-
-	for opt in node_options:
-		var raw_type = opt.get("node_type", 0)
-		var node_type: int
-		if raw_type is String:
-			node_type = int(raw_type)
-		else:
-			node_type = int(raw_type)
-		## 战斗节点: 普通战斗(2), 精英(3), 终局(7)
-		if node_type == 2 or node_type == 3 or node_type == 7:
-			has_enemy = true
-			var enemy_cfg: Dictionary = opt.get("enemy_config", {})
-			if enemy_cfg.is_empty():
-				enemy_cfg = _fetch_enemy_config_for_option(opt)
-			enemy_name = enemy_cfg.get("name", "???")
-			enemy_hp = maxi(0, enemy_cfg.get("hp", enemy_cfg.get("max_hp", 100)))
-			enemy_stats = enemy_cfg
-			break
-
-	if not has_enemy:
-		enemy_info_panel.visible = false
-		return
-
-	enemy_info_panel.visible = true
-	enemy_name_label.text = "敌人: %s" % enemy_name
-	enemy_hp_label.text = "HP: %d" % enemy_hp
-
-	## v2: 计算预计损失血量
-	if enemy_stats.is_empty():
-		enemy_info_panel.visible = false
-		return
-	var hero_stats: Dictionary = _get_current_hero_stats()
-	var prediction: Dictionary = DamagePredictor.predict_battle_outcome(
-		_get_current_hero_hp(), hero_stats, enemy_stats
-	)
-
-	predicted_damage_label.text = "预计损失: %d/击" % prediction.get("per_hit", 0)
-	var risk: String = prediction.get("risk_level", "unknown")
-	risk_label.text = DamagePredictor.get_risk_display_text(risk)
-	risk_label.modulate = DamagePredictor.get_risk_color(risk)
-
-
-## 从节点选项获取敌人配置
-func _fetch_enemy_config_for_option(opt: Dictionary) -> Dictionary:
-	var enemy_id: String = ""
-	var node_type: int = opt.get("node_type", 0)
-
-	match node_type:
-		2: ## 普通战斗
-			enemy_id = opt.get("enemy_config_id", "")
-		3: ## 精英战
-			enemy_id = opt.get("enemy_config_id", "")
-		7: ## 终局战
-			enemy_id = opt.get("enemy_config_id", "")
-
-	if enemy_id.is_empty():
-		return {}
-	return ConfigManager.get_enemy_config(enemy_id)
 
 
 ## 获取当前主角属性

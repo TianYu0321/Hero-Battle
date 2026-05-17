@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://dw6ddn1q4g3yy"]
-
-[ext_resource type="Script" path="res://scenes/test/test_pvp_real.gd" id="1_pvpr1"]
-
-[node name="TestPvpReal" type="Node2D" unique_id=1365181903]
-script = ExtResource("1_pvpr1")

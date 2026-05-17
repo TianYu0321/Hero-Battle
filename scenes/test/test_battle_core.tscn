@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://bhqym35i1p71q"]
-
-[ext_resource type="Script" uid="uid://d2ntmugf0fchg" path="res://scripts/core/test_battle_core.gd" id="1_abc12"]
-
-[node name="TestBattleCore" type="Node2D" unique_id=2073193224]
-script = ExtResource("1_abc12")

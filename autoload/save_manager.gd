@@ -31,13 +31,8 @@ func _ensure_save_dir() -> void:
 func save_run_state(run_data: Dictionary, is_auto: bool = true, slot_id: int = 1, user_id: String = current_user_id) -> bool:
 	var file_path: String = ConfigManager.SAVE_DIR + "%s_save_%03d.json" % [user_id, slot_id]
 	
-	# 使用 RunSnapshot 统一存档格式，同时保留原始数据中的额外字段（如 node_options）
-	var snapshot = RunSnapshot.from_dict(run_data)
-	var data: Dictionary = snapshot.to_dict()
-	# 合并原始数据中的额外字段（RunSnapshot 未覆盖的字段）
-	for key in run_data.keys():
-		if not data.has(key):
-			data[key] = run_data[key]
+	# RunSaveData 已在 run_controller.gd 中构造完成，直接保存
+	var data: Dictionary = run_data.duplicate(true)
 	data["timestamp"] = Time.get_unix_time_from_system()
 	data["is_auto_save"] = is_auto
 

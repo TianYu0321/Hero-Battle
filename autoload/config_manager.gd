@@ -124,6 +124,45 @@ const _PARTNER_ID_MAP: Dictionary = {
 	"1006": "partner_hunter",
 }
 
+# --- 精灵图路径配置 ---
+const HERO_SPRITE_PATHS: Dictionary = {
+	1: "res://assets/characters/warrior/hero_frames.tres",
+	2: "res://assets/characters/shinobi/hero_frames.tres",
+	3: "res://assets/characters/paladin/hero_frames.tres",
+}
+
+const ENEMY_SPRITE_PATHS: Dictionary = {
+	2001: "res://assets/characters/enemies/enemy_2001_frames.tres",
+	2002: "res://assets/characters/enemies/enemy_2002_frames.tres",
+	2003: "res://assets/characters/enemies/enemy_2003_frames.tres",
+	2004: "res://assets/characters/enemies/enemy_2004_frames.tres",
+	2005: "res://assets/characters/enemies/enemy_2005_frames.tres",
+}
+
+const DEFAULT_HERO_SPRITE: String = "res://assets/characters/default_hero_frames.tres"
+const DEFAULT_ENEMY_SPRITE: String = "res://assets/characters/enemies/default_enemy_frames.tres"
+
+## 获取英雄精灵图路径
+static func get_hero_sprite_path(hero_config_id: int) -> String:
+	return HERO_SPRITE_PATHS.get(hero_config_id, DEFAULT_HERO_SPRITE)
+
+## 获取敌人精灵图路径
+static func get_enemy_sprite_path(enemy_config_id: int) -> String:
+	return ENEMY_SPRITE_PATHS.get(enemy_config_id, DEFAULT_ENEMY_SPRITE)
+
+## 获取精灵图动画帧配置
+static func get_sprite_anim_config(_path: String) -> Dictionary:
+	return {
+		"hframes": 4,
+		"vframes": 4,
+		"animations": {
+			"idle": [0, 1, 2, 3],
+			"attack_1": [4, 5, 6, 7],
+			"hurt": [8, 9, 10, 11],
+			"dead": [12, 13, 14, 15],
+		}
+	}
+
 # --- Fallback 数据 ---
 const _FALLBACK_HERO_CONFIGS: Dictionary = {
 	"hero_warrior": {
@@ -230,6 +269,14 @@ func _load_all_configs() -> void:
 	var support_raw: Dictionary = _load_json_safe("res://resources/configs/partner_support_configs.json", {})
 	_partner_support_configs = support_raw.get("entries", {})
 	_final_boss_configs = _load_json_safe("res://resources/configs/final_boss_configs.json", {})
+	
+	## 为所有敌人配置自动注入精灵图路径
+	for enemy_id in _enemy_configs.keys():
+		var cfg: Dictionary = _enemy_configs[enemy_id]
+		if not cfg.has("sprite_path"):
+			var eid: int = cfg.get("id", int(enemy_id))
+			cfg["sprite_path"] = get_enemy_sprite_path(eid)
+	
 	push_warning("[ConfigManager] Configs loaded. H:%d P:%d S:%d E:%d F:%d A:%d PVP:%d Shop:%d Node:%d Score:%d Support:%d" % [_hero_configs.size(), _partner_configs.size(), _skill_configs.size(), _enemy_configs.size(), _formula_configs.size(), _partner_assist_configs.size(), _pvp_opponent_configs.size(), _shop_configs.size(), _node_configs.size(), _scoring_configs.size(), _partner_support_configs.size()])
 
 static func _load_json_safe(file_path: String, fallback: Dictionary = {}) -> Dictionary:
@@ -320,7 +367,12 @@ func get_enemy_config(enemy_id: String) -> Dictionary:
 	if not _enemy_configs.has(enemy_id):
 		push_warning("[ConfigManager] enemy_id not found: %s" % enemy_id)
 		return {}
-	return _enemy_configs[enemy_id]
+	var cfg: Dictionary = _enemy_configs[enemy_id].duplicate()
+	## 自动注入精灵图路径（如果没有显式配置）
+	if not cfg.has("sprite_path"):
+		var eid: int = cfg.get("id", int(enemy_id))
+		cfg["sprite_path"] = get_enemy_sprite_path(eid)
+	return cfg
 
 
 func get_all_enemy_configs() -> Dictionary:

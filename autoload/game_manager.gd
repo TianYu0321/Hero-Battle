@@ -164,7 +164,9 @@ func _on_continue_game_requested() -> void:
 		push_warning("[GameManager] 存档数据无效，无法继续")
 		return
 	pending_save_data = save_data.duplicate()
-	selected_hero_config_id = save_data.get("hero_config_id", 0)
+	# 从 RunSaveData 结构读取（hero.config_id 或旧版 hero_config_id）
+	var hero_data: Dictionary = save_data.get("hero", {})
+	selected_hero_config_id = hero_data.get("config_id", save_data.get("hero_config_id", 0))
 	selected_partner_config_ids.clear()
 	for p in save_data.get("partners", []):
 		selected_partner_config_ids.append(p.get("config_id", p.get("partner_config_id", 0)))

@@ -1,0 +1,120 @@
+{
+  "background": {
+    "texture_path": "res://assets/backgrounds/menu_bg.png",
+    "stretch_mode": "keep_aspect",
+    "camera_breath": {
+      "enabled": true,
+      "pivot_offset": [960, 540],
+      "primary": {
+        "scale_min": [1.0, 1.0],
+        "scale_max": [1.025, 1.025],
+        "cycle_seconds": 7.0,
+        "trans": "sine",
+        "ease": "in_out"
+      },
+      "secondary": {
+        "scale_delta": 0.004,
+        "cycle_seconds": 2.1,
+        "trans": "sine",
+        "ease": "in_out"
+      },
+      "jitter": {
+        "enabled": true,
+        "intensity_degrees": 0.15,
+        "interval_min": 3.0,
+        "interval_max": 8.0,
+        "duration": 0.4,
+        "trans": "quad",
+        "ease": "out"
+      }
+    }
+  },
+  "rain": {
+    "enabled": true,
+    "near": {
+      "position": [960, -100],
+      "amount": 300,
+      "lifetime": 1.2,
+      "preprocess": 2.0,
+      "visibility_rect": [-200, -200, 2240, 1480],
+      "emission_box_extents": [1200, 10, 1],
+      "direction": [0.15, 1, 0],
+      "spread": 2.0,
+      "velocity_min": 500.0,
+      "velocity_max": 700.0,
+      "gravity": [0, 800, 0],
+      "scale_min": 1.0,
+      "scale_max": 2.0,
+      "color": [0.55, 0.65, 0.75, 0.35],
+      "drop_gradient_colors": [[1, 1, 1, 0.6], [1, 1, 1, 0]],
+      "drop_width": 2,
+      "drop_height": 24,
+      "drop_fill_from": [0.5, 0],
+      "drop_fill_to": [0.5, 1]
+    },
+    "far": {
+      "position": [960, -50],
+      "amount": 400,
+      "lifetime": 2.0,
+      "preprocess": 3.0,
+      "visibility_rect": [-200, -200, 2240, 1480],
+      "emission_box_extents": [1400, 10, 1],
+      "direction": [0.1, 1, 0],
+      "spread": 5.0,
+      "velocity_min": 300.0,
+      "velocity_max": 450.0,
+      "gravity": [0, 500, 0],
+      "scale_min": 0.5,
+      "scale_max": 1.0,
+      "color": [0.45, 0.50, 0.60, 0.15],
+      "drop_gradient_colors": [[1, 1, 1, 0.3], [1, 1, 1, 0]],
+      "drop_width": 1,
+      "drop_height": 16,
+      "drop_fill_from": [0.5, 0],
+      "drop_fill_to": [0.5, 1]
+    }
+  },
+  "floor_light": {
+    "enabled": true,
+    "anchor_top": 0.75,
+    "color": [0.90, 0.75, 0.35, 0.05],
+    "color_warm": [0.92, 0.70, 0.30, 0.06],
+    "color_cool": [0.82, 0.78, 0.45, 0.04],
+    "pulse_alpha_min": 0.03,
+    "pulse_alpha_max": 0.14,
+    "hold_peak_seconds": 0.6,
+    "fade_in_seconds": 2.2,
+    "fade_out_seconds": 2.8,
+    "trans_in": "cubic",
+    "ease_in": "out",
+    "trans_out": "sine",
+    "ease_out": "in"
+  },
+  "character": {
+    "enabled": false,
+    "sprite_path": "",
+    "position": [1400, 540],
+    "scale": 0.8,
+    "float": {
+      "range": 5,
+      "cycle_seconds": 4.5,
+      "trans": "sine",
+      "ease": "in_out"
+    },
+    "breath": {
+      "scale_min": 0.785,
+      "scale_max": 0.815,
+      "cycle_seconds": 3.2,
+      "overshoot": 0.003,
+      "trans": "back",
+      "ease": "in_out"
+    },
+    "shadow": {
+      "alpha_min": 0.25,
+      "alpha_max": 0.40,
+      "cycle_seconds": 3.2,
+      "trans": "sine",
+      "ease": "in_out"
+    }
+  }
+}

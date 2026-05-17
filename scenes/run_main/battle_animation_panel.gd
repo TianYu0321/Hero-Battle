@@ -42,11 +42,8 @@ var _events_by_turn: Dictionary = {}
 var _turn_keys: Array = []
 var _event_tween: Tween = null
 
-# 摘要模拟模式
+# 总回合数（由 recorder 真实事件决定）
 var _sim_total_rounds: int = 0
-var _sim_hero_final_hp: int = 0
-var _sim_enemy_final_hp: int = 0
-var _sim_victory: bool = false
 
 # 狂暴阶段
 var _is_frenzy_active: bool = false
@@ -126,6 +123,8 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 					hero_max_hp: int, enemy_max_hp: int,
 					_hero_partners: Array, _enemy_partners: Array,
 					total_rounds: int = 0,
+					hero_start_hp: int = -1,
+					enemy_start_hp: int = -1,
 					hero_sprite_path: String = "",
 					enemy_sprite_path: String = "") -> void:
 	_playback_generation += 1
@@ -140,24 +139,24 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 	var _real_max_turn: int = 0
 	
 	if _recorder != null and _recorder.has_method("get_events_by_turn"):
-		_events_by_turn = _recorder.get_events_by_turn()
-		_turn_keys = _events_by_turn.keys()
-		for t in _turn_keys:
-			_real_max_turn = maxi(_real_max_turn, int(t))
+		var raw_events: Dictionary = _recorder.get_events_by_turn()
+		_events_by_turn = {}
+		_turn_keys = []
+		_real_max_turn = 0
+		for k in raw_events.keys():
+			var ik: int = int(k)
+			_events_by_turn[ik] = raw_events[k]
+			_turn_keys.append(ik)
+			_real_max_turn = maxi(_real_max_turn, ik)
+		_turn_keys.sort()
 	
-	# 使用传入的 total_rounds 作为真实回合数保底
-	var effective_rounds: int = total_rounds
-	if effective_rounds <= 0:
-		effective_rounds = maxi(_real_max_turn, 3)
-	
-	_sim_total_rounds = effective_rounds
+	# 关键修改：用 recorder 真实回合数，不用传入的 total_rounds
+	_sim_total_rounds = maxi(_real_max_turn, 1)
 	
 	_hero_max_hp = maxi(1, hero_max_hp)
-	_hero_hp = _hero_max_hp
+	_hero_hp = hero_start_hp if hero_start_hp >= 0 else _hero_max_hp
 	_enemy_max_hp = maxi(1, enemy_max_hp)
-	_enemy_hp = _enemy_max_hp
-	_sim_hero_final_hp = _hero_hp
-	_sim_enemy_final_hp = _enemy_hp
+	_enemy_hp = enemy_start_hp if enemy_start_hp >= 0 else _enemy_max_hp
 	_current_round = 0
 	
 	hero_name_label.text = hero_name
@@ -186,65 +185,8 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
 	
 	print("[BattleAnimation] 回放开始: gen=%d, 真实%d回合, recorder有效=%s" % [
-		_playback_generation, effective_rounds, _real_max_turn > 0
+		_playback_generation, _sim_total_rounds, _real_max_turn > 0
 	])
-	_clear_damage_numbers()
-	_play_next_turn()
-
-# === 模式B：摘要模拟（爬塔用） ===
-
-func start_battle(battle_result: Dictionary) -> void:
-	_playback_generation += 1
-	_result_emitted = false
-	_is_frenzy_active = false
-	_is_playing = true
-	visible = true
-	
-	_recorder = null
-	_events_by_turn = {}
-	_turn_keys = []
-	
-	_hero_max_hp = maxi(1, battle_result.get("hero_max_hp", 100))
-	_hero_hp = clampi(battle_result.get("hero_hp", _hero_max_hp), 0, _hero_max_hp)
-	_enemy_max_hp = maxi(1, battle_result.get("enemy_max_hp", 100))
-	_enemy_hp = clampi(battle_result.get("enemy_hp", _enemy_max_hp), 0, _enemy_max_hp)
-	
-	_sim_total_rounds = maxi(1, battle_result.get("total_rounds", 1))
-	_sim_hero_final_hp = _hero_hp
-	_sim_enemy_final_hp = _enemy_hp
-	_sim_victory = battle_result.get("victory", true)
-	
-	var hero_name: String = battle_result.get("hero_name", "英雄")
-	var enemy_name: String = battle_result.get("enemy_name", "???")
-	var stage_name: String = battle_result.get("stage_name", "深渊斗技场")
-	
-	hero_name_label.text = hero_name
-	enemy_name_label.text = enemy_name
-	stage_name_label.text = stage_name
-	
-	hero_art.visible = true
-	enemy_art.visible = true
-	_load_sprite(hero_art, battle_result.get("hero_sprite_path", ""))
-	_load_sprite(enemy_art, battle_result.get("enemy_sprite_path", ""))
-	
-	_update_hp_display()
-	_apply_hp_bar_colors()
-	
-	# 开场HP检查：负数/零HP直接结算，避免空Tween卡死
-	if _hero_hp <= 0 or _enemy_hp <= 0:
-		battle_log.text = ""
-		if _hero_hp <= 0:
-			battle_log.append_text("[color=#D93826]%s 体力不支，无法战斗！[/color]\n" % hero_name_label.text)
-		else:
-			battle_log.append_text("[color=#5A8FD0]%s 已被击败！[/color]\n" % enemy_name_label.text)
-		_show_result()
-		return
-	
-	battle_log.text = ""
-	battle_log.append_text("[color=#E6C040]战斗开始！[/color]\n")
-	
-	_current_round = 0
-	print("[BattleAnimation] 模拟开始: gen=%d, %d回合" % [_playback_generation, _sim_total_rounds])
 	_clear_damage_numbers()
 	_play_next_turn()
 
@@ -285,8 +227,7 @@ func _play_next_turn() -> void:
 		else:
 			turn_timer.start(1.0)
 	else:
-		_generate_simulated_turn()
-		_update_hp_display()
+		# 无事件，等 timer 推进
 		turn_timer.start(1.0)
 
 func _safe_process_event(evt: Dictionary) -> void:
@@ -426,74 +367,6 @@ func _process_event(evt: Dictionary) -> void:
 			round_label.modulate = Color(1, 0.2, 0.2)
 			_update_hp_display()
 			AudioManager.play_sfx("frenzy_alert")
-func _generate_simulated_turn() -> void:
-	var progress: float = float(_current_round) / float(max(_sim_total_rounds, 3))
-	
-	# 英雄行动
-	var hero_target_hp: int = int(lerpf(_enemy_max_hp, _sim_enemy_final_hp, progress))
-	var hero_dmg: int = maxi(0, _enemy_hp - hero_target_hp)
-	if hero_dmg > 0 and _enemy_hp > 0:
-		var is_crit: bool = randf() < 0.15
-		var is_miss: bool = randf() < 0.10
-		if is_miss:
-			battle_log.append_text("[color=#73737A]  %s → %s 闪避[/color]\n" % [hero_name_label.text, enemy_name_label.text])
-			AudioManager.play_sfx("miss")
-		elif is_crit:
-			battle_log.append_text("[color=#F28A3E]  %s → %s 暴击 %d！[/color]\n" % [hero_name_label.text, enemy_name_label.text, hero_dmg * 2])
-			_enemy_hp = maxi(0, _enemy_hp - hero_dmg * 2)
-			AudioManager.play_sfx("crit")
-		else:
-			battle_log.append_text("  %s → %s %d\n" % [hero_name_label.text, enemy_name_label.text, hero_dmg])
-			_enemy_hp = maxi(0, _enemy_hp - hero_dmg)
-			AudioManager.play_sfx("attack")
-		
-			
-			# 受击特效
-			VFX.flash_white(enemy_art, 0.1)
-			VFX.screen_shake(5.0, 0.1)
-			VFX.spawn_damage_number(enemy_art.global_position, hero_dmg, is_crit)
-			
-			if is_crit:
-				VFX.critical_hit(enemy_art.global_position)
-				VFX.freeze_frame(0.08, 0.05)
-			
-			# 敌人受击动画
-			_play_anim(enemy_art, "hurt")
-			
-			if _enemy_hp <= 0:
-				battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % enemy_name_label.text)
-				_play_anim(enemy_art, "dead")
-				_death_flash(false)
-				AudioManager.play_sfx("defeat")
-	
-	# 敌人行动
-	if _current_round < maxi(_sim_total_rounds, 3) and _hero_hp > 0 and _enemy_hp > 0:
-		var enemy_target_hp: int = int(lerpf(_hero_max_hp, _sim_hero_final_hp, progress))
-		var enemy_dmg: int = maxi(0, _hero_hp - enemy_target_hp)
-		if enemy_dmg > 0:
-			var is_miss: bool = randf() < 0.10
-			if is_miss:
-				battle_log.append_text("[color=#73737A]  %s → %s 闪避[/color]\n" % [enemy_name_label.text, hero_name_label.text])
-				AudioManager.play_sfx("miss")
-			else:
-				battle_log.append_text("  %s → %s %d\n" % [enemy_name_label.text, hero_name_label.text, enemy_dmg])
-				_hero_hp = maxi(0, _hero_hp - enemy_dmg)
-				AudioManager.play_sfx("attack")
-			
-				# 受击特效
-				VFX.flash_white(hero_art, 0.1)
-				VFX.screen_shake(5.0, 0.1)
-				VFX.spawn_damage_number(hero_art.global_position, enemy_dmg, false)
-				
-				# 英雄受击动画
-				_play_anim(hero_art, "hurt")
-				
-				if _hero_hp <= 0:
-					battle_log.append_text("[color=#D93826]  %s 被击败！[/color]\n" % hero_name_label.text)
-					_play_anim(hero_art, "dead")
-					_death_flash(true)
-					AudioManager.play_sfx("defeat")
-
 func _apply_hp_bar_colors() -> void:
 	hero_hp_bar.add_theme_color_override("theme_fg", COL_BLUE_MAIN)
 	hero_hp_bar.add_theme_color_override("theme_bg", COL_BLUE_DEEP)
@@ -502,13 +375,31 @@ func _apply_hp_bar_colors() -> void:
 
 func _load_sprite(animated_sprite: AnimatedSprite2D, path: String) -> void:
 	if path.is_empty():
+		_set_placeholder_sprite(animated_sprite, animated_sprite.name.contains("Hero"))
 		return
 	var frames: Resource = load(path)
 	if frames == null or not frames is SpriteFrames:
-		push_warning("[BattleAnimation] 无法加载 SpriteFrames: %s" % path)
+		push_warning("[BattleAnimation] 无法加载 SpriteFrames: %s，使用占位" % path)
+		_set_placeholder_sprite(animated_sprite, animated_sprite.name.contains("Hero"))
 		return
 	animated_sprite.sprite_frames = frames
 	animated_sprite.autoplay = "idle"
+	animated_sprite.play("idle")
+
+func _set_placeholder_sprite(animated_sprite: AnimatedSprite2D, is_hero: bool) -> void:
+	## 占位：创建一个简单的纯色 AnimatedSprite2D（1帧）
+	var placeholder: SpriteFrames = SpriteFrames.new()
+	var texture := GradientTexture2D.new()
+	texture.gradient = Gradient.new()
+	if is_hero:
+		texture.gradient.colors = [Color("#4ECDC4"), Color("#2B6B5E")]
+	else:
+		texture.gradient.colors = [Color("#FF6B6B"), Color("#8B2E2E")]
+	texture.width = 128
+	texture.height = 128
+	placeholder.add_animation("idle")
+	placeholder.add_frame("idle", texture)
+	animated_sprite.sprite_frames = placeholder
 	animated_sprite.play("idle")
 
 func _play_anim(animated_sprite: AnimatedSprite2D, action: String) -> void:
@@ -551,10 +442,6 @@ func _show_result() -> void:
 	if _result_emitted:
 		return
 	_result_emitted = true
-	
-	if _turn_keys.size() == 0:
-		_hero_hp = _sim_hero_final_hp
-		_enemy_hp = _sim_enemy_final_hp
 	
 	_update_hp_display()
 	
