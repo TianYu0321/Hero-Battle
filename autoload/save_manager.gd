@@ -353,6 +353,8 @@ func load_player_data(user_id: String = current_user_id) -> Dictionary:
 			data = _create_default_player_data()
 	if not data.has("unlocked_heroes"):
 		data["unlocked_heroes"] = ["hero_warrior"]
+	if not data.has("hero_best_scores"):
+		data["hero_best_scores"] = {}
 	return data
 
 func save_player_data(data: Dictionary, user_id: String = current_user_id) -> void:
@@ -367,6 +369,7 @@ func _create_default_player_data() -> Dictionary:
 		"mocheng_coin": 0,
 		"unlocked_partners": [],
 		"unlocked_heroes": ["hero_warrior"],
+		"hero_best_scores": {},
 		"net_wins": 0,
 		"total_wins": 0,
 		"total_losses": 0,

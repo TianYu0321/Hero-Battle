@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 [ext_resource type="PackedScene" path="res://scenes/leaderboard/leaderboard_panel.tscn" id="3_lbp"]
 [ext_resource type="PackedScene" path="res://scenes/shop/shop_popup.tscn" id="4_sp"]
-[ext_resource type="Texture2D" path="res://assets/backgrounds/menu_bg.png" id="5_bg"]
+[ext_resource type="Texture2D" uid="uid://dv1iyaf152ymf" path="res://assets/backgrounds/menu_bg.png" id="5_bg"]
 
 [node name="MainMenu" type="Control" unique_id=1795506737]
 layout_mode = 3
@@ -15,37 +15,53 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_menu")
 
-[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+[node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=89529031]
 layer = 0
 
-[node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer"]
-layout_mode = 1
+[node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer" unique_id=696752317]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture = ExtResource("5_bg")
 expand_mode = 1
 stretch_mode = 4
-texture = ExtResource("5_bg")
 
-[node name="FloorLightOverlay" type="ColorRect" parent="BackgroundLayer"]
-layout_mode = 1
-anchors_preset = 7
+[node name="FloorLightOverlay" type="ColorRect" parent="BackgroundLayer" unique_id=246728889]
+anchors_preset = -1
+anchor_left = 0.5
 anchor_top = 0.75
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.90, 0.75, 0.35, 0.05)
+color = Color(0.9, 0.75, 0.35, 0.05)
 
-[node name="RainParent" type="Node2D" parent="BackgroundLayer"]
-position = Vector2(960, -100)
+[node name="FogSprite" type="Sprite2D" parent="BackgroundLayer" unique_id=1984828905]
+position = Vector2(640, 360)
 
-[node name="CharacterLayer" type="CanvasLayer" parent="."]
-layer = 1
+[node name="LeftHandGlow" type="Sprite2D" parent="BackgroundLayer" unique_id=1984828906]
+position = Vector2(253, 480)
 
-[node name="TitleLabel" type="Label" parent="." unique_id=1691243069]
+[node name="LeftHandParticles" type="GPUParticles2D" parent="BackgroundLayer" unique_id=1984828907]
+position = Vector2(253, 480)
+
+[node name="TowerGlow1" type="Sprite2D" parent="BackgroundLayer" unique_id=1984828908]
+position = Vector2(920, 147)
+
+[node name="TowerGlow2" type="Sprite2D" parent="BackgroundLayer" unique_id=1984828909]
+position = Vector2(900, 200)
+
+[node name="TowerGlow3" type="Sprite2D" parent="BackgroundLayer" unique_id=1984828910]
+position = Vector2(940, 240)
+
+[node name="CharacterLayer" type="CanvasLayer" parent="." unique_id=1760655318]
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="TitleLabel" type="Label" parent="UILayer" unique_id=1691243069]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -60,7 +76,7 @@ text = "赛马娘版Q宠大乐斗"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="MenuButtons" type="VBoxContainer" parent="." unique_id=535879365]
+[node name="MenuButtons" type="VBoxContainer" parent="UILayer" unique_id=535879365]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -117,7 +133,8 @@ custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "排行榜"
 
-[node name="MenuButton" type="Button" parent="." unique_id=2024501554]
+[node name="MenuButton" type="Button" parent="UILayer" unique_id=2024501554]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -131,7 +148,7 @@ text = "设置"
 
 [node name="PauseMenu" parent="." unique_id=128202323 instance=ExtResource("2_pause")]
 
-[node name="PVPHintLabel" type="Label" parent="." unique_id=62247608]
+[node name="PVPHintLabel" type="Label" parent="UILayer" unique_id=62247608]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -146,15 +163,15 @@ theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LeaderboardPanel" parent="." unique_id=1817026908 instance=ExtResource("3_lbp")]
+[node name="LeaderboardPanel" parent="UILayer" unique_id=1817026908 instance=ExtResource("3_lbp")]
 visible = false
 layout_mode = 1
 
-[node name="ShopPopup" parent="." unique_id=1226683992 instance=ExtResource("4_sp")]
+[node name="ShopPopup" parent="UILayer" unique_id=1226683992 instance=ExtResource("4_sp")]
 visible = false
 layout_mode = 1
 
-[node name="VersionLabel" type="Label" parent="." unique_id=841931558]
+[node name="VersionLabel" type="Label" parent="UILayer" unique_id=841931558]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0

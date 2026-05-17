@@ -413,6 +413,18 @@ func get_unlocked_hero_ids() -> Array[String]:
 			result.append(hero_id)
 	return result
 
+## 根据数字 config_id 判断英雄是否已解锁
+func is_hero_unlocked(hero_config_id: int) -> bool:
+	var hero_key: String = _HERO_ID_MAP.get(str(hero_config_id), "")
+	if hero_key.is_empty():
+		return false
+	var cfg: Dictionary = get_hero_config(hero_key)
+	if cfg.get("is_default_unlock", false):
+		return true
+	var player_data: Dictionary = SaveManager.load_player_data()
+	var unlocked: Array = player_data.get("unlocked_heroes", [])
+	return hero_key in unlocked
+
 func get_all_hero_configs() -> Dictionary:
 	return _hero_configs.duplicate()
 

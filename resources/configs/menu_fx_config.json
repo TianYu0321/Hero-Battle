@@ -1,81 +1,92 @@
 {
   "background": {
+    "mode": "image",
     "texture_path": "res://assets/backgrounds/menu_bg.png",
-    "stretch_mode": "keep_aspect",
-    "camera_breath": {
+    "stretch_mode": "keep_aspect"
+  },
+  "left_hand_glow": {
+    "enabled": true,
+    "position": [253, 480],
+    "texture_size": 280,
+    "color": [0.55, 0.1, 0.85, 0.30],
+    "color_bright": [0.70, 0.2, 1.0, 0.45],
+    "breathe_alpha_min": 0.22,
+    "breathe_alpha_max": 0.40,
+    "breathe_scale_min": 0.92,
+    "breathe_scale_max": 1.10,
+    "cycle_seconds": 2.4,
+    "trans": "sine",
+    "ease": "in_out"
+  },
+  "left_hand_particles": {
+    "enabled": true,
+    "position": [253, 480],
+    "amount": 20,
+    "lifetime": 1.2,
+    "preprocess": 1.0,
+    "visibility_rect": [-100, -100, 200, 200],
+    "emission_shape": 1,
+    "emission_sphere_radius": 35.0,
+    "direction": [0, -1, 0],
+    "spread": 25.0,
+    "initial_velocity_min": 15.0,
+    "initial_velocity_max": 40.0,
+    "gravity": [0, -10, 0],
+    "damping_min": 5.0,
+    "damping_max": 15.0,
+    "scale_min": 1.0,
+    "scale_max": 2.5,
+    "color": [0.65, 0.15, 0.95, 0.45],
+    "particle_texture_size": 4
+  },
+  "fog_overlay": {
+    "enabled": true,
+    "position": [640, 360],
+    "texture_width": 2560,
+    "texture_height": 300,
+    "color": [0.45, 0.50, 0.55, 0.10],
+    "speed": 18.0,
+    "cycle_seconds": 18.0,
+    "trans": "linear",
+    "ease": "in_out"
+  },
+  "tower_glows": [
+    {
       "enabled": true,
-      "pivot_offset": [960, 540],
-      "primary": {
-        "scale_min": [1.0, 1.0],
-        "scale_max": [1.025, 1.025],
-        "cycle_seconds": 7.0,
-        "trans": "sine",
-        "ease": "in_out"
-      },
-      "secondary": {
-        "scale_delta": 0.004,
-        "cycle_seconds": 2.1,
-        "trans": "sine",
-        "ease": "in_out"
-      },
-      "jitter": {
-        "enabled": true,
-        "intensity_degrees": 0.15,
-        "interval_min": 3.0,
-        "interval_max": 8.0,
-        "duration": 0.4,
-        "trans": "quad",
-        "ease": "out"
-      }
-    }
-  },
-  "rain": {
-    "enabled": true,
-    "near": {
-      "position": [960, -100],
-      "amount": 300,
-      "lifetime": 1.2,
-      "preprocess": 2.0,
-      "visibility_rect": [-200, -200, 2240, 1480],
-      "emission_box_extents": [1200, 10, 1],
-      "direction": [0.15, 1, 0],
-      "spread": 2.0,
-      "velocity_min": 500.0,
-      "velocity_max": 700.0,
-      "gravity": [0, 800, 0],
-      "scale_min": 1.0,
-      "scale_max": 2.0,
-      "color": [0.55, 0.65, 0.75, 0.35],
-      "drop_gradient_colors": [[1, 1, 1, 0.6], [1, 1, 1, 0]],
-      "drop_width": 2,
-      "drop_height": 24,
-      "drop_fill_from": [0.5, 0],
-      "drop_fill_to": [0.5, 1]
+      "position": [920, 147],
+      "texture_size": 50,
+      "color": [0.95, 0.75, 0.35, 0.28],
+      "flicker_alpha_min": 0.15,
+      "flicker_alpha_max": 0.42,
+      "flicker_speed": 0.14,
+      "cycle_min": 1.4,
+      "cycle_max": 2.8
     },
-    "far": {
-      "position": [960, -50],
-      "amount": 400,
-      "lifetime": 2.0,
-      "preprocess": 3.0,
-      "visibility_rect": [-200, -200, 2240, 1480],
-      "emission_box_extents": [1400, 10, 1],
-      "direction": [0.1, 1, 0],
-      "spread": 5.0,
-      "velocity_min": 300.0,
-      "velocity_max": 450.0,
-      "gravity": [0, 500, 0],
-      "scale_min": 0.5,
-      "scale_max": 1.0,
-      "color": [0.45, 0.50, 0.60, 0.15],
-      "drop_gradient_colors": [[1, 1, 1, 0.3], [1, 1, 1, 0]],
-      "drop_width": 1,
-      "drop_height": 16,
-      "drop_fill_from": [0.5, 0],
-      "drop_fill_to": [0.5, 1]
+    {
+      "enabled": true,
+      "position": [900, 200],
+      "texture_size": 45,
+      "color": [0.92, 0.72, 0.32, 0.22],
+      "flicker_alpha_min": 0.10,
+      "flicker_alpha_max": 0.35,
+      "flicker_speed": 0.11,
+      "cycle_min": 1.8,
+      "cycle_max": 3.2
+    },
+    {
+      "enabled": true,
+      "position": [940, 240],
+      "texture_size": 40,
+      "color": [0.88, 0.68, 0.28, 0.18],
+      "flicker_alpha_min": 0.08,
+      "flicker_alpha_max": 0.30,
+      "flicker_speed": 0.10,
+      "cycle_min": 2.0,
+      "cycle_max": 3.8
     }
-  },
+  ],
   "floor_light": {
-    "enabled": true,
+    "enabled": false,
     "anchor_top": 0.75,
     "color": [0.90, 0.75, 0.35, 0.05],
     "color_warm": [0.92, 0.70, 0.30, 0.06],
@@ -90,31 +101,12 @@
     "trans_out": "sine",
     "ease_out": "in"
   },
-  "character": {
-    "enabled": false,
-    "sprite_path": "",
-    "position": [1400, 540],
-    "scale": 0.8,
-    "float": {
-      "range": 5,
-      "cycle_seconds": 4.5,
-      "trans": "sine",
-      "ease": "in_out"
-    },
-    "breath": {
-      "scale_min": 0.785,
-      "scale_max": 0.815,
-      "cycle_seconds": 3.2,
-      "overshoot": 0.003,
-      "trans": "back",
-      "ease": "in_out"
-    },
-    "shadow": {
-      "alpha_min": 0.25,
-      "alpha_max": 0.40,
-      "cycle_seconds": 3.2,
-      "trans": "sine",
-      "ease": "in_out"
-    }
+  "hover_enhance": {
+    "glow_alpha_boost": 0.18,
+    "glow_scale_boost": 0.06,
+    "tower_alpha_boost": 0.12,
+    "tween_duration": 0.35,
+    "trans": "cubic",
+    "ease": "out"
   }
 }
