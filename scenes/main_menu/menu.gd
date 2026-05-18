@@ -11,7 +11,7 @@ extends Control
 @onready var _btn_new_game: Button = $UILayer/MenuButtons/BtnNewGame
 @onready var _btn_continue: Button = $UILayer/MenuButtons/BtnContinue
 @onready var _btn_quit: Button = $UILayer/MenuButtons/BtnQuit
-@onready var _menu_button: Button = %MenuButton
+@onready var _menu_button: Button = $UILayer/MenuButton
 @onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _leaderboard_panel: Panel = $UILayer/LeaderboardPanel
 @onready var _shop_panel: ShopPopup = $UILayer/ShopPopup
@@ -57,11 +57,11 @@ func _ready() -> void:
 	_load_fx_config()
 	_apply_fx_config()
 	
-	# 动态创建设置面板
+	# 动态创建设置面板（添加到 UILayer 避免被背景遮挡）
 	var settings_scene = load("res://scenes/settings/settings_panel.tscn")
 	if settings_scene != null:
 		_settings_panel = settings_scene.instantiate()
-		add_child(_settings_panel)
+		$UILayer.add_child(_settings_panel)
 		_settings_panel.visible = false
 	
 	# 收集左侧菜单按钮并设置样式 + hover
@@ -70,10 +70,12 @@ func _ready() -> void:
 	var btn_pvp: Button = get_node_or_null("UILayer/MenuButtons/BtnPVP")
 	var btn_shop: Button = get_node_or_null("UILayer/MenuButtons/BtnShop")
 	var btn_leaderboard: Button = get_node_or_null("UILayer/MenuButtons/BtnLeaderboard")
+	var btn_settings: Button = get_node_or_null("UILayer/MenuButtons/BtnSettings")
 	if btn_archive != null: _menu_buttons.append(btn_archive)
 	if btn_pvp != null: _menu_buttons.append(btn_pvp)
 	if btn_shop != null: _menu_buttons.append(btn_shop)
 	if btn_leaderboard != null: _menu_buttons.append(btn_leaderboard)
+	if btn_settings != null: _menu_buttons.append(btn_settings)
 	
 	for btn in _menu_buttons:
 		_setup_button_style(btn)
@@ -119,14 +121,9 @@ func _ready() -> void:
 	else:
 		push_warning("[MainMenu] BtnLeaderboard 未找到")
 	
-	# 启用设置按钮
-	var btn_settings: Button = get_node_or_null("UILayer/MenuButtons/BtnSettings")
+	# 连接设置按钮信号（样式已在 _menu_buttons 循环中应用）
 	if btn_settings != null:
-		btn_settings.visible = true
-		btn_settings.disabled = false
-		btn_settings.pressed.connect(_on_settings_pressed)
-		_setup_button_style(btn_settings)
-		_setup_button_hover(btn_settings)
+		_safe_connect_pressed(btn_settings, _on_settings_pressed)
 		print("[MainMenu] 设置按钮已启用")
 	else:
 		push_warning("[MainMenu] BtnSettings 未找到")
@@ -645,22 +642,24 @@ func _setup_menu_button_hover(button: Button) -> void:
 	if button == null or not is_instance_valid(button):
 		push_warning("[MainMenu] _setup_menu_button_hover: button 为 null")
 		return
-	button.mouse_entered.connect(func():
-		_menu_hovered_count += 1
-		if _menu_hovered_count == 1:
-			_enhance_glows(true)
-		var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(button, "scale", Vector2.ONE * 1.05, 0.15)
-		tween.parallel().tween_property(button, "modulate", Color(1.2, 1.2, 1.2), 0.15)
-	)
-	button.mouse_exited.connect(func():
-		_menu_hovered_count = maxi(_menu_hovered_count - 1, 0)
-		if _menu_hovered_count == 0:
-			_enhance_glows(false)
-		var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(button, "scale", Vector2.ONE, 0.15)
-		tween.parallel().tween_property(button, "modulate", Color.WHITE, 0.15)
-	)
+	button.mouse_entered.connect(func(): _on_menu_button_hover_entered(button))
+	button.mouse_exited.connect(func(): _on_menu_button_hover_exited(button))
+
+func _on_menu_button_hover_entered(button: Button) -> void:
+	_menu_hovered_count += 1
+	if _menu_hovered_count == 1:
+		_enhance_glows(true)
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "scale", Vector2.ONE * 1.05, 0.15)
+	tween.parallel().tween_property(button, "modulate", Color(1.2, 1.2, 1.2), 0.15)
+
+func _on_menu_button_hover_exited(button: Button) -> void:
+	_menu_hovered_count = maxi(_menu_hovered_count - 1, 0)
+	if _menu_hovered_count == 0:
+		_enhance_glows(false)
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(button, "scale", Vector2.ONE, 0.15)
+	tween.parallel().tween_property(button, "modulate", Color.WHITE, 0.15)
 
 func _enhance_glows(active: bool) -> void:
 	var hover_cfg: Dictionary = _fx_config.get("hover_enhance", {})
@@ -702,10 +701,11 @@ func _safe_connect_pressed(button: Button, callback: Callable) -> void:
 	button.pressed.connect(callback)
 
 func _on_new_game_pressed() -> void:
+	print("[MainMenu] 【点击】开始新局")
 	EventBus.new_game_requested.emit("")
 
 func _on_continue_pressed() -> void:
-	print("[MainMenu] 继续游戏点击, has_active_run=", SaveManager.has_active_run())
+	print("[MainMenu] 【点击】继续游戏, has_active_run=", SaveManager.has_active_run())
 	if not SaveManager.has_active_run():
 		push_error("[MainMenu] 点击继续游戏但存档无效")
 		if _btn_continue != null:
@@ -714,22 +714,23 @@ func _on_continue_pressed() -> void:
 	EventBus.continue_game_requested.emit()
 
 func _on_quit_pressed() -> void:
+	print("[MainMenu] 【点击】退出游戏")
 	get_tree().quit()
 
 func _on_archive_button_pressed() -> void:
-	print("[MainMenu] 查看档案按钮点击")
+	print("[MainMenu] 【点击】斗士档案")
 	EventBus.archive_view_requested.emit()
 
 func _on_pvp_pressed() -> void:
-	print("[MainMenu] PVP对战按钮点击")
+	print("[MainMenu] 【点击】PVP对战")
 	EventBus.pvp_lobby_requested.emit()
 
 func _on_shop_pressed() -> void:
-	print("[MainMenu] 商店按钮点击")
+	print("[MainMenu] 【点击】商店")
 	_shop_panel.show_popup()
 
 func _on_leaderboard_pressed() -> void:
-	print("[MainMenu] 排行榜按钮点击")
+	print("[MainMenu] 【点击】排行榜")
 	var leaderboard_system := LeaderboardSystem.new()
 	var rankings := leaderboard_system.get_leaderboard(20)
 	if _leaderboard_panel != null:
@@ -815,10 +816,13 @@ func _get_my_data() -> Dictionary:
 	return {"player_name": "Player", "net_wins": 0}
 
 func _on_settings_pressed() -> void:
+	print("[MainMenu] 【点击】设置")
 	AudioManager.play_ui("button_click")
 	if _settings_panel != null:
 		_show_panel(_settings_panel)
 		_settings_panel.load_settings()
+	else:
+		push_warning("[MainMenu] 设置面板为 null")
 
 func _show_panel(panel: Control) -> void:
 	panel.visible = true

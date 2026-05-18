@@ -40,7 +40,7 @@
     "particle_texture_size": 4
   },
   "fog_overlay": {
-    "enabled": true,
+    "enabled": false,
     "position": [640, 360],
     "texture_width": 2560,
     "texture_height": 300,

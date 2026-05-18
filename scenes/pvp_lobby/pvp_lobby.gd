@@ -263,6 +263,7 @@ func _on_start_battle() -> void:
 			recorder, hero_name, enemy_name,
 			hero_max_hp, enemy_max_hp,
 			[], [], total_rounds,
+			hero_max_hp, enemy_max_hp,
 			hero_sprite_path, enemy_sprite_path
 		)
 

@@ -25,8 +25,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("5_bg")
-expand_mode = 1
-stretch_mode = 4
+expand_mode = 0
+stretch_mode = 5
 
 [node name="FloorLightOverlay" type="ColorRect" parent="BackgroundLayer" unique_id=246728889]
 anchors_preset = -1
@@ -58,11 +58,10 @@ position = Vector2(940, 240)
 
 [node name="CharacterLayer" type="CanvasLayer" parent="." unique_id=1760655318]
 
-[node name="UILayer" type="CanvasLayer" parent="."]
+[node name="UILayer" type="CanvasLayer" parent="." unique_id=277755031]
 layer = 2
 
 [node name="TitleLabel" type="Label" parent="UILayer" unique_id=1691243069]
-layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -77,7 +76,6 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="MenuButtons" type="VBoxContainer" parent="UILayer" unique_id=535879365]
-layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -91,51 +89,56 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
 
-[node name="BtnNewGame" type="Button" parent="MenuButtons" unique_id=783483649]
+[node name="BtnNewGame" type="Button" parent="UILayer/MenuButtons" unique_id=783483649]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "开始新局"
 
-[node name="BtnContinue" type="Button" parent="MenuButtons" unique_id=1206341204]
+[node name="BtnContinue" type="Button" parent="UILayer/MenuButtons" unique_id=1206341204]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "继续游戏"
 
-[node name="BtnArchive" type="Button" parent="MenuButtons" unique_id=1117886865]
+[node name="BtnArchive" type="Button" parent="UILayer/MenuButtons" unique_id=1117886865]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "斗士档案"
 
-[node name="BtnQuit" type="Button" parent="MenuButtons" unique_id=462298988]
+[node name="BtnQuit" type="Button" parent="UILayer/MenuButtons" unique_id=462298988]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "退出游戏"
 
-[node name="BtnPVP" type="Button" parent="MenuButtons" unique_id=1301902876]
+[node name="BtnPVP" type="Button" parent="UILayer/MenuButtons" unique_id=1301902876]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "PVP对战"
 
-[node name="BtnShop" type="Button" parent="MenuButtons" unique_id=1818890231]
+[node name="BtnShop" type="Button" parent="UILayer/MenuButtons" unique_id=1818890231]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "商店"
 
-[node name="BtnLeaderboard" type="Button" parent="MenuButtons" unique_id=1814472937]
+[node name="BtnLeaderboard" type="Button" parent="UILayer/MenuButtons" unique_id=1814472937]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 text = "排行榜"
 
+[node name="BtnSettings" type="Button" parent="UILayer/MenuButtons" unique_id=999999999]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+text = "设置"
+
 [node name="MenuButton" type="Button" parent="UILayer" unique_id=2024501554]
 unique_name_in_owner = true
-layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -146,10 +149,7 @@ offset_bottom = 60.0
 grow_horizontal = 0
 text = "设置"
 
-[node name="PauseMenu" parent="." unique_id=128202323 instance=ExtResource("2_pause")]
-
 [node name="PVPHintLabel" type="Label" parent="UILayer" unique_id=62247608]
-layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -165,14 +165,11 @@ vertical_alignment = 1
 
 [node name="LeaderboardPanel" parent="UILayer" unique_id=1817026908 instance=ExtResource("3_lbp")]
 visible = false
-layout_mode = 1
 
 [node name="ShopPopup" parent="UILayer" unique_id=1226683992 instance=ExtResource("4_sp")]
 visible = false
-layout_mode = 1
 
 [node name="VersionLabel" type="Label" parent="UILayer" unique_id=841931558]
-layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -188,3 +185,5 @@ theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
 theme_override_font_sizes/font_size = 14
 text = "v0.1.0"
 horizontal_alignment = 2
+
+[node name="PauseMenu" parent="." unique_id=128202323 instance=ExtResource("2_pause")]

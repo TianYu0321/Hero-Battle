@@ -98,12 +98,7 @@ func play_music(track_id: String, fade_duration: float = 1.0) -> void:
 	if _music_player.playing and _music_player.stream != stream:
 		var tween := create_tween()
 		tween.tween_property(_music_player, "volume_db", -80.0, fade_duration)
-		tween.tween_callback(func() -> void:
-			_music_player.stop()
-			_music_player.stream = stream
-			_music_player.volume_db = 0.0
-			_music_player.play()
-		)
+		tween.tween_callback(_on_fade_in_new_track.bind(stream))
 		return
 	
 	_music_player.stream = stream
@@ -114,10 +109,17 @@ func stop_music(fade_duration: float = 0.5) -> void:
 		return
 	var tween := create_tween()
 	tween.tween_property(_music_player, "volume_db", -80.0, fade_duration)
-	tween.tween_callback(func() -> void:
-		_music_player.stop()
-		_music_player.volume_db = 0.0
-	)
+	tween.tween_callback(_on_stop_music_fade_complete)
+
+func _on_fade_in_new_track(stream: AudioStream) -> void:
+	_music_player.stop()
+	_music_player.stream = stream
+	_music_player.volume_db = 0.0
+	_music_player.play()
+
+func _on_stop_music_fade_complete() -> void:
+	_music_player.stop()
+	_music_player.volume_db = 0.0
 
 
 ## ===== 音量控制 =====

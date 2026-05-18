@@ -76,6 +76,9 @@ func _ready() -> void:
 	# 初始化用户ID（本地阶段固定，后续从登录回调获取）
 	SaveManager.set_user_id("local_default")
 	print("[GameManager] 用户ID初始化: %s" % SaveManager.get_user_id())
+	
+	# 启动时应用保存的视频设置（分辨率/全屏）
+	_call_deferred_apply_video_settings()
 
 	EventBus.new_game_requested.connect(_on_new_game_requested)
 	EventBus.continue_game_requested.connect(_on_continue_game_requested)
@@ -87,6 +90,24 @@ func _ready() -> void:
 	EventBus.archive_view_requested.connect(_on_archive_view_requested)
 	EventBus.pvp_lobby_requested.connect(_on_pvp_lobby_requested)
 	EventBus.shop_requested.connect(_on_shop_requested)
+
+func _call_deferred_apply_video_settings() -> void:
+	# 等待一帧确保窗口已初始化
+	await get_tree().process_frame
+	# 编辑器内嵌模式下跳过（避免 "Embedded window can't be resized" 等报错）
+	# 导出为独立可执行文件后此功能完全正常
+	if OS.has_feature("editor"):
+		return
+	var settings: Dictionary = SaveManager.load_settings()
+	var res_index: int = settings.get("resolution_index", 0)
+	res_index = clampi(res_index, 0, 1)
+	var resolutions: Array[Vector2i] = [Vector2i(1920, 1080), Vector2i(1280, 720)]
+	var fullscreen: bool = settings.get("fullscreen", false)
+	if fullscreen:
+		get_window().mode = Window.MODE_EXCLUSIVE_FULLSCREEN
+	else:
+		get_window().mode = Window.MODE_WINDOWED
+		DisplayServer.window_set_size(resolutions[res_index])
 
 func change_scene(to_state: String, transition_type: String = "fade") -> void:
 	if _is_transitioning:

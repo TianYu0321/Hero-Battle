@@ -48,6 +48,9 @@ var _sim_total_rounds: int = 0
 # 狂暴阶段
 var _is_frenzy_active: bool = false
 
+# 多段攻击动画轮询索引 {sprite: index}
+var _attack_anim_index: Dictionary = {}
+
 signal confirmed
 
 const COL_TEXT_MAIN := Color(0.90, 0.90, 0.92)
@@ -254,6 +257,8 @@ func _process_event(evt: Dictionary) -> void:
 			var is_crit: bool = summary.get("is_crit", false)
 			var value: int = summary.get("value", 0)
 			
+			print("[BattleAnim] action_executed actor=%s hero_name=%s enemy_name=%s" % [actor, hero_name_label.text, enemy_name_label.text])
+			
 			if is_miss:
 				battle_log.append_text("[color=#73737A]  %s → %s 闪避[/color]\n" % [actor, target])
 				AudioManager.play_sfx("miss")
@@ -269,6 +274,8 @@ func _process_event(evt: Dictionary) -> void:
 				_play_anim(hero_art, "attack")
 			elif actor == enemy_name_label.text:
 				_play_anim(enemy_art, "attack")
+			else:
+				print("[BattleAnim] ⚠ actor 不匹配，不播放攻击动画")
 		
 		"unit_damaged":
 			var unit_id: String = data.get("unit_id", "")
@@ -404,17 +411,29 @@ func _set_placeholder_sprite(animated_sprite: AnimatedSprite2D, is_hero: bool) -
 
 func _play_anim(animated_sprite: AnimatedSprite2D, action: String) -> void:
 	if animated_sprite.sprite_frames == null:
+		print("[BattleAnim] _play_anim: sprite_frames 为 null")
 		return
 	var anim_name: String = action
 	match action:
 		"attack":
-			if animated_sprite.sprite_frames.has_animation("attack_1"):
+			# 多段攻击：轮询 attack_1 / attack_2 / attack_3
+			var idx: int = _attack_anim_index.get(animated_sprite, 0)
+			var attack_name: String = "attack_%d" % (idx + 1)
+			if animated_sprite.sprite_frames.has_animation(attack_name):
+				anim_name = attack_name
+				_attack_anim_index[animated_sprite] = (idx + 1) % 3
+			elif animated_sprite.sprite_frames.has_animation("attack_1"):
 				anim_name = "attack_1"
 			elif not animated_sprite.sprite_frames.has_animation("attack"):
+				print("[BattleAnim] _play_anim: 无攻击动画可播放")
 				return
 		"hurt", "dead", "idle":
+			# 非攻击动作时重置攻击动画索引
+			_attack_anim_index[animated_sprite] = 0
 			if not animated_sprite.sprite_frames.has_animation(action):
+				print("[BattleAnim] _play_anim: 无 %s 动画" % action)
 				return
+	print("[BattleAnim] _play_anim: 播放 %s" % anim_name)
 	animated_sprite.play(anim_name)
 
 func _on_turn_timer_timeout() -> void:

@@ -673,6 +673,8 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 	
 	recorder.stop_recording()
 	result["playback_recorder"] = recorder
+	result["hero"] = battle_hero
+	result["enemies"] = [enemy]
 
 	# 同步战斗后的 HP 回写到 RuntimeHero
 	_hero.current_hp = battle_hero.get("hp", _hero.current_hp)
@@ -704,8 +706,31 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 func _end_run() -> void:
 	# 检查是否解锁新英雄
 	_check_hero_unlocks()
-	# 清理或返回主菜单
-	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, {})
+	
+	# 生成基础档案数据（死亡/放弃时也能显示结算信息）
+	var archive_dict: Dictionary = {}
+	if _hero != null:
+		archive_dict["hero_config_id"] = _hero.hero_config_id
+		var hero_id: String = ConfigManager.get_hero_id_by_config_id(_hero.hero_config_id)
+		if not hero_id.is_empty():
+			var hero_cfg: Dictionary = ConfigManager.get_hero_config(hero_id)
+			archive_dict["hero_name"] = hero_cfg.get("hero_name", "未知")
+		archive_dict["attr_snapshot_vit"] = _hero.current_vit
+		archive_dict["attr_snapshot_str"] = _hero.current_str
+		archive_dict["attr_snapshot_agi"] = _hero.current_agi
+		archive_dict["attr_snapshot_tec"] = _hero.current_tec
+		archive_dict["attr_snapshot_mnd"] = _hero.current_mnd
+		archive_dict["max_hp_reached"] = _hero.max_hp
+	if _run != null:
+		archive_dict["final_turn"] = _run.current_turn
+		archive_dict["battle_win_count"] = _run.battle_win_count
+		archive_dict["elite_win_count"] = _run.elite_win_count
+		archive_dict["gold_earned_total"] = _run.gold_earned_total
+		archive_dict["gold_spent"] = _run.gold_spent
+		archive_dict["run_status"] = _run.run_status
+		archive_dict["training_count"] = _hero.total_training_count if _hero != null else 0
+	
+	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
 
 
 func _check_hero_unlocks() -> void:

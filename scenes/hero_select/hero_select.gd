@@ -8,30 +8,30 @@ class_name HeroSelectUI
 extends Control
 
 # --- 顶部 ---
-@onready var _back_btn: Button = %BackButton
-@onready var _title_label: Label = %TitleLabel
-@onready var _novice_btn: Button = %NoviceButton
-@onready var _veteran_btn: Button = %VeteranButton
+@onready var _back_btn: Button = $UILayer/TopBar/BackButton
+@onready var _title_label: Label = $UILayer/TopBar/TitleLabel
+@onready var _novice_btn: Button = $UILayer/TopBar/DifficultyToggle/NoviceButton
+@onready var _veteran_btn: Button = $UILayer/TopBar/DifficultyToggle/VeteranButton
 
 # --- 左侧面板 ---
-@onready var _hero_list_container: VBoxContainer = %HeroListContainer
+@onready var _hero_list_container: VBoxContainer = $UILayer/LeftPanel/HeroListContainer
 
 # --- 右侧面板 ---
-@onready var _big_portrait: ColorRect = %HeroBigPortrait
-@onready var _silhouette_label: Label = %SilhouetteLabel
-@onready var _hero_name_label: Label = %HeroNameLabel
-@onready var _hero_role_label: Label = %HeroRoleLabel
-@onready var _lock_overlay: ColorRect = %LockOverlay
-@onready var _lock_label: Label = %LockLabel
+@onready var _big_portrait: ColorRect = $UILayer/RightPanel/HeroBigPortrait
+@onready var _silhouette_label: Label = $UILayer/RightPanel/HeroBigPortrait/SilhouetteLabel
+@onready var _hero_name_label: Label = $UILayer/RightPanel/HeroNameLabel
+@onready var _hero_role_label: Label = $UILayer/RightPanel/HeroRoleLabel
+@onready var _lock_overlay: ColorRect = $UILayer/RightPanel/LockOverlay
+@onready var _lock_label: Label = $UILayer/RightPanel/LockOverlay/LockLabel
 
 # --- 底部 ---
-@onready var _stat_container: HBoxContainer = %StatPreviewContainer
-@onready var _desc_label: RichTextLabel = %DescriptionLabel
-@onready var _start_btn: Button = %StartRunButton
+@onready var _stat_container: HBoxContainer = $UILayer/BottomPanel/StatPreviewContainer
+@onready var _desc_label: RichTextLabel = $UILayer/BottomPanel/DescriptionPanel/DescriptionLabel
+@onready var _start_btn: Button = $UILayer/BottomPanel/StartRunButton
 
 # --- 过渡 ---
-@onready var _transition_overlay: ColorRect = %TransitionOverlay
-@onready var _transition_label: Label = %TransitionLabel
+@onready var _transition_overlay: ColorRect = $UILayer/TransitionOverlay
+@onready var _transition_label: Label = $UILayer/TransitionOverlay/TransitionLabel
 
 var _hero_ids: Array[String] = []
 var _selected_hero_id: String = ""
@@ -128,7 +128,7 @@ func _create_hero_card(hero_id: String, config: Dictionary, is_unlocked: bool) -
 	
 	# 内部布局
 	var hbox := HBoxContainer.new()
-	hbox.theme_override_constants/separation = 12
+	hbox.add_theme_constant_override("separation", 12)
 	hbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	card.add_child(hbox)
 	
@@ -153,15 +153,15 @@ func _create_hero_card(hero_id: String, config: Dictionary, is_unlocked: bool) -
 	
 	var name_label := Label.new()
 	name_label.text = config.get("hero_name", hero_id)
-	name_label.theme_override_font_sizes/font_size = 16
-	name_label.theme_override_colors/font_color = Color.WHITE if is_unlocked else Color(0.5, 0.5, 0.5, 1)
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color.WHITE if is_unlocked else Color(0.5, 0.5, 0.5, 1))
 	name_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	vbox.add_child(name_label)
 	
 	var role_label := Label.new()
 	role_label.text = config.get("class_desc", "")
-	role_label.theme_override_font_sizes/font_size = 12
-	role_label.theme_override_colors/font_color = Color(0.6, 0.6, 0.65, 1) if is_unlocked else Color(0.4, 0.4, 0.4, 1)
+	role_label.add_theme_font_size_override("font_size", 12)
+	role_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65, 1) if is_unlocked else Color(0.4, 0.4, 0.4, 1))
 	role_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	vbox.add_child(role_label)
 	
@@ -298,13 +298,13 @@ func _build_stat_bars() -> void:
 	for stat in stats:
 		var vbox := VBoxContainer.new()
 		vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-		vbox.theme_override_constants/separation = 4
+		vbox.add_theme_constant_override("separation", 4)
 		_stat_container.add_child(vbox)
 		
 		var name_label := Label.new()
 		name_label.text = stat["name"]
-		name_label.theme_override_font_sizes/font_size = 12
-		name_label.theme_override_colors/font_color = stat["color"]
+		name_label.add_theme_font_size_override("font_size", 12)
+		name_label.add_theme_color_override("font_color", stat["color"])
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(name_label)
 		
@@ -318,8 +318,8 @@ func _build_stat_bars() -> void:
 		
 		var val_label := Label.new()
 		val_label.text = "0"
-		val_label.theme_override_font_sizes/font_size = 12
-		val_label.theme_override_colors/font_color = Color(0.8, 0.8, 0.85, 1)
+		val_label.add_theme_font_size_override("font_size", 12)
+		val_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85, 1))
 		val_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(val_label)
 		
@@ -371,11 +371,14 @@ func _tween_label_number(label: Label, target_value: int, duration: float) -> vo
 	var start_value: int = int(label.text) if label.text.is_valid_int() else 0
 	var tween := create_tween()
 	tween.tween_method(
-		func(v: int): label.text = str(v),
+		_tween_label_update.bind(label),
 		start_value,
 		target_value,
 		duration
 	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+func _tween_label_update(v: int, label: Label) -> void:
+	label.text = str(v)
 
 # --- 难度切换 ---
 
@@ -441,11 +444,12 @@ func _start_transition_to_run() -> void:
 	
 	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	tween.tween_property(_transition_overlay, "modulate:a", 1.0, 0.4)
-	tween.finished.connect(func():
-		GameManager.selected_hero_config_id = GameManager._HERO_STRING_TO_ID.get(_selected_hero_id, 1)
-		GameManager.pending_archive["is_veteran"] = _is_veteran_mode
-		EventBus.hero_selected.emit(_selected_hero_id)
-	)
+	tween.finished.connect(_on_transition_finished)
+
+func _on_transition_finished() -> void:
+	GameManager.selected_hero_config_id = GameManager._HERO_STRING_TO_ID.get(_selected_hero_id, 1)
+	GameManager.pending_archive["is_veteran"] = _is_veteran_mode
+	EventBus.hero_selected.emit(_selected_hero_id)
 
 func _on_back_pressed() -> void:
 	EventBus.back_to_menu_requested.emit()
