@@ -29,16 +29,7 @@ extends Control
 @onready var ui_modal_blocker: ColorRect = $UIModalBlocker
 
 @onready var rescue_panel: Control = $RescuePanel
-@onready var rescue_candidate_buttons: Array[Button] = [
-	$RescuePanel/CandidateBtn1,
-	$RescuePanel/CandidateBtn2,
-	$RescuePanel/CandidateBtn3,
-]
-@onready var rescue_candidate_labels: Array[Label] = [
-	$RescuePanel/CandidateBtn1/Label,
-	$RescuePanel/CandidateBtn2/Label,
-	$RescuePanel/CandidateBtn3/Label,
-]
+@onready var candidates_container: HBoxContainer = $RescuePanel/CandidatesContainer
 
 @onready var pause_menu: PauseMenu = $PauseMenu
 @onready var menu_button: Button = $MenuButton
@@ -150,9 +141,7 @@ func _ready() -> void:
 	# --- 菜单按钮 ---
 	menu_button.pressed.connect(_on_menu_button_pressed)
 
-	# --- 救援面板按钮绑定 ---
-	for i in range(rescue_candidate_buttons.size()):
-		rescue_candidate_buttons[i].pressed.connect(_on_rescue_partner_selected.bind(i))
+	# --- 救援面板按钮绑定（改为动态卡片，不在 _ready 绑定） ---
 	
 	# --- 商店关闭按钮 ---
 	var shop_close_button: Button = $ShopPanel/ContentVBox/CloseButton
@@ -556,37 +545,113 @@ func _show_training_panel_details(_panel_data: Dictionary) -> void:
 
 func _show_rescue_panel_details(candidates: Array) -> void:
 	_selected_rescue_partner_id = -1
-	for i in range(rescue_candidate_buttons.size()):
-		if i < candidates.size():
-			rescue_candidate_buttons[i].visible = true
-			rescue_candidate_buttons[i].modulate = Color(1, 1, 1)
-			var candidate = candidates[i]
-			rescue_candidate_labels[i].text = "%s\n%s" % [candidate.get("name", "???"), candidate.get("role", "")]
-			rescue_candidate_buttons[i].disabled = false
-		else:
-			rescue_candidate_buttons[i].visible = false
-			rescue_candidate_buttons[i].disabled = true
+	## 清空旧卡片
+	for child in candidates_container.get_children():
+		child.queue_free()
+	
+	## 创建卡片
+	for i in range(candidates.size()):
+		var card := _create_rescue_card(candidates[i])
+		candidates_container.add_child(card)
 
-func _on_rescue_partner_selected(index: int) -> void:
-	print("[RunMain] _on_rescue_partner_selected 被调用: index=%d, candidates.size=%d" % [index, _last_rescue_candidates.size()])
-	if index < _last_rescue_candidates.size():
-		var candidate = _last_rescue_candidates[index]
-		print("[RunMain] 候选伙伴字典: " + str(candidate))
-		var partner_config_id = int(candidate.get("partner_id", 0))
-		print("[RunMain] 解析 partner_config_id=%d" % partner_config_id)
-		if partner_config_id > 0:
-			_selected_rescue_partner_id = partner_config_id
-			print("[RunMain] 选择救援伙伴: id=%d" % _selected_rescue_partner_id)
-			# 高亮选中的按钮
-			for btn in rescue_candidate_buttons:
-				btn.modulate = Color(0.5, 0.5, 0.5)
-			rescue_candidate_buttons[index].modulate = Color(1, 1, 1)
-			_run_controller.select_rescue_partner(partner_config_id)
-			# UI状态切换由 RunController 的下一个 panel_opened 信号驱动
-		else:
-			print("[RunMain] 警告: partner_config_id <= 0，不调用 select_rescue_partner")
+func _create_rescue_card(candidate: Dictionary) -> Control:
+	var card := Control.new()
+	card.custom_minimum_size = Vector2(200, 280)
+	
+	## 卡片框背景（按伙伴ID+等级）
+	var partner_id: String = str(candidate.get("partner_id", ""))
+	var level: int = int(candidate.get("level", 1))
+	level = clampi(level, 1, 5)
+	var card_bg := TextureRect.new()
+	card_bg.name = "CardBg"
+	card_bg.layout_mode = 1
+	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	card_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	card_bg.texture = load(ConfigManager.get_partner_card_path(partner_id, level))
+	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(card_bg)
+	
+	## 内容区（留边距避免遮挡卡片框边框）
+	var margin := MarginContainer.new()
+	margin.layout_mode = 1
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	card.add_child(margin)
+	
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 6)
+	margin.add_child(vbox)
+	
+	## 稀有度角标
+	var rarity: String = candidate.get("rarity_str", "C")
+	var border_color: Color = _get_rarity_color(rarity)
+	var badge := Label.new()
+	badge.text = rarity
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 14)
+	badge.add_theme_color_override("font_color", border_color)
+	vbox.add_child(badge)
+	
+	## 头像
+	var portrait := TextureRect.new()
+	portrait.custom_minimum_size = Vector2(120, 120)
+	portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var portrait_path: String = candidate.get("portrait_path", "")
+	if portrait_path.is_empty():
+		portrait_path = ConfigManager.get_partner_portrait_path(int(candidate.get("partner_id", 0)))
+	var tex: Texture2D = _resolve_texture_from_path(portrait_path)
+	if tex != null:
+		portrait.texture = tex
+	vbox.add_child(portrait)
+	
+	## 名字
+	var name_label := Label.new()
+	name_label.text = candidate.get("name", "???")
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color("#E6C040"))
+	vbox.add_child(name_label)
+	
+	## 职业/定位
+	var role_label := Label.new()
+	role_label.text = candidate.get("role", "伙伴")
+	role_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	role_label.add_theme_font_size_override("font_size", 12)
+	role_label.add_theme_color_override("font_color", Color("#888888"))
+	vbox.add_child(role_label)
+	
+	## 招募按钮
+	var partner_config_id: int = int(candidate.get("partner_id", 0))
+	var btn := Button.new()
+	btn.text = "招募"
+	btn.custom_minimum_size = Vector2(120, 36)
+	btn.pressed.connect(func(): _on_rescue_partner_selected(partner_config_id))
+	vbox.add_child(btn)
+	
+	return card
+
+func _get_rarity_color(rarity: String) -> Color:
+	match rarity:
+		"S": return Color("#E6C040")
+		"A": return Color("#5A8FD0")
+		"B": return Color("#4ECDC4")
+		_:   return Color("#888888")
+
+func _on_rescue_partner_selected(partner_config_id: int) -> void:
+	print("[RunMain] _on_rescue_partner_selected 被调用: partner_config_id=%d" % partner_config_id)
+	if partner_config_id > 0:
+		_selected_rescue_partner_id = partner_config_id
+		print("[RunMain] 选择救援伙伴: id=%d" % _selected_rescue_partner_id)
+		_run_controller.select_rescue_partner(partner_config_id)
+		## UI状态切换由 RunController 的下一个 panel_opened 信号驱动
 	else:
-		print("[RunMain] 警告: index >= candidates.size，忽略点击")
+		print("[RunMain] 警告: partner_config_id <= 0，不调用 select_rescue_partner")
 
 func _on_shop_close_pressed() -> void:
 	print("[RunMain] 商店关闭")
@@ -715,18 +780,35 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		var hero_start_hp = hero_data.get("hp", hero_max_hp)
 		var enemy_start_hp = enemy_data.get("hp", enemy_max_hp)
 		
+		## 构建伙伴链数据
+		var partner_summaries: Array = []
+		var partners: Array = _run_controller.get_partners()
+		for p in partners:
+			var p_dict: Dictionary = {}
+			if p is Dictionary:
+				p_dict = p
+			else:
+				## RuntimePartner 对象
+				p_dict = {
+					"name": p.name if p.get("name") != null else ConfigManager.get_partner_config(str(p.partner_config_id)).get("name", "???"),
+					"avatar_path": ConfigManager.get_partner_avatar_path(str(p.partner_config_id)),
+					"chain_count": 0,
+					"level": p.current_level if p.get("current_level") != null else 1,
+				}
+			partner_summaries.append(p_dict)
+		battle_animation_panel._update_chain_slots(partner_summaries)
+		
 		battle_animation_panel.reset_panel()
 		_show_modal_panel(battle_animation_panel)
 		
 		# 先连接 confirmed 信号，再启动 playback
-		# 因为 start_playback 内部可能在 HP<=0 时直接 emit confirmed（短路结算）
 		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
 			battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)
 		
 		battle_animation_panel.start_playback(
 			recorder, hero_name, enemy_name,
 			hero_max_hp, enemy_max_hp,
-			[], [],
+			partner_summaries, [],
 			turns_elapsed,
 			hero_start_hp,
 			enemy_start_hp,
@@ -916,101 +998,77 @@ func _init_partner_slots() -> void:
 	
 	partner_panel.visible = false
 
-func _create_partner_slot(index: int) -> PanelContainer:
-	var slot := PanelContainer.new()
+func _create_partner_slot(index: int) -> Control:
+	var slot := Control.new()
 	slot.name = "PartnerSlot_%d" % index
-	slot.custom_minimum_size = Vector2(160, 56)
+	slot.custom_minimum_size = Vector2(140, 180)
 	
-	## 默认边框样式
-	var default_style := StyleBoxFlat.new()
-	default_style.bg_color = Color(0.08, 0.08, 0.1, 0.7)
-	default_style.border_color = Color(0.25, 0.25, 0.3, 0.5)
-	default_style.border_width_left = 1
-	default_style.border_width_top = 1
-	default_style.border_width_right = 1
-	default_style.border_width_bottom = 1
-	default_style.corner_radius_top_left = 4
-	default_style.corner_radius_top_right = 4
-	default_style.corner_radius_bottom_left = 4
-	default_style.corner_radius_bottom_right = 4
-	slot.add_theme_stylebox_override("panel", default_style)
+	## 卡片框背景（默认 LV1，后续由 _fill_partner_slot 按实际等级覆盖）
+	var card_bg := TextureRect.new()
+	card_bg.name = "CardBg"
+	card_bg.layout_mode = 1
+	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	card_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	card_bg.texture = load(ConfigManager.get_partner_card_path("", 1))
+	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot.add_child(card_bg)
 	
-	## Hover 效果
-	var hover_style := StyleBoxFlat.new()
-	hover_style.bg_color = Color(0.1, 0.1, 0.14, 0.8)
-	hover_style.border_color = Color(0.35, 0.55, 0.85, 0.6)
-	hover_style.border_width_left = 1
-	hover_style.border_width_top = 1
-	hover_style.border_width_right = 1
-	hover_style.border_width_bottom = 1
-	hover_style.corner_radius_top_left = 4
-	hover_style.corner_radius_top_right = 4
-	hover_style.corner_radius_bottom_left = 4
-	hover_style.corner_radius_bottom_right = 4
-	
+	## Hover 效果（用 modulate 实现，不覆盖样式）
 	slot.mouse_entered.connect(func():
-		slot.add_theme_stylebox_override("panel", hover_style)
+		slot.modulate = Color(1.1, 1.1, 1.2)
 	)
 	slot.mouse_exited.connect(func():
-		slot.add_theme_stylebox_override("panel", default_style)
+		if not (slot.has_meta("flash_tween") and slot.get_meta("flash_tween") != null and (slot.get_meta("flash_tween") as Tween).is_valid()):
+			slot.modulate = Color(1, 1, 1)
 	)
 	
-	var hbox := HBoxContainer.new()
-	hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
-	hbox.add_theme_constant_override("separation", 6)
-	slot.add_child(hbox)
+	## 内容区（留边距避免遮挡卡片框边框）
+	var margin := MarginContainer.new()
+	margin.layout_mode = 1
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	slot.add_child(margin)
 	
-	## 稀有度色条
-	var rarity_badge := ColorRect.new()
-	rarity_badge.name = "RarityBadge"
-	rarity_badge.custom_minimum_size = Vector2(4, 48)
-	rarity_badge.color = Color("#888888")
-	hbox.add_child(rarity_badge)
-	
-	## 头像
-	var avatar := TextureRect.new()
-	avatar.name = "Avatar"
-	avatar.custom_minimum_size = Vector2(48, 48)
-	avatar.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	hbox.add_child(avatar)
-	
-	## 信息区
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 2)
-	hbox.add_child(vbox)
+	vbox.add_theme_constant_override("separation", 4)
+	margin.add_child(vbox)
 	
+	## 头像
+	var portrait := TextureRect.new()
+	portrait.name = "Portrait"
+	portrait.custom_minimum_size = Vector2(64, 64)
+	portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	vbox.add_child(portrait)
+	
+	## 名字
 	var name_label := Label.new()
 	name_label.name = "NameLabel"
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", Color("#E6C040"))
 	vbox.add_child(name_label)
 	
+	## 等级 + 职业
 	var level_label := Label.new()
 	level_label.name = "LevelLabel"
-	level_label.add_theme_font_size_override("font_size", 11)
+	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_label.add_theme_font_size_override("font_size", 10)
 	level_label.add_theme_color_override("font_color", Color("#888888"))
 	vbox.add_child(level_label)
 	
-	## 技能充能条
-	var gauge := ProgressBar.new()
-	gauge.name = "SkillGauge"
-	gauge.custom_minimum_size = Vector2(90, 4)
-	gauge.max_value = 3
-	gauge.value = 0
-	gauge.show_percentage = false
-	
-	## 底色
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.15, 0.15, 0.18, 1)
-	bg_style.corner_radius_top_left = 2
-	bg_style.corner_radius_top_right = 2
-	bg_style.corner_radius_bottom_left = 2
-	bg_style.corner_radius_bottom_right = 2
-	gauge.add_theme_stylebox_override("background", bg_style)
-	
-	vbox.add_child(gauge)
+	## CHAIN 计数徽章
+	var chain_badge := Label.new()
+	chain_badge.name = "ChainBadge"
+	chain_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	chain_badge.add_theme_font_size_override("font_size", 10)
+	chain_badge.add_theme_color_override("font_color", Color("#5A8FD0"))
+	vbox.add_child(chain_badge)
 	
 	return slot
 
@@ -1035,52 +1093,64 @@ func _update_partner_hud() -> void:
 	## 总面板：有伙伴时显示，无伙伴时隐藏
 	partner_panel.visible = (partners.size() > 0)
 
+func _resolve_texture_from_path(path: String) -> Texture2D:
+	## 支持 Texture2D 和 SpriteFrames（自动取第一帧）
+	if path.is_empty():
+		return null
+	var res: Resource = load(path)
+	if res == null:
+		return null
+	if res is Texture2D:
+		return res as Texture2D
+	if res is SpriteFrames:
+		var frames: SpriteFrames = res
+		var anim_names: PackedStringArray = frames.get_animation_names()
+		for anim_name in anim_names:
+			var frame_count: int = frames.get_frame_count(anim_name)
+			if frame_count > 0:
+				return frames.get_frame_texture(anim_name, 0)
+	return null
+
 func _fill_partner_slot(slot: Control, partner) -> void:
-	var hbox: HBoxContainer = slot.get_child(0)
-	var rarity_badge: ColorRect = hbox.get_node("RarityBadge")
-	var avatar: TextureRect = hbox.get_node("Avatar")
-	var vbox: VBoxContainer = hbox.get_child(2)
-	var name_label: Label = vbox.get_node("NameLabel")
-	var level_label: Label = vbox.get_node("LevelLabel")
-	var gauge: ProgressBar = vbox.get_node("SkillGauge")
-	
 	var config_id: int = partner.partner_config_id if partner is RuntimePartner else partner.get("partner_config_id", 0)
 	var cfg: Dictionary = ConfigManager.get_partner_config(str(config_id))
 	
-	## 稀有度色条
-	var rarity: String = cfg.get("rarity_str", "C")
-	rarity_badge.color = ConfigManager.get_rarity_color(rarity)
+	## 更新卡片框背景（按伙伴ID+等级）
+	var level: int = partner.current_level if partner is RuntimePartner else partner.get("current_level", 1)
+	level = clampi(level, 1, 5)
+	var card_bg: TextureRect = slot.get_node("CardBg")
+	var partner_id: String = str(config_id)
+	card_bg.texture = load(ConfigManager.get_partner_card_path(partner_id, level))
+	
+	## 内容子节点（CardBg = child 0, MarginContainer = child 1）
+	var margin: MarginContainer = slot.get_child(1)
+	var vbox: VBoxContainer = margin.get_child(0)
+	var portrait: TextureRect = vbox.get_node("Portrait")
+	var name_label: Label = vbox.get_node("NameLabel")
+	var level_label: Label = vbox.get_node("LevelLabel")
+	var chain_badge: Label = vbox.get_node("ChainBadge")
 	
 	## 头像
 	var avatar_path: String = cfg.get("avatar_path", "")
-	if not avatar_path.is_empty():
-		avatar.texture = load(avatar_path)
-	else:
-		avatar.texture = null
+	portrait.texture = _resolve_texture_from_path(avatar_path)
 	
 	## 名字
-	var p_name: String = cfg.get("name", "???")
-	name_label.text = p_name
+	name_label.text = cfg.get("name", "???")
 	
-	## 等级
-	var level: int = partner.current_level if partner is RuntimePartner else partner.get("current_level", 1)
+	## 等级 + 职业
 	level_label.text = "Lv.%d | %s" % [level, cfg.get("role", "伙伴")]
 	
-	## 技能充能
+	## CHAIN 计数
+	var chain_count: int = partner.chain_trigger_count if partner is RuntimePartner else partner.get("chain_trigger_count", 0)
+	chain_badge.text = "x chain %d" % chain_count
+	
+	## 技能充能状态：满充能时卡片整体闪烁（代替 ProgressBar）
 	var charge: int = partner.skill_charge if partner is RuntimePartner else partner.get("skill_charge", 0)
 	var charge_max: int = partner.skill_charge_max if partner is RuntimePartner else partner.get("skill_charge_max", cfg.get("skill_charge_max", 3))
-	gauge.max_value = charge_max
-	
-	## Tween 动画更新充能条
-	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(gauge, "value", float(charge), 0.3)
-	
-	## 颜色：满充能闪烁暗金
 	if charge >= charge_max:
-		_flash_gauge_ready(gauge)
+		_flash_slot_ready(slot)
 	else:
-		_stop_gauge_flash(gauge)
-		_set_gauge_fill_color(gauge, Color("#5A8FD0"))
+		_stop_slot_flash(slot)
 
 func _flash_gauge_ready(gauge: ProgressBar) -> void:
 	if gauge.has_meta("flash_tween"):
@@ -1111,6 +1181,25 @@ func _set_gauge_fill_color(gauge: ProgressBar, color: Color) -> void:
 	fill_style.corner_radius_bottom_right = 2
 	gauge.add_theme_stylebox_override("fill", fill_style)
 
+## 小型卡片满充能闪烁（代替 ProgressBar）
+func _flash_slot_ready(slot: Control) -> void:
+	if slot.has_meta("flash_tween"):
+		var old: Tween = slot.get_meta("flash_tween")
+		if old != null and old.is_valid():
+			old.kill()
+	var tween := create_tween().set_loops()
+	tween.tween_property(slot, "modulate", Color(1.3, 1.2, 0.8), 0.4)
+	tween.tween_property(slot, "modulate", Color(1, 1, 1), 0.4)
+	slot.set_meta("flash_tween", tween)
+
+func _stop_slot_flash(slot: Control) -> void:
+	if slot.has_meta("flash_tween"):
+		var old: Tween = slot.get_meta("flash_tween")
+		if old != null and old.is_valid():
+			old.kill()
+		slot.remove_meta("flash_tween")
+	slot.modulate = Color(1, 1, 1)
+
 func _on_partner_unlocked(_config_id: String, partner_name: String, _slot_index: int, _turn: int, _role: String) -> void:
 	_update_partner_hud()
 	_show_floating_text("+%s 加入队伍！" % partner_name, Color("#4ECDC4"))
@@ -1123,7 +1212,7 @@ func _on_partner_unlocked(_config_id: String, partner_name: String, _slot_index:
 	
 	if last_visible_index >= 0:
 		var slot: Control = _partner_slots[last_visible_index]
-		slot.pivot_offset = Vector2(80, 28)
+		slot.pivot_offset = Vector2(70, 90)
 		slot.scale = Vector2(0.5, 0.5)
 		slot.modulate.a = 0.0
 		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

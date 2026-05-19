@@ -61,29 +61,37 @@ position = Vector2(1410, 360)
 layer = 2
 
 [node name="TitleLabel" type="Label" parent="UILayer" unique_id=1691243069]
+custom_minimum_size = Vector2(500, 80)
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -375.0
-offset_top = 120.0
-offset_right = 375.0
-offset_bottom = 195.0
+offset_left = -880.0
+offset_top = 100.0
+offset_right = -130.0
+offset_bottom = 175.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_shadow_color = Color(0.2, 0.05, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0.79, 0.64, 0.15, 1)
+theme_override_constants/shadow_offset_x = 3
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/outline_size = 2
+theme_override_font_sizes/font_size = 48
 text = "赛马娘版Q宠大乐斗"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="MenuButtons" type="VBoxContainer" parent="UILayer" unique_id=535879365]
+custom_minimum_size = Vector2(300, 475)
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -150.0
-offset_top = -165.0
-offset_right = 150.0
-offset_bottom = 165.0
+offset_left = -880.0
+offset_top = -320.0
+offset_right = -580.0
+offset_bottom = 420.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
@@ -92,49 +100,46 @@ theme_override_constants/separation = 20
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 75)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.6, 1)
 text = "开始新局"
 
 [node name="BtnContinue" type="Button" parent="UILayer/MenuButtons" unique_id=1206341204]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 75)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.6, 1)
 text = "继续游戏"
 
 [node name="BtnArchive" type="Button" parent="UILayer/MenuButtons" unique_id=1117886865]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 75)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.6, 1)
 text = "斗士档案"
-
-[node name="BtnQuit" type="Button" parent="UILayer/MenuButtons" unique_id=462298988]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 75)
-layout_mode = 2
-text = "退出游戏"
-
-[node name="BtnPVP" type="Button" parent="UILayer/MenuButtons" unique_id=1301902876]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 75)
-layout_mode = 2
-text = "PVP对战"
-
-[node name="BtnShop" type="Button" parent="UILayer/MenuButtons" unique_id=1818890231]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 75)
-layout_mode = 2
-text = "商店"
-
-[node name="BtnLeaderboard" type="Button" parent="UILayer/MenuButtons" unique_id=1814472937]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 75)
-layout_mode = 2
-text = "排行榜"
 
 [node name="BtnSettings" type="Button" parent="UILayer/MenuButtons" unique_id=999999999]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(300, 75)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.6, 1)
 text = "设置"
+
+[node name="BtnQuit" type="Button" parent="UILayer/MenuButtons" unique_id=462298988]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 75)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.6, 1)
+text = "退出游戏"
 
 [node name="MenuButton" type="Button" parent="UILayer" unique_id=2024501554]
 unique_name_in_owner = true
@@ -184,5 +189,40 @@ theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
 theme_override_font_sizes/font_size = 14
 text = "v0.1.0"
 horizontal_alignment = 2
+
+[node name="IconBar" type="HBoxContainer" parent="UILayer" unique_id=139309283]
+custom_minimum_size = Vector2(300, 80)
+offset_left = 80.0
+offset_top = 750.0
+offset_right = 80.0
+offset_bottom = 750.0
+alignment = 1
+
+[node name="BtnPVP" type="Button" parent="UILayer/IconBar" unique_id=1301902876]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "PVP对战"
+
+[node name="BtnShop" type="Button" parent="UILayer/IconBar" unique_id=1818890231]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "商店"
+
+[node name="BtnLeaderboard" type="Button" parent="UILayer/IconBar" unique_id=1814472937]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 80)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
+theme_override_colors/font_hover_color = Color(1, 0.95, 0.6, 1)
+theme_override_font_sizes/font_size = 14
+text = "排行榜"
 
 [node name="PauseMenu" parent="." unique_id=128202323 instance=ExtResource("2_pause")]

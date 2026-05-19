@@ -52,13 +52,22 @@ func _populate_partner_slots() -> void:
 		if slot == null:
 			continue
 
-		var portrait: ColorRect = slot.get_node("PortraitRect")
-		var name_label: Label = slot.get_node("NameLabel")
-		var role_label: Label = slot.get_node("RoleLabel")
-		var lv_label: Label = slot.get_node("LvLabel")
-		var check_box: CheckBox = slot.get_node("SelectCheck")
+		var card_bg: TextureRect = slot.get_node("CardBg")
+		var portrait: TextureRect = slot.get_node("Margin/VBox/Portrait")
+		var name_label: Label = slot.get_node("Margin/VBox/NameLabel")
+		var role_label: Label = slot.get_node("Margin/VBox/RoleLabel")
+		var lv_label: Label = slot.get_node("Margin/VBox/LvLabel")
+		var check_box: CheckBox = slot.get_node("Margin/VBox/SelectCheck")
 
-		portrait.color = Color.html(config.get("portrait_color", "#FFFFFF"))
+		## 卡片框背景（酒馆伙伴默认 Lv.1）
+		card_bg.texture = load(ConfigManager.get_partner_card_path(partner_id, 1))
+		
+		## 头像
+		var avatar_path: String = config.get("avatar_path", "")
+		var tex: Texture2D = _resolve_texture_from_path(avatar_path)
+		if tex != null:
+			portrait.texture = tex
+		
 		name_label.text = config.get("partner_name", partner_id)
 		role_label.text = config.get("role", "")
 		lv_label.text = "Lv.1"
@@ -73,6 +82,24 @@ func _populate_partner_slots() -> void:
 		var slot: Control = _partner_grid.get_child(i)
 		if slot != null:
 			slot.visible = false
+
+func _resolve_texture_from_path(path: String) -> Texture2D:
+	## 支持 Texture2D 和 SpriteFrames（自动取第一帧）
+	if path.is_empty():
+		return null
+	var res: Resource = load(path)
+	if res == null:
+		return null
+	if res is Texture2D:
+		return res as Texture2D
+	if res is SpriteFrames:
+		var frames: SpriteFrames = res
+		var anim_names: PackedStringArray = frames.get_animation_names()
+		for anim_name in anim_names:
+			var frame_count: int = frames.get_frame_count(anim_name)
+			if frame_count > 0:
+				return frames.get_frame_texture(anim_name, 0)
+	return null
 
 func _on_partner_toggled(pressed: bool, partner_id: String) -> void:
 	if pressed:

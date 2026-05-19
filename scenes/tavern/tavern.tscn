@@ -70,212 +70,380 @@ columns = 3
 theme_override_constants/h_separation = 20
 theme_override_constants/v_separation = 20
 
-[node name="PartnerSlot1" type="VBoxContainer" parent="PartnerGrid"]
+[node name="PartnerSlot1" type="Control" parent="PartnerGrid"]
 custom_minimum_size = Vector2(270.0, 330.0)
 layout_mode = 2
-alignment = 1
 
-[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot1"]
-custom_minimum_size = Vector2(120.0, 120.0)
+[node name="CardBg" type="TextureRect" parent="PartnerGrid/PartnerSlot1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="PartnerGrid/PartnerSlot1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="PartnerGrid/PartnerSlot1/Margin"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="Portrait" type="TextureRect" parent="PartnerGrid/PartnerSlot1/Margin/VBox"]
+custom_minimum_size = Vector2(100.0, 100.0)
 layout_mode = 2
 size_flags_horizontal = 4
-color = Color(0.905882, 0.298039, 0.235294, 1)
+expand_mode = 1
+stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot1"]
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot1/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "剑士"
 horizontal_alignment = 1
 
-[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot1"]
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot1/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
 text = "输出型·力量"
 horizontal_alignment = 1
 
-[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot1"]
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot1/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Lv.1"
 horizontal_alignment = 1
 
-[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot1"]
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot1/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "加入队伍"
 
-[node name="PartnerSlot2" type="VBoxContainer" parent="PartnerGrid"]
+[node name="PartnerSlot2" type="Control" parent="PartnerGrid"]
 custom_minimum_size = Vector2(270.0, 330.0)
 layout_mode = 2
-alignment = 1
 
-[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot2"]
-custom_minimum_size = Vector2(120.0, 120.0)
+[node name="CardBg" type="TextureRect" parent="PartnerGrid/PartnerSlot2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="PartnerGrid/PartnerSlot2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="PartnerGrid/PartnerSlot2/Margin"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="Portrait" type="TextureRect" parent="PartnerGrid/PartnerSlot2/Margin/VBox"]
+custom_minimum_size = Vector2(100.0, 100.0)
 layout_mode = 2
 size_flags_horizontal = 4
-color = Color(0.180392, 0.8, 0.443137, 1)
+expand_mode = 1
+stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot2"]
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot2/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "斥候"
 horizontal_alignment = 1
 
-[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot2"]
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot2/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
 text = "输出型·敏捷"
 horizontal_alignment = 1
 
-[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot2"]
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot2/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Lv.1"
 horizontal_alignment = 1
 
-[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot2"]
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot2/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "加入队伍"
 
-[node name="PartnerSlot3" type="VBoxContainer" parent="PartnerGrid"]
+[node name="PartnerSlot3" type="Control" parent="PartnerGrid"]
 custom_minimum_size = Vector2(270.0, 330.0)
 layout_mode = 2
-alignment = 1
 
-[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot3"]
-custom_minimum_size = Vector2(120.0, 120.0)
+[node name="CardBg" type="TextureRect" parent="PartnerGrid/PartnerSlot3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="PartnerGrid/PartnerSlot3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="PartnerGrid/PartnerSlot3/Margin"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="Portrait" type="TextureRect" parent="PartnerGrid/PartnerSlot3/Margin/VBox"]
+custom_minimum_size = Vector2(100.0, 100.0)
 layout_mode = 2
 size_flags_horizontal = 4
-color = Color(0.203922, 0.596078, 0.858824, 1)
+expand_mode = 1
+stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot3"]
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot3/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "盾卫"
 horizontal_alignment = 1
 
-[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot3"]
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot3/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
 text = "防御型·体魄"
 horizontal_alignment = 1
 
-[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot3"]
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot3/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Lv.1"
 horizontal_alignment = 1
 
-[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot3"]
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot3/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "加入队伍"
 
-[node name="PartnerSlot4" type="VBoxContainer" parent="PartnerGrid"]
+[node name="PartnerSlot4" type="Control" parent="PartnerGrid"]
 custom_minimum_size = Vector2(270.0, 330.0)
 layout_mode = 2
-alignment = 1
 
-[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot4"]
-custom_minimum_size = Vector2(120.0, 120.0)
+[node name="CardBg" type="TextureRect" parent="PartnerGrid/PartnerSlot4"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="PartnerGrid/PartnerSlot4"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="PartnerGrid/PartnerSlot4/Margin"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="Portrait" type="TextureRect" parent="PartnerGrid/PartnerSlot4/Margin/VBox"]
+custom_minimum_size = Vector2(100.0, 100.0)
 layout_mode = 2
 size_flags_horizontal = 4
-color = Color(0.945098, 0.768627, 0.0588235, 1)
+expand_mode = 1
+stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot4"]
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot4/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "药师"
 horizontal_alignment = 1
 
-[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot4"]
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot4/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
 text = "辅助型·精神"
 horizontal_alignment = 1
 
-[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot4"]
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot4/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Lv.1"
 horizontal_alignment = 1
 
-[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot4"]
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot4/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "加入队伍"
 
-[node name="PartnerSlot5" type="VBoxContainer" parent="PartnerGrid"]
+[node name="PartnerSlot5" type="Control" parent="PartnerGrid"]
 custom_minimum_size = Vector2(270.0, 330.0)
 layout_mode = 2
-alignment = 1
 
-[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot5"]
-custom_minimum_size = Vector2(120.0, 120.0)
+[node name="CardBg" type="TextureRect" parent="PartnerGrid/PartnerSlot5"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="PartnerGrid/PartnerSlot5"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="PartnerGrid/PartnerSlot5/Margin"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="Portrait" type="TextureRect" parent="PartnerGrid/PartnerSlot5/Margin/VBox"]
+custom_minimum_size = Vector2(100.0, 100.0)
 layout_mode = 2
 size_flags_horizontal = 4
-color = Color(0.607843, 0.34902, 0.713726, 1)
+expand_mode = 1
+stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot5"]
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot5/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "术士"
 horizontal_alignment = 1
 
-[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot5"]
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot5/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
 text = "控场型·技巧"
 horizontal_alignment = 1
 
-[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot5"]
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot5/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Lv.1"
 horizontal_alignment = 1
 
-[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot5"]
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot5/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "加入队伍"
 
-[node name="PartnerSlot6" type="VBoxContainer" parent="PartnerGrid"]
+[node name="PartnerSlot6" type="Control" parent="PartnerGrid"]
 custom_minimum_size = Vector2(270.0, 330.0)
 layout_mode = 2
-alignment = 1
 
-[node name="PortraitRect" type="ColorRect" parent="PartnerGrid/PartnerSlot6"]
-custom_minimum_size = Vector2(120.0, 120.0)
+[node name="CardBg" type="TextureRect" parent="PartnerGrid/PartnerSlot6"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="PartnerGrid/PartnerSlot6"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="PartnerGrid/PartnerSlot6/Margin"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 6
+
+[node name="Portrait" type="TextureRect" parent="PartnerGrid/PartnerSlot6/Margin/VBox"]
+custom_minimum_size = Vector2(100.0, 100.0)
 layout_mode = 2
 size_flags_horizontal = 4
-color = Color(0.901961, 0.494118, 0.133333, 1)
+expand_mode = 1
+stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot6"]
+[node name="NameLabel" type="Label" parent="PartnerGrid/PartnerSlot6/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "猎人"
 horizontal_alignment = 1
 
-[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot6"]
+[node name="RoleLabel" type="Label" parent="PartnerGrid/PartnerSlot6/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.666667, 0.666667, 0.666667, 1)
 text = "斩杀型·技巧"
 horizontal_alignment = 1
 
-[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot6"]
+[node name="LvLabel" type="Label" parent="PartnerGrid/PartnerSlot6/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 text = "Lv.1"
 horizontal_alignment = 1
 
-[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot6"]
+[node name="SelectCheck" type="CheckBox" parent="PartnerGrid/PartnerSlot6/Margin/VBox"]
 layout_mode = 2
 size_flags_horizontal = 4
 text = "加入队伍"

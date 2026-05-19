@@ -288,65 +288,21 @@ grow_horizontal = 2
 text = "选择一名伙伴加入"
 horizontal_alignment = 1
 
-[node name="CandidateBtn1" type="Button" parent="RescuePanel"]
+[node name="CandidatesContainer" type="HBoxContainer" parent="RescuePanel"]
 layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 30.0
-offset_top = 60.0
-offset_right = -30.0
-offset_bottom = 142.5
-grow_horizontal = 2
-
-[node name="Label" type="Label" parent="RescuePanel/CandidateBtn1"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -140.0
+offset_right = 320.0
+offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="CandidateBtn2" type="Button" parent="RescuePanel"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 30.0
-offset_top = 157.5
-offset_right = -30.0
-offset_bottom = 240.0
-grow_horizontal = 2
-
-[node name="Label" type="Label" parent="RescuePanel/CandidateBtn2"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="CandidateBtn3" type="Button" parent="RescuePanel"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 30.0
-offset_top = 255.0
-offset_right = -30.0
-offset_bottom = 337.5
-grow_horizontal = 2
-
-[node name="Label" type="Label" parent="RescuePanel/CandidateBtn3"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-horizontal_alignment = 1
-vertical_alignment = 1
+alignment = 1
+theme_override_constants/separation = 24
 
 [node name="PauseMenu" parent="." instance=ExtResource("2_pause")]
 

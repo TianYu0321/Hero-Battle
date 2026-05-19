@@ -138,13 +138,75 @@ offset_bottom = 240.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HeroArt" type="AnimatedSprite2D" parent="StageArea" unique_id=1604219356]
-position = Vector2(270.0, 210.0)
-scale = Vector2(2, 2)
+[node name="HeroCard" type="Control" parent="StageArea"]
+layout_mode = 0
+offset_left = 120.0
+offset_top = 60.0
+offset_right = 420.0
+offset_bottom = 360.0
 
-[node name="EnemyArt" type="AnimatedSprite2D" parent="StageArea" unique_id=109318882]
-position = Vector2(1650.0, 210.0)
-scale = Vector2(-2, 2)
+[node name="CardBorder" type="ColorRect" parent="StageArea/HeroCard"]
+layout_mode = 0
+offset_right = 300.0
+offset_bottom = 300.0
+color = Color(0.1, 0.1, 0.12, 1.0)
+
+[node name="Portrait" type="TextureRect" parent="StageArea/HeroCard"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 290.0
+offset_bottom = 290.0
+expand_mode = 3
+stretch_mode = 5
+
+[node name="PortraitOverlay" type="ColorRect" parent="StageArea/HeroCard/Portrait"]
+layout_mode = 0
+offset_right = 280.0
+offset_bottom = 280.0
+color = Color(1, 1, 1, 0)
+
+[node name="GlowOverlay" type="ColorRect" parent="StageArea/HeroCard"]
+layout_mode = 0
+offset_right = 300.0
+offset_bottom = 300.0
+color = Color(1, 1, 1, 0)
+
+[node name="EnemyCard" type="Control" parent="StageArea"]
+layout_mode = 0
+offset_left = 1500.0
+offset_top = 60.0
+offset_right = 1800.0
+offset_bottom = 360.0
+
+[node name="CardBorder" type="ColorRect" parent="StageArea/EnemyCard"]
+layout_mode = 0
+offset_right = 300.0
+offset_bottom = 300.0
+color = Color(0.1, 0.1, 0.12, 1.0)
+
+[node name="Portrait" type="TextureRect" parent="StageArea/EnemyCard"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 290.0
+offset_bottom = 290.0
+expand_mode = 3
+stretch_mode = 5
+
+[node name="PortraitOverlay" type="ColorRect" parent="StageArea/EnemyCard/Portrait"]
+layout_mode = 0
+offset_right = 280.0
+offset_bottom = 280.0
+color = Color(1, 1, 1, 0)
+
+[node name="GlowOverlay" type="ColorRect" parent="StageArea/EnemyCard"]
+layout_mode = 0
+offset_right = 300.0
+offset_bottom = 300.0
+color = Color(1, 1, 1, 0)
+
+[node name="PartnerAnimContainer" type="Node2D" parent="StageArea"]
 
 [node name="StageName" type="Label" parent="StageArea" unique_id=53564804]
 layout_mode = 0
@@ -196,3 +258,127 @@ one_shot = true
 [node name="ResultTimer" type="Timer" parent="." unique_id=653165749]
 process_callback = 0
 one_shot = true
+
+[node name="PartnerChainLayer" type="CanvasLayer" parent="."]
+layer = 4
+
+[node name="PartnerChainList" type="VBoxContainer" parent="PartnerChainLayer"]
+offset_left = 30.0
+offset_top = 300.0
+offset_right = 230.0
+offset_bottom = 500.0
+theme_override_constants/separation = 8
+
+[node name="ChainSlot_0" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList"]
+layout_mode = 2
+offset_right = 200.0
+visible = false
+
+[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0"]
+layout_mode = 2
+offset_right = 48.0
+offset_bottom = 48.0
+custom_minimum_size = Vector2(48, 48)
+expand_mode = 3
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0"]
+layout_mode = 2
+offset_left = 52.0
+offset_right = 120.0
+offset_bottom = 26.0
+text = "???"
+
+[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0"]
+layout_mode = 2
+offset_left = 124.0
+offset_right = 200.0
+offset_bottom = 26.0
+text = "x chain 0"
+
+[node name="ChainSlot_1" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList"]
+layout_mode = 2
+offset_top = 52.0
+offset_right = 200.0
+visible = false
+
+[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1"]
+layout_mode = 2
+offset_right = 48.0
+offset_bottom = 48.0
+custom_minimum_size = Vector2(48, 48)
+expand_mode = 3
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1"]
+layout_mode = 2
+offset_left = 52.0
+offset_right = 120.0
+offset_bottom = 26.0
+text = "???"
+
+[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1"]
+layout_mode = 2
+offset_left = 124.0
+offset_right = 200.0
+offset_bottom = 26.0
+text = "x chain 0"
+
+[node name="ChainSlot_2" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList"]
+layout_mode = 2
+offset_top = 104.0
+offset_right = 200.0
+visible = false
+
+[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2"]
+layout_mode = 2
+offset_right = 48.0
+offset_bottom = 48.0
+custom_minimum_size = Vector2(48, 48)
+expand_mode = 3
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2"]
+layout_mode = 2
+offset_left = 52.0
+offset_right = 120.0
+offset_bottom = 26.0
+text = "???"
+
+[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2"]
+layout_mode = 2
+offset_left = 124.0
+offset_right = 200.0
+offset_bottom = 26.0
+text = "x chain 0"
+
+[node name="ChainSlot_3" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList"]
+layout_mode = 2
+offset_top = 156.0
+offset_right = 200.0
+visible = false
+
+[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3"]
+layout_mode = 2
+offset_right = 48.0
+offset_bottom = 48.0
+custom_minimum_size = Vector2(48, 48)
+expand_mode = 3
+stretch_mode = 5
+
+[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3"]
+layout_mode = 2
+offset_left = 52.0
+offset_right = 120.0
+offset_bottom = 26.0
+text = "???"
+
+[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3"]
+layout_mode = 2
+offset_left = 124.0
+offset_right = 200.0
+offset_bottom = 26.0
+text = "x chain 0"
+
+[node name="VFXLayer" type="CanvasLayer" parent="."]
+layer = 5

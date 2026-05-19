@@ -166,6 +166,26 @@ func get_partner_avatar_path(partner_id: String) -> String:
 	var cfg := get_partner_config(partner_id)
 	return cfg.get("avatar_path", "")
 
+## 获取伙伴立绘/肖像路径（营救卡片大图）
+func get_partner_portrait_path(partner_config_id: int) -> String:
+	var cfg := get_partner_config(str(partner_config_id))
+	var path: String = cfg.get("portrait_path", "")
+	if path.is_empty():
+		path = cfg.get("avatar_path", "")
+	return path
+
+## 获取伙伴卡片框路径（支持专用卡片 + 通用等级 fallback）
+func get_partner_card_path(partner_id: String, level: int) -> String:
+	level = clampi(level, 1, 5)
+	## 映射数字ID到partner_id（如 "1001" → "partner_swordsman"）
+	var mapped_id: String = _PARTNER_ID_MAP.get(partner_id, partner_id)
+	## 先查专用卡片（后续美术在 partners/ 目录下补充）
+	var dedicated: String = "res://assets/characters/card/partners/%s_lv%d.png" % [mapped_id, level]
+	if FileAccess.file_exists(dedicated):
+		return dedicated
+	## fallback 到通用等级卡片
+	return "res://assets/characters/card/LV%d.png" % level
+
 ## 获取稀有度颜色
 static func get_rarity_color(rarity: String) -> Color:
 	match rarity:
@@ -393,6 +413,17 @@ func get_partner_config(partner_id: String) -> Dictionary:
 
 func get_all_partner_configs() -> Dictionary:
 	return _partner_configs.duplicate()
+
+func get_partner_config_by_name(partner_name: String) -> Dictionary:
+	for key in _partner_configs.keys():
+		var cfg: Dictionary = _partner_configs[key]
+		if cfg.get("name", "") == partner_name:
+			return cfg.duplicate()
+	for key in _FALLBACK_PARTNER_CONFIGS.keys():
+		var cfg: Dictionary = _FALLBACK_PARTNER_CONFIGS[key]
+		if cfg.get("name", "") == partner_name:
+			return cfg.duplicate()
+	return {}
 
 func get_skill_config(skill_id) -> Dictionary:
 	var normalized_id: String
