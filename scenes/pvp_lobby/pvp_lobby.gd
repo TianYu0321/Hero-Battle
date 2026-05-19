@@ -236,11 +236,8 @@ func _on_start_battle() -> void:
 	var combat_summary: Dictionary = result.get("combat_summary", {})
 	var total_rounds: int = combat_summary.get("turns", 0)
 
-	# 英雄 sprite 路径映射（config_id → path）
-	var hero_sprite_path: String = ""
-	match GameManager.selected_hero_config_id:
-		2:
-			hero_sprite_path = "res://assets/characters/shinobi/hero_frames.tres"
+	# 英雄 sprite 路径（统一走 ConfigManager）
+	var hero_sprite_path: String = ConfigManager.get_hero_sprite_path(GameManager.selected_hero_config_id)
 	
 	# 敌人 sprite 路径（对手）
 	var enemy_data = result.get("enemies", [{}])[0]

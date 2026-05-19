@@ -1,9 +1,10 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 [ext_resource type="PackedScene" uid="uid://battlesummary01" path="res://scenes/run_main/battle_summary_panel.tscn" id="3_bsp"]
 [ext_resource type="PackedScene" path="res://scenes/run_main/battle_animation_panel.tscn" id="4_bap"]
+[ext_resource type="PackedScene" uid="uid://outingpopup01" path="res://scenes/outing/outing_popup.tscn" id="5_op"]
 
 [node name="RunMain" type="Control"]
 layout_mode = 3
@@ -17,49 +18,49 @@ script = ExtResource("1_abc12")
 [node name="MenuButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 1
-offset_left = 1160.0
-offset_top = 20.0
-offset_right = 1260.0
-offset_bottom = 60.0
+offset_left = 1740.0
+offset_top = 30.0
+offset_right = 1890.0
+offset_bottom = 90.0
 text = "菜单"
 
 [node name="HudContainer" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 140.0
+offset_bottom = 210.0
 grow_horizontal = 2
 
 [node name="FloorLabel" type="Label" parent="HudContainer"]
 layout_mode = 0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = 150.0
-offset_bottom = 50.0
+offset_left = 30.0
+offset_top = 30.0
+offset_right = 225.0
+offset_bottom = 75.0
 text = "层数: 1/30"
 
 [node name="GoldLabel" type="Label" parent="HudContainer"]
 layout_mode = 0
-offset_left = 180.0
-offset_top = 20.0
-offset_right = 330.0
-offset_bottom = 50.0
+offset_left = 270.0
+offset_top = 30.0
+offset_right = 495.0
+offset_bottom = 75.0
 text = "金币: 0"
 
 [node name="HpLabel" type="Label" parent="HudContainer"]
 layout_mode = 0
-offset_left = 360.0
-offset_top = 20.0
-offset_right = 510.0
-offset_bottom = 50.0
+offset_left = 540.0
+offset_top = 30.0
+offset_right = 765.0
+offset_bottom = 75.0
 text = "生命: 100/100"
 
 [node name="OptionContainer" type="VBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 240.0
-offset_top = 280.0
-offset_right = 640.0
-offset_bottom = 470.0
+offset_left = 360.0
+offset_top = 420.0
+offset_right = 960.0
+offset_bottom = 705.0
 
 [node name="TrainButton" type="Button" parent="OptionContainer"]
 layout_mode = 2
@@ -80,10 +81,10 @@ text = "外出"
 [node name="TrainingPanel" type="VBoxContainer" parent="."]
 visible = false
 layout_mode = 0
-offset_left = 240.0
-offset_top = 280.0
-offset_right = 640.0
-offset_bottom = 530.0
+offset_left = 360.0
+offset_top = 420.0
+offset_right = 960.0
+offset_bottom = 795.0
 
 [node name="TitleLabel" type="Label" parent="TrainingPanel"]
 layout_mode = 2
@@ -102,12 +103,12 @@ layout_mode = 2
 text = "LV:0"
 
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow1"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow1"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
@@ -127,12 +128,12 @@ layout_mode = 2
 text = "LV:0"
 
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow2"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow2"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
@@ -152,12 +153,12 @@ layout_mode = 2
 text = "LV:0"
 
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow3"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow3"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
@@ -177,12 +178,12 @@ layout_mode = 2
 text = "LV:0"
 
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow4"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow4"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
@@ -202,12 +203,12 @@ layout_mode = 2
 text = "LV:0"
 
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow5"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow5"]
-custom_minimum_size = Vector2(24, 24)
+custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
 color = Color(0.8, 0.8, 0.8, 1)
 
@@ -217,13 +218,13 @@ text = "选择"
 
 [node name="PlayerInfoPanel" type="VBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 20.0
-offset_top = 160.0
-offset_right = 180.0
-offset_bottom = 420.0
+offset_left = 30.0
+offset_top = 240.0
+offset_right = 270.0
+offset_bottom = 630.0
 
 [node name="PlayerPortrait" type="ColorRect" parent="PlayerInfoPanel"]
-custom_minimum_size = Vector2(60, 60)
+custom_minimum_size = Vector2(90.0, 90.0)
 layout_mode = 2
 color = Color(0.4, 0.6, 0.9, 1)
 
@@ -249,10 +250,10 @@ text = "精神: 0"
 
 [node name="EnemyInfoPanel" type="VBoxContainer" parent="."]
 layout_mode = 0
-offset_left = 680.0
-offset_top = 280.0
-offset_right = 880.0
-offset_bottom = 380.0
+offset_left = 1020.0
+offset_top = 420.0
+offset_right = 1320.0
+offset_bottom = 570.0
 
 [node name="EnemyNameLabel" type="Label" parent="EnemyInfoPanel"]
 layout_mode = 2
@@ -273,16 +274,16 @@ text = "风险: ???"
 [node name="RescuePanel" type="Panel" parent="."]
 visible = false
 layout_mode = 0
-offset_left = 240.0
-offset_top = 200.0
-offset_right = 640.0
-offset_bottom = 420.0
+offset_left = 360.0
+offset_top = 300.0
+offset_right = 960.0
+offset_bottom = 630.0
 
 [node name="TitleLabel" type="Label" parent="RescuePanel"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 30.0
+offset_bottom = 45.0
 grow_horizontal = 2
 text = "选择一名伙伴加入"
 horizontal_alignment = 1
@@ -291,10 +292,10 @@ horizontal_alignment = 1
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 20.0
-offset_top = 40.0
-offset_right = -20.0
-offset_bottom = 95.0
+offset_left = 30.0
+offset_top = 60.0
+offset_right = -30.0
+offset_bottom = 142.5
 grow_horizontal = 2
 
 [node name="Label" type="Label" parent="RescuePanel/CandidateBtn1"]
@@ -311,10 +312,10 @@ vertical_alignment = 1
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 20.0
-offset_top = 105.0
-offset_right = -20.0
-offset_bottom = 160.0
+offset_left = 30.0
+offset_top = 157.5
+offset_right = -30.0
+offset_bottom = 240.0
 grow_horizontal = 2
 
 [node name="Label" type="Label" parent="RescuePanel/CandidateBtn2"]
@@ -331,10 +332,10 @@ vertical_alignment = 1
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 20.0
-offset_top = 170.0
-offset_right = -20.0
-offset_bottom = 225.0
+offset_left = 30.0
+offset_top = 255.0
+offset_right = -30.0
+offset_bottom = 337.5
 grow_horizontal = 2
 
 [node name="Label" type="Label" parent="RescuePanel/CandidateBtn3"]
@@ -349,108 +350,29 @@ vertical_alignment = 1
 
 [node name="PauseMenu" parent="." instance=ExtResource("2_pause")]
 
-[node name="PartnerContainer" type="Control" parent="."]
-layout_mode = 3
-anchors_preset = 12
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -100.0
-grow_horizontal = 2
-grow_vertical = 0
+[node name="PartnerHUDLayer" type="CanvasLayer" parent="."]
+layer = 3
 
-[node name="PartnerSlot1" type="ColorRect" parent="PartnerContainer"]
-layout_mode = 0
-offset_left = 200.0
-offset_top = 18.0
-offset_right = 264.0
-offset_bottom = 82.0
-color = Color(0.2, 0.6, 0.3, 1)
-
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot1"]
+[node name="PartnerPanel" type="PanelContainer" parent="PartnerHUDLayer"]
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 1
+anchor_left = 1.0
 anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "伙伴1"
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = -200.0
+offset_top = 120.0
+offset_right = -20.0
+offset_bottom = 600.0
+grow_horizontal = 0
 
-[node name="PartnerSlot2" type="ColorRect" parent="PartnerContainer"]
-layout_mode = 0
-offset_left = 400.0
-offset_top = 18.0
-offset_right = 464.0
-offset_bottom = 82.0
-color = Color(0.9, 0.5, 0.1, 1)
+[node name="PartnerList" type="VBoxContainer" parent="PartnerHUDLayer/PartnerPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot2"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "伙伴2"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="PartnerSlot3" type="ColorRect" parent="PartnerContainer"]
-layout_mode = 0
-offset_left = 600.0
-offset_top = 18.0
-offset_right = 664.0
-offset_bottom = 82.0
-color = Color(0.2, 0.4, 0.8, 1)
-
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot3"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "伙伴3"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="PartnerSlot4" type="ColorRect" parent="PartnerContainer"]
-layout_mode = 0
-offset_left = 800.0
-offset_top = 18.0
-offset_right = 864.0
-offset_bottom = 82.0
-color = Color(0.7, 0.2, 0.7, 1)
-
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot4"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "伙伴4"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="PartnerSlot5" type="ColorRect" parent="PartnerContainer"]
-layout_mode = 0
-offset_left = 1000.0
-offset_top = 18.0
-offset_right = 1064.0
-offset_bottom = 82.0
-color = Color(0.8, 0.8, 0.2, 1)
-
-[node name="Label" type="Label" parent="PartnerContainer/PartnerSlot5"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "伙伴5"
+[node name="PartnerTitle" type="Label" parent="PartnerHUDLayer/PartnerPanel/PartnerList"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.901961, 0.752941, 0.25098, 1)
+text = "随行伙伴"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -468,20 +390,20 @@ mouse_filter = 1
 [node name="ShopPanel" type="Panel" parent="."]
 visible = false
 layout_mode = 0
-offset_left = 440.0
-offset_top = 140.0
-offset_right = 840.0
-offset_bottom = 540.0
+offset_left = 660.0
+offset_top = 210.0
+offset_right = 1260.0
+offset_bottom = 810.0
 
 [node name="ContentVBox" type="VBoxContainer" parent="ShopPanel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 10.0
-offset_right = -20.0
-offset_bottom = -10.0
+offset_left = 30.0
+offset_top = 15.0
+offset_right = -30.0
+offset_bottom = -15.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -515,26 +437,29 @@ visible = false
 [node name="BattleAnimationPanel" parent="." instance=ExtResource("4_bap")]
 visible = false
 
+[node name="OutingPopup" parent="." instance=ExtResource("5_op")]
+visible = false
+
 [node name="CombatConfirmPanel" type="Panel" parent="."]
 layout_mode = 0
-offset_left = 440.0
-offset_top = 280.0
-offset_right = 840.0
-offset_bottom = 400.0
+offset_left = 660.0
+offset_top = 420.0
+offset_right = 1260.0
+offset_bottom = 600.0
 visible = false
 
 [node name="EnterCombatButton" type="Button" parent="CombatConfirmPanel"]
 layout_mode = 0
-offset_left = 20.0
-offset_top = 10.0
-offset_right = 380.0
-offset_bottom = 50.0
+offset_left = 30.0
+offset_top = 15.0
+offset_right = 570.0
+offset_bottom = 75.0
 text = "进入战斗"
 
 [node name="ReturnButton" type="Button" parent="CombatConfirmPanel"]
 layout_mode = 0
-offset_left = 20.0
-offset_top = 60.0
-offset_right = 380.0
-offset_bottom = 100.0
+offset_left = 30.0
+offset_top = 90.0
+offset_right = 570.0
+offset_bottom = 150.0
 text = "返回"

@@ -14,10 +14,10 @@ script = ExtResource("1_detail")
 
 [node name="VBox" type="VBoxContainer" parent="."]
 layout_mode = 2
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 1270.0
-offset_bottom = 710.0
+offset_left = 15.0
+offset_top = 15.0
+offset_right = 1905.0
+offset_bottom = 1065.0
 theme_override_constants/separation = 12
 
 [node name="TitleRow" type="HBoxContainer" parent="VBox"]

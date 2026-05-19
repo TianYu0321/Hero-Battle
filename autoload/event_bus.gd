@@ -34,6 +34,8 @@ signal gold_changed(new_amount: int, delta: int, reason: String)
 
 signal rescue_encountered(candidates: Array[Dictionary], rescue_turn: int)
 signal partner_unlocked(partner_id: String, partner_name: String, slot: int, join_turn: int, role: String)
+signal partner_skill_triggered(partner_id: String, skill_name: String, effect_desc: String)
+signal partner_charge_changed(partner_id: String, current: int, max_charge: int)
 signal enemy_encountered(enemy_data: Dictionary)
 
 ## 局外商店信号 (Outgame Shop)

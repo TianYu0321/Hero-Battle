@@ -61,27 +61,37 @@ func brave_normal_attack(hero: Dictionary, target: Dictionary) -> Array[Dictiona
 		_dc.apply_damage_packet(target, chase_pkt)
 	return packets
 
-## 影舞者普攻: 分裂多段
+## 影舞者普攻: 1段普通攻击（被动技能已解耦）
 func shadow_dancer_normal_attack(hero: Dictionary, target: Dictionary) -> Array[Dictionary]:
 	var packets: Array[Dictionary] = []
-	var passive_cfg: Dictionary = _get_passive_skill_config(hero)
-	var trigger_params: Dictionary = passive_cfg.get("trigger_params", {})
+	var pkt: Dictionary = _dc.compute_damage(hero, target, 1.0, "NORMAL")
+	packets.append(pkt)
+	_dc.apply_damage_packet(target, pkt)
+	return packets
 
+## 影舞者被动技能: 疾风连击（普攻后触发，多段攻击）
+func trigger_shadow_wind(hero: Dictionary, target: Dictionary) -> Array[Dictionary]:
+	var packets: Array[Dictionary] = []
+	var passive_cfg: Dictionary = _get_passive_skill_config(hero)
+	if passive_cfg.is_empty():
+		return packets
+	
+	var trigger_params: Dictionary = passive_cfg.get("trigger_params", {})
 	var stats: Dictionary = hero.get("stats", {})
 	var segment_min: int = trigger_params.get("segment_min", 2)
 	var segment_max: int = trigger_params.get("segment_max", 4)
 	var segment_attr_bonus: int = trigger_params.get("segment_attr_bonus", 3)
 	var segment_attr_step: int = trigger_params.get("segment_attr_step", 20)
-
+	
 	var attr_val: int = _get_attr_value(stats, segment_attr_bonus)
 	var segments: int = clampi(segment_min + int(attr_val / segment_attr_step), segment_min, segment_max)
 	var power_scale: float = passive_cfg.get("power_scale", 0.35)
 	for i in range(segments):
-		var pkt: Dictionary = _dc.compute_damage(hero, target, power_scale, "NORMAL")
-		packets.append(pkt)
-		_dc.apply_damage_packet(target, pkt)
 		if not target.get("is_alive", false):
 			break
+		var pkt: Dictionary = _dc.compute_damage(hero, target, power_scale, "SKILL")
+		packets.append(pkt)
+		_dc.apply_damage_packet(target, pkt)
 	return packets
 
 ## 铁卫普攻: 1段 100%

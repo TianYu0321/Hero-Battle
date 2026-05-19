@@ -1,0 +1,39 @@
+[gd_scene load_steps=2 format=3 uid="uid://dynamicbg01"]
+
+[ext_resource type="Script" path="res://scenes/backgrounds/dynamic_bg.gd" id="1_dbgd"]
+
+[node name="DynamicBg" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_dbgd")
+
+[node name="SkyLayer" type="Sprite2D" parent="."]
+centered = true
+
+[node name="WindowFrameLayer" type="Sprite2D" parent="."]
+centered = true
+
+[node name="GroundLayer" type="Sprite2D" parent="."]
+centered = true
+
+[node name="BatLayer" type="Sprite2D" parent="."]
+centered = true
+
+[node name="ForegroundLayer" type="Sprite2D" parent="."]
+centered = true
+
+[node name="LightGlow" type="Sprite2D" parent="."]
+centered = true
+
+[node name="FogOverlay" type="Sprite2D" parent="."]
+centered = true
+
+[node name="VignetteOverlay" type="Sprite2D" parent="."]
+centered = true
+
+[node name="DustParticles" type="CPUParticles2D" parent="."]

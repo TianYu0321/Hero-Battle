@@ -85,7 +85,8 @@ func _ready() -> void:
 	var _ash_parent := Node2D.new()
 	_ash_parent.name = "AshParent"
 	add_child(_ash_parent)
-	EnvVFX.create_ash_particles(_ash_parent, Vector2(1280, 720))
+	var vp_size := get_viewport().get_visible_rect().size
+	EnvVFX.create_ash_particles(_ash_parent, vp_size)
 
 func _apply_dark_theme() -> void:
 	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.92)
@@ -256,8 +257,9 @@ func _process_event(evt: Dictionary) -> void:
 			var is_miss: bool = summary.get("is_miss", false)
 			var is_crit: bool = summary.get("is_crit", false)
 			var value: int = summary.get("value", 0)
+			var action_type: String = data.get("action_type", "NORMAL")
 			
-			print("[BattleAnim] action_executed actor=%s hero_name=%s enemy_name=%s" % [actor, hero_name_label.text, enemy_name_label.text])
+			print("[BattleAnim] action_executed actor=%s action_type=%s" % [actor, action_type])
 			
 			if is_miss:
 				battle_log.append_text("[color=#73737A]  %s → %s 闪避[/color]\n" % [actor, target])
@@ -269,11 +271,20 @@ func _process_event(evt: Dictionary) -> void:
 				battle_log.append_text("  %s → %s %d\n" % [actor, target, value])
 				AudioManager.play_sfx("attack")
 			
-			# 攻击方播放攻击动画
+			# 根据 action_type 选择动画
+			var anim_action: String = "attack"
+			match action_type:
+				"ULTIMATE":
+					anim_action = "ultimate"
+				"SKILL":
+					anim_action = "skill"
+				_:
+					anim_action = "attack"
+			
 			if actor == hero_name_label.text:
-				_play_anim(hero_art, "attack")
+				_play_anim(hero_art, anim_action)
 			elif actor == enemy_name_label.text:
-				_play_anim(enemy_art, "attack")
+				_play_anim(enemy_art, anim_action)
 			else:
 				print("[BattleAnim] ⚠ actor 不匹配，不播放攻击动画")
 		
@@ -392,6 +403,19 @@ func _load_sprite(animated_sprite: AnimatedSprite2D, path: String) -> void:
 	animated_sprite.sprite_frames = frames
 	animated_sprite.autoplay = "idle"
 	animated_sprite.play("idle")
+	
+	## 影舞者新图尺寸较大，单独缩小比例
+	if path.contains("shinobi"):
+		if animated_sprite.name.contains("Hero"):
+			animated_sprite.scale = Vector2(0.5, 0.5)
+		else:
+			animated_sprite.scale = Vector2(-0.5, 0.5)
+	else:
+		## 其他角色恢复默认比例
+		if animated_sprite.name.contains("Hero"):
+			animated_sprite.scale = Vector2(2.0, 2.0)
+		else:
+			animated_sprite.scale = Vector2(-2.0, 2.0)
 
 func _set_placeholder_sprite(animated_sprite: AnimatedSprite2D, is_hero: bool) -> void:
 	## 占位：创建一个简单的纯色 AnimatedSprite2D（1帧）
@@ -427,12 +451,18 @@ func _play_anim(animated_sprite: AnimatedSprite2D, action: String) -> void:
 			elif not animated_sprite.sprite_frames.has_animation("attack"):
 				print("[BattleAnim] _play_anim: 无攻击动画可播放")
 				return
-		"hurt", "dead", "idle":
+		"hurt", "dead", "idle", "ultimate", "skill":
 			# 非攻击动作时重置攻击动画索引
 			_attack_anim_index[animated_sprite] = 0
 			if not animated_sprite.sprite_frames.has_animation(action):
-				print("[BattleAnim] _play_anim: 无 %s 动画" % action)
-				return
+				print("[BattleAnim] _play_anim: 无 %s 动画，fallback 到 attack" % action)
+				# fallback: 尝试 attack_1，如果没有则尝试 attack
+				if animated_sprite.sprite_frames.has_animation("attack_1"):
+					anim_name = "attack_1"
+				elif animated_sprite.sprite_frames.has_animation("attack"):
+					anim_name = "attack"
+				else:
+					return
 	print("[BattleAnim] _play_anim: 播放 %s" % anim_name)
 	animated_sprite.play(anim_name)
 
@@ -471,7 +501,8 @@ func _show_result() -> void:
 	
 	battle_log.append_text("\n[color=#E6C040]=== 战斗结束 ===[/color]")
 	print("[BattleAnimation] confirmed, gen=%d" % _playback_generation)
-	confirmed.emit()
+	# 使用 call_deferred 确保信号在连接建立后才发射，防止 run_main 中先启动 playback 后连接信号时的竞态
+	confirmed.emit.call_deferred()
 
 func reset_panel() -> void:
 	_is_playing = false
@@ -569,11 +600,14 @@ func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool, is_cha
 		tween.tween_property(label, "global_position:y", start_y + 10, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tween.tween_property(label, "modulate:a", 0, 0.3)
 	
-	tween.tween_callback(label.queue_free)
+	tween.tween_callback(func():
+		if is_instance_valid(label):
+			label.queue_free()
+	)
 
 func _clear_damage_numbers() -> void:
 	for child in get_children():
-		if child is Label and child.name.begins_with("DamageNum_"):
+		if is_instance_valid(child) and child is Label and child.name.begins_with("DamageNum_"):
 			child.queue_free()
 
 func _flash_sprite(is_hero: bool, is_crit: bool) -> void:

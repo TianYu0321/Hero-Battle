@@ -23,6 +23,11 @@ var is_active: bool = true
 var created_at: int = 0
 var updated_at: int = 0
 
+## 技能充能（HUD 显示用）
+var skill_charge: int = 0
+var skill_charge_max: int = 3
+var is_skill_ready: bool = false
+
 static var _next_instance_id: int = 1
 
 func _init() -> void:
@@ -47,6 +52,9 @@ func to_dict() -> Dictionary:
 		"is_active": is_active,
 		"created_at": created_at,
 		"updated_at": updated_at,
+		"skill_charge": skill_charge,
+		"skill_charge_max": skill_charge_max,
+		"is_skill_ready": is_skill_ready,
 	}
 
 
@@ -69,4 +77,7 @@ static func from_dict(data: Dictionary) -> RuntimePartner:
 	partner.is_active = data.get("is_active", true)
 	partner.created_at = data.get("created_at", 0)
 	partner.updated_at = data.get("updated_at", 0)
+	partner.skill_charge = data.get("skill_charge", 0)
+	partner.skill_charge_max = data.get("skill_charge_max", 3)
+	partner.is_skill_ready = data.get("is_skill_ready", false)
 	return partner

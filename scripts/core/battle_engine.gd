@@ -155,17 +155,31 @@ func _process_state() -> void:
 				_state = BattleState.ROUND_END
 				return
 			EventBus.unit_turn_started.emit(_hero.unit_id, _hero.name, true, "HERO")
-			var packets: Array = _skill_mgr.execute_hero_normal_attack(_hero, target)
+			
+			# 1. 普通攻击（1段）
+			var normal_packets: Array = _skill_mgr.execute_hero_normal_attack(_hero, target)
 			var was_crit: bool = false
 			var was_hit: bool = false
-			for pkt in packets:
-				_emit_damage_signals(_hero, target, pkt, "HERO_ACTION")
+			for pkt in normal_packets:
+				_emit_damage_signals(_hero, target, pkt, "NORMAL")
 				_dc.apply_damage_packet(target, pkt)
 				if pkt.is_crit:
 					was_crit = true
 				if not pkt.is_miss:
 					was_hit = true
-			_result.total_damage_dealt += packets[0].value if not packets[0].is_miss else 0
+			
+			# 2. 被动技能触发（影舞者: 疾风连击）
+			if target.get("is_alive", false):
+				var skill_packets: Array = _skill_mgr.trigger_shadow_wind(_hero, target)
+				for pkt in skill_packets:
+					_emit_damage_signals(_hero, target, pkt, "SKILL")
+					_dc.apply_damage_packet(target, pkt)
+					if pkt.is_crit:
+						was_crit = true
+					if not pkt.is_miss:
+						was_hit = true
+			
+			_result.total_damage_dealt += normal_packets[0].value if normal_packets.size() > 0 and not normal_packets[0].is_miss else 0
 			# 伙伴援助上下文
 			var assist_ctx: Dictionary = {
 				"hero": _hero, "enemies": _enemies, "partners": _partners,
@@ -366,6 +380,7 @@ func _emit_damage_signals(attacker: Dictionary, defender: Dictionary, pkt: Dicti
 		recorder.record_event("action_executed", {
 			"actor_name": attacker.get("name", ""),
 			"target_name": defender.get("name", ""),
+			"action_type": action_type,
 			"result_summary": pkt,
 		})
 	

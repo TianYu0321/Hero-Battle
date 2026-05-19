@@ -67,6 +67,9 @@ func initialize_partners(partner_config_ids: Array[int]) -> Array[RuntimePartner
 		p.partner_config_id = pid
 		p.current_level = 1
 		p.is_active = true
+		p.skill_charge = 0
+		p.skill_charge_max = config.get("skill_charge_max", 3)
+		p.is_skill_ready = false
 		# Phase 1 伙伴基础属性占位（简化）
 		# Phase 1: 伙伴不再拥有五维属性
 		_partners.append(p)
@@ -83,6 +86,9 @@ func add_partner(partner_config_id: int, position: int) -> RuntimePartner:
 	p.position = position
 	p.current_level = 1
 	p.is_active = true
+	p.skill_charge = 0
+	p.skill_charge_max = config.get("skill_charge_max", 3)
+	p.is_skill_ready = false
 	_partners.append(p)
 	EventBus.emit_signal("partner_unlocked", str(partner_config_id), config.get("name", ""), position, 0, "")
 	return p

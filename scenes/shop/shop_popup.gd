@@ -113,9 +113,13 @@ func _on_purchase_requested(item: Dictionary) -> void:
 	dialog.dialog_text = "花费 %d 魔城币购买 %s？" % [cost, item_name]
 	dialog.confirmed.connect(func():
 		_confirm_purchase(item)
-		dialog.queue_free()
+		if is_instance_valid(dialog):
+			dialog.queue_free()
 	)
-	dialog.canceled.connect(dialog.queue_free)
+	dialog.canceled.connect(func():
+		if is_instance_valid(dialog):
+			dialog.queue_free()
+	)
 	add_child(dialog)
 	dialog.popup_centered()
 

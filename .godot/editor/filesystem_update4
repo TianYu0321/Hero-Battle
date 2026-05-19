@@ -1,8 +1,0 @@
-res://scenes/main_menu/menu.tscn
-res://scenes/main_menu/menu.gd
-res://autoload/audio_manager.gd
-res://scenes/hero_select/hero_select.gd
-res://scripts/systems/run_controller.gd
-res://autoload/game_manager.gd
-res://scenes/run_main/battle_animation_panel.gd
-res://scenes/pvp_lobby/pvp_lobby.gd

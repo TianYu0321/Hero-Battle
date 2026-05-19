@@ -56,6 +56,7 @@ var _pending_battle_result: Dictionary = {}
 
 var _special_floor_phase: SpecialFloorPhase = SpecialFloorPhase.NONE
 var _battle_result_phase: BattleResultPhase = BattleResultPhase.NONE
+var _last_rest_heal_amount: int = 0
 
 
 func _ready() -> void:
@@ -119,6 +120,9 @@ func _ready() -> void:
 	_settlement_system = SettlementSystem.new()
 	_settlement_system.name = "SettlementSystem"
 	add_child(_settlement_system)
+	
+	## 伙伴充能信号连接
+	EventBus.partner_assist_triggered.connect(_on_partner_assist_triggered)
 
 
 func continue_from_save(save_data: Dictionary) -> bool:
@@ -459,7 +463,7 @@ func _process_node_result(result: Dictionary) -> void:
 		var hero_name: String = "英雄"
 		if _hero != null:
 			var hero_cfg: Dictionary = ConfigManager.get_hero_config(ConfigManager.get_hero_id_by_config_id(_hero.hero_config_id))
-			hero_name = hero_cfg.get("name", "英雄")
+			hero_name = hero_cfg.get("hero_name", "英雄")
 		var enemy_name: String = "敌人"
 		var enemy_max_hp: int = 100
 		if result.has("enemy_config"):
@@ -467,11 +471,12 @@ func _process_node_result(result: Dictionary) -> void:
 			enemy_max_hp = result["enemy_config"].get("max_hp", 100)
 		
 		# 补充 battle_result 供 UI 层统一使用
-		battle_result["hero"] = {
-			"name": hero_name,
-			"max_hp": _hero.max_hp if _hero != null else 100,
-			"hp": hero_start_hp,
-		}
+		# battle_hero.name 已在 spawn_hero 中设为中文名，直接保留
+		var ui_hero: Dictionary = battle_result.get("hero", {})
+		ui_hero["max_hp"] = _hero.max_hp if _hero != null else 100
+		ui_hero["hp"] = hero_start_hp
+		battle_result["hero"] = ui_hero
+		
 		battle_result["enemies"] = [{
 			"name": enemy_name,
 			"max_hp": enemy_max_hp,
@@ -573,6 +578,7 @@ func _process_reward(reward: Dictionary) -> void:
 			if _hero != null and amount > 0:
 				var old_hp: int = _hero.current_hp
 				_hero.current_hp = mini(_hero.max_hp, _hero.current_hp + amount)
+				_last_rest_heal_amount = _hero.current_hp - old_hp
 				EventBus.emit_signal("stats_changed", _hero.id, {
 					0: {"old": old_hp, "new": _hero.current_hp, "delta": _hero.current_hp - old_hp, "attr_code": 0}
 				})
@@ -860,7 +866,7 @@ func _finish_node_execution(result: Dictionary) -> void:
 func _get_panel_name_from_node_type(node_type: int) -> String:
 	match node_type:
 		1: return "TRAINING_PANEL"
-		4: return "SHOP_PANEL"  # 外出事件的商店
+		4: return "OUTING_PANEL"
 		5: return "RESCUE_PANEL"
 		6: return "SHOP_PANEL"
 		_: return "UNKNOWN_PANEL"
@@ -957,6 +963,114 @@ func close_shop_panel() -> void:
 	else:
 		EventBus.emit_signal("panel_closed", "SHOP_PANEL", "closed")
 		_finish_node_execution(_pending_result)
+
+func get_last_rest_heal_amount() -> int:
+	return _last_rest_heal_amount
+
+
+func get_partners() -> Array:
+	## 返回已招募伙伴列表
+	return _character_manager.get_partners() if _character_manager != null else []
+
+
+func _on_partner_assist_triggered(partner_id: String, _partner_name: String, _trigger_type: String, _assist_result: Dictionary, _assist_count: int) -> void:
+	## 伙伴援助触发后增加充能
+	if _character_manager == null:
+		return
+	for p in _character_manager.get_partners():
+		if str(p.partner_config_id) == partner_id:
+			p.skill_charge = mini(p.skill_charge + 1, p.skill_charge_max)
+			p.is_skill_ready = p.skill_charge >= p.skill_charge_max
+			EventBus.partner_charge_changed.emit(partner_id, p.skill_charge, p.skill_charge_max)
+			if p.is_skill_ready:
+				var cfg: Dictionary = ConfigManager.get_partner_config(partner_id)
+				EventBus.partner_skill_triggered.emit(partner_id, cfg.get("name", "伙伴技能"), "充能已满，可触发")
+			break
+
+
+func select_outing_choice(choice_index: int) -> Dictionary:
+	## 玩家从外出事件弹窗选择了具体选项
+	if _state != RunState.RUNNING_NODE_EXECUTE:
+		push_warning("[RunController] select_outing_choice called outside RUNNING_NODE_EXECUTE")
+		return {}
+	
+	var choices: Array = _pending_result.get("choices", [])
+	if choice_index < 0 or choice_index >= choices.size():
+		push_error("[RunController] 无效外出选择: %d" % choice_index)
+		return {}
+	
+	var choice: Dictionary = choices[choice_index]
+	var result := {
+		"success": true,
+		"message": "",
+		"hp_change": 0,
+		"gold_change": 0,
+	}
+	
+	## 应用 HP 消耗
+	var cost_hp: int = choice.get("cost_hp", 0)
+	if cost_hp > 0 and _hero != null:
+		var old_hp: int = _hero.current_hp
+		_hero.current_hp = maxi(1, _hero.current_hp - cost_hp)
+		result["hp_change"] = old_hp - _hero.current_hp
+		EventBus.emit_signal("stats_changed", _hero.id, {
+			0: {"old": old_hp, "new": _hero.current_hp, "delta": result["hp_change"], "attr_code": 0}
+		})
+	
+	## 应用金币消耗
+	var cost_gold: int = choice.get("cost_gold", 0)
+	if cost_gold > 0 and _run != null:
+		var old_gold: int = _run.gold_owned
+		_run.gold_owned = maxi(0, _run.gold_owned - cost_gold)
+		result["gold_change"] = old_gold - _run.gold_owned
+		EventBus.emit_signal("gold_changed", _run.gold_owned, result["gold_change"], "outing")
+	
+	## 应用效果（如伤害减免、透视次数等）
+	var effect: Dictionary = choice.get("effect", {})
+	if effect.has("random_attr") and _hero != null:
+		var attr_names: Array[String] = ["vit", "str", "agi", "tec", "mnd"]
+		var attr_codes: Dictionary = {"vit": 1, "str": 2, "agi": 3, "tec": 4, "mnd": 5}
+		var rand_attr: String = attr_names[randi() % attr_names.size()]
+		var old_val: int = 0
+		var delta: int = effect.get("random_attr", 0)
+		match rand_attr:
+			"vit":
+				old_val = _hero.current_vit
+				_hero.current_vit += delta
+				_hero.max_hp += delta
+			"str":
+				old_val = _hero.current_str
+				_hero.current_str += delta
+			"agi":
+				old_val = _hero.current_agi
+				_hero.current_agi += delta
+			"tec":
+				old_val = _hero.current_tec
+				_hero.current_tec += delta
+			"mnd":
+				old_val = _hero.current_mnd
+				_hero.current_mnd += delta
+		result["message"] += " %s+%d" % [rand_attr, delta]
+		EventBus.emit_signal("stats_changed", _hero.id, {
+			attr_codes[rand_attr]: {"old": old_val, "new": old_val + delta, "delta": delta, "attr_code": attr_codes[rand_attr]}
+		})
+	## TODO: 其他效果（damage_reduction, forecast_charge, bet_win, training_bonus）
+	## 这些需要运行时 buff/debuff 系统支持，先记录到日志中
+	if not effect.is_empty():
+		result["effect"] = effect
+	
+	## 记录日志
+	var log_msg: String = "外出事件：选择了 %s" % choice.get("text", "???")
+	if result["hp_change"] != 0:
+		log_msg += " | HP %+d" % (-result["hp_change"])
+	if result["gold_change"] != 0:
+		log_msg += " | 金币 %+d" % (-result["gold_change"])
+	result["logs"] = [log_msg]
+	
+	## 完成节点执行
+	_finish_node_execution(result)
+	return result
+
 
 func select_training_attr(attr_type: int) -> void:
 	## 玩家从训练面板选择了具体属性

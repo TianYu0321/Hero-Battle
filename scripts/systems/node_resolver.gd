@@ -161,9 +161,10 @@ func _resolve_rest(context: Dictionary) -> Dictionary:
 
 func _resolve_outing(context: Dictionary) -> Dictionary:
 	## 外出 — 触发随机事件池（4:3:3 比例）
-	var result := {"success": true, "node_type": NodePoolSystem.NodeType.OUTING, "rewards": [], "logs": []}
+	## 奖励/惩罚事件改为弹窗交互，精英保持战斗
 	var hero = context.get("hero")
 	var run = context.get("run")
+	var turn: int = context.get("turn", 1)
 	
 	## 使用预生成的事件类型（事件透视一致性）
 	var node_option: Dictionary = context.get("node_option", {})
@@ -179,62 +180,47 @@ func _resolve_outing(context: Dictionary) -> Dictionary:
 			"elite": roll = 7
 			_: roll = randi() % 10
 
-	if roll < 4:  ## 40% 奖励事件
-		var reward_events = [
-			{"type": "gold", "amount": 30 + (run.current_turn if run != null else 1) * 2, "log": "发现宝藏，获得%d金币"},
-			{"type": "level_up", "target": "random", "log": "遇到导师，随机角色等级+1"},
-			{"type": "heal_full", "log": "发现圣泉，生命完全恢复"},
-			{"type": "train_lv5", "attr": -1, "log": "神秘训练场，自选属性享受LV5训练"},
-		]
-		var evt = reward_events[randi() % reward_events.size()]
-
-		match evt.type:
-			"gold":
-				result["rewards"].append({"type": "gold", "amount": evt.amount})
-				result["logs"].append(evt.log % evt.amount)
-			"level_up":
-				result["rewards"].append({"type": "level_up", "target": "random"})
-				result["logs"].append(evt.log)
-			"heal_full":
-				var old_hp = hero.current_hp if hero != null else 0
-				var heal_amount = (hero.max_hp - old_hp) if hero != null else 0
-				result["rewards"].append({"type": "hp_heal", "amount": heal_amount})
-				result["logs"].append(evt.log)
-			"train_lv5":
-				result["rewards"].append({"type": "train_lv5", "attr": evt.attr})
-				result["logs"].append(evt.log)
-
-	elif roll < 7:  ## 30% 惩罚事件
-		var penalty_events = [
-			{"type": "damage", "amount_percent": 0.15, "log": "落入陷阱，损失%d生命"},
-			{"type": "debuff", "effect": "weak", "duration": 3, "log": "中了虚弱，接下来3层训练效果减半"},
-			{"type": "steal_gold", "percent": 0.2, "log": "遭遇小偷，损失%d金币"},
-			{"type": "debuff", "effect": "vulnerable", "duration": 3, "log": "喝了弱化药水，接下来3场战斗受到伤害+20%%"},
-		]
-		var evt = penalty_events[randi() % penalty_events.size()]
-
-		match evt.type:
-			"damage":
-				var dmg = int(hero.max_hp * evt.amount_percent) if hero != null else 10
-				result["rewards"].append({"type": "hp_damage", "amount": dmg})
-				result["logs"].append(evt.log % dmg)
-			"debuff":
-				result["rewards"].append({"type": "debuff", "effect": evt.effect, "duration": evt.duration})
-				result["logs"].append(evt.log)
-			"steal_gold":
-				var stolen = int(run.gold_owned * evt.percent) if run != null else 0
-				result["rewards"].append({"type": "gold", "amount": -stolen})
-				result["logs"].append(evt.log % stolen)
-
-	else:  ## 30% 精英
-		var turn: int = context.get("turn", 1)
+	## 精英战斗（30%）保持原有逻辑
+	if roll >= 7:
 		var enemy_id: int = _select_enemy_for_turn(turn)
-		result["requires_battle"] = true
-		result["is_elite"] = true
-		result["enemy_config_id"] = enemy_id
-		result["logs"].append("遭遇精英怪物！")
+		return {
+			"success": true,
+			"node_type": NodePoolSystem.NodeType.OUTING,
+			"requires_battle": true,
+			"is_elite": true,
+			"enemy_config_id": enemy_id,
+			"logs": ["遭遇精英怪物！"],
+		}
 
-	return result
+	## 奖励/惩罚事件改为弹窗交互
+	var templates: Array[Dictionary] = [
+		{
+			"title": "神秘商人",
+			"description": "一个裹着斗篷的商人拦住了你。他展示了三件物品，低声说：\"只收现金，概不赊账。\"",
+			"choices": [
+				{"text": "购买护身符 (金币-30, 下次战斗伤害-20%)", "cost_gold": 30, "effect": {"damage_reduction": 0.2, "turns": 1}},
+				{"text": "购买情报 (金币-15, 透视下次节点)", "cost_gold": 15, "effect": {"forecast_charge": 1}},
+				{"text": "拒绝并离开", "cost_gold": 0, "effect": {}},
+			]
+		},
+		{
+			"title": "竞技场外围赌局",
+			"description": "观众席有人在开盘口，赌下一场战斗的胜负。赔率看起来颇为诱人...",
+			"choices": [
+				{"text": "押自己赢 (金币-20, 胜利后返还50)", "cost_gold": 20, "effect": {"bet_win": 50}},
+				{"text": "小额试水 (金币-5, 胜利后返还15)", "cost_gold": 5, "effect": {"bet_win": 15}},
+				{"text": "不参与", "cost_gold": 0, "effect": {}},
+			]
+		},
+	]
+
+	var template_idx: int = 0 if roll < 4 else 1
+	var tpl: Dictionary = templates[template_idx].duplicate(true)
+	tpl["node_type"] = NodePoolSystem.NodeType.OUTING
+	tpl["requires_ui_selection"] = true
+	tpl["success"] = true
+	tpl["logs"] = []
+	return tpl
 
 
 func _resolve_rescue(node_option: Dictionary, context: Dictionary) -> Dictionary:

@@ -15,25 +15,25 @@ script = ExtResource("1_mno90")
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 500.0
+offset_bottom = 750.0
 grow_horizontal = 2
 
 [node name="RoundLabel" type="Label" parent="BattleField"]
 layout_mode = 0
-offset_left = 540.0
-offset_top = 20.0
-offset_right = 740.0
-offset_bottom = 60.0
+offset_left = 810.0
+offset_top = 30.0
+offset_right = 1110.0
+offset_bottom = 90.0
 text = "回合: 1/20"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HeroRect" type="ColorRect" parent="BattleField"]
 layout_mode = 0
-offset_left = 200.0
-offset_top = 180.0
-offset_right = 264.0
-offset_bottom = 244.0
+offset_left = 300.0
+offset_top = 270.0
+offset_right = 396.0
+offset_bottom = 366.0
 color = Color(0.752941, 0.223529, 0.168627, 1)
 
 [node name="Label" type="Label" parent="BattleField/HeroRect"]
@@ -49,10 +49,10 @@ vertical_alignment = 1
 
 [node name="EnemyRect" type="ColorRect" parent="BattleField"]
 layout_mode = 0
-offset_left = 1016.0
-offset_top = 180.0
-offset_right = 1080.0
-offset_bottom = 244.0
+offset_left = 1524.0
+offset_top = 270.0
+offset_right = 1620.0
+offset_bottom = 366.0
 color = Color(0.5, 0.1, 0.1, 1)
 
 [node name="Label" type="Label" parent="BattleField/EnemyRect"]
@@ -68,33 +68,33 @@ vertical_alignment = 1
 
 [node name="HeroHpBar" type="ProgressBar" parent="BattleField"]
 layout_mode = 0
-offset_left = 160.0
-offset_top = 260.0
-offset_right = 304.0
-offset_bottom = 280.0
+offset_left = 240.0
+offset_top = 390.0
+offset_right = 456.0
+offset_bottom = 420.0
 value = 100.0
 
 [node name="EnemyHpBar" type="ProgressBar" parent="BattleField"]
 layout_mode = 0
-offset_left = 976.0
-offset_top = 260.0
-offset_right = 1120.0
-offset_bottom = 280.0
+offset_left = 1464.0
+offset_top = 390.0
+offset_right = 1680.0
+offset_bottom = 420.0
 value = 100.0
 
 [node name="BattleLog" type="RichTextLabel" parent="."]
 layout_mode = 0
-offset_left = 240.0
-offset_top = 520.0
-offset_right = 1040.0
-offset_bottom = 640.0
+offset_left = 360.0
+offset_top = 780.0
+offset_right = 1560.0
+offset_bottom = 960.0
 bbcode_enabled = true
 text = "战斗日志..."
 
 [node name="SpeedButton" type="Button" parent="."]
 layout_mode = 0
-offset_left = 1100.0
-offset_top = 660.0
-offset_right = 1240.0
-offset_bottom = 700.0
+offset_left = 1650.0
+offset_top = 990.0
+offset_right = 1860.0
+offset_bottom = 1050.0
 text = "速度: 1x"

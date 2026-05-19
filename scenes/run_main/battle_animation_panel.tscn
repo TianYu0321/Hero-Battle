@@ -27,103 +27,103 @@ color = Color(0.05, 0.05, 0.08, 0.92)
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 160.0
+offset_bottom = 240.0
 grow_horizontal = 2
 
 [node name="HeroCard" type="Control" parent="HudContainer" unique_id=1587200478]
 anchors_preset = 0
-offset_left = 30.0
-offset_top = 15.0
-offset_right = 350.0
-offset_bottom = 145.0
+offset_left = 45.0
+offset_top = 22.5
+offset_right = 525.0
+offset_bottom = 217.5
 
 [node name="Portrait" type="ColorRect" parent="HudContainer/HeroCard" unique_id=1982153985]
 layout_mode = 0
-offset_right = 100.0
-offset_bottom = 110.0
+offset_right = 150.0
+offset_bottom = 165.0
 color = Color(0.08, 0.18, 0.35, 1)
 
 [node name="NameLabel" type="Label" parent="HudContainer/HeroCard" unique_id=1272777026]
 layout_mode = 0
-offset_left = 115.0
-offset_top = 8.0
-offset_right = 310.0
-offset_bottom = 36.0
+offset_left = 172.5
+offset_top = 12.0
+offset_right = 465.0
+offset_bottom = 54.0
 text = "英雄"
 
 [node name="HpBar" type="ProgressBar" parent="HudContainer/HeroCard" unique_id=2035740620]
 layout_mode = 0
-offset_left = 115.0
-offset_top = 45.0
-offset_right = 310.0
-offset_bottom = 68.0
+offset_left = 172.5
+offset_top = 67.5
+offset_right = 465.0
+offset_bottom = 102.0
 value = 100.0
 
 [node name="HpMeta" type="Label" parent="HudContainer/HeroCard" unique_id=2142487398]
 layout_mode = 0
-offset_left = 115.0
-offset_top = 72.0
-offset_right = 310.0
-offset_bottom = 96.0
+offset_left = 172.5
+offset_top = 108.0
+offset_right = 465.0
+offset_bottom = 144.0
 text = "100 / 100"
 
 [node name="CenterBadge" type="Control" parent="HudContainer" unique_id=1582829730]
 anchors_preset = 0
-offset_left = 500.0
-offset_top = 15.0
-offset_right = 700.0
-offset_bottom = 145.0
+offset_left = 750.0
+offset_top = 22.5
+offset_right = 1050.0
+offset_bottom = 217.5
 
 [node name="VsLabel" type="Label" parent="HudContainer/CenterBadge" unique_id=265606832]
 layout_mode = 0
-offset_top = 5.0
-offset_right = 200.0
-offset_bottom = 60.0
+offset_top = 7.5
+offset_right = 300.0
+offset_bottom = 90.0
 text = "VS"
 horizontal_alignment = 1
 
 [node name="RoundLabel" type="Label" parent="HudContainer/CenterBadge" unique_id=24890720]
 layout_mode = 0
-offset_top = 70.0
-offset_right = 200.0
-offset_bottom = 100.0
+offset_top = 105.0
+offset_right = 300.0
+offset_bottom = 150.0
 text = "回合 1/10"
 horizontal_alignment = 1
 
 [node name="EnemyCard" type="Control" parent="HudContainer" unique_id=717432503]
 anchors_preset = 0
-offset_left = 860.0
-offset_top = 15.0
-offset_right = 1180.0
-offset_bottom = 145.0
+offset_left = 1290.0
+offset_top = 22.5
+offset_right = 1770.0
+offset_bottom = 217.5
 
 [node name="Portrait" type="ColorRect" parent="HudContainer/EnemyCard" unique_id=1452233566]
 layout_mode = 0
-offset_left = 220.0
-offset_right = 320.0
-offset_bottom = 110.0
+offset_left = 330.0
+offset_right = 480.0
+offset_bottom = 165.0
 color = Color(0.35, 0.06, 0.04, 1)
 
 [node name="NameLabel" type="Label" parent="HudContainer/EnemyCard" unique_id=1470198696]
 layout_mode = 0
-offset_top = 8.0
-offset_right = 205.0
-offset_bottom = 36.0
+offset_top = 12.0
+offset_right = 307.5
+offset_bottom = 54.0
 text = "敌人"
 horizontal_alignment = 2
 
 [node name="HpBar" type="ProgressBar" parent="HudContainer/EnemyCard" unique_id=2078358758]
 layout_mode = 0
-offset_top = 45.0
-offset_right = 205.0
-offset_bottom = 68.0
+offset_top = 67.5
+offset_right = 307.5
+offset_bottom = 102.0
 value = 100.0
 
 [node name="HpMeta" type="Label" parent="HudContainer/EnemyCard" unique_id=1671927945]
 layout_mode = 0
-offset_top = 72.0
-offset_right = 205.0
-offset_bottom = 96.0
+offset_top = 108.0
+offset_right = 307.5
+offset_bottom = 144.0
 text = "100 / 100"
 horizontal_alignment = 2
 
@@ -133,25 +133,25 @@ anchors_preset = 14
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
-offset_top = -160.0
-offset_bottom = 160.0
+offset_top = -240.0
+offset_bottom = 240.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="HeroArt" type="AnimatedSprite2D" parent="StageArea" unique_id=1604219356]
-position = Vector2(180, 140)
+position = Vector2(270.0, 210.0)
 scale = Vector2(2, 2)
 
 [node name="EnemyArt" type="AnimatedSprite2D" parent="StageArea" unique_id=109318882]
-position = Vector2(1100, 140)
+position = Vector2(1650.0, 210.0)
 scale = Vector2(-2, 2)
 
 [node name="StageName" type="Label" parent="StageArea" unique_id=53564804]
 layout_mode = 0
-offset_left = 440.0
-offset_top = 120.0
-offset_right = 840.0
-offset_bottom = 155.0
+offset_left = 660.0
+offset_top = 180.0
+offset_right = 1260.0
+offset_bottom = 232.5
 text = "深渊斗技场"
 horizontal_alignment = 1
 
@@ -161,32 +161,32 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -220.0
+offset_top = -330.0
 grow_horizontal = 2
 grow_vertical = 0
 
 [node name="LogHead" type="Label" parent="LogPanel" unique_id=97218405]
 layout_mode = 0
-offset_left = 140.0
-offset_top = 8.0
-offset_right = 740.0
-offset_bottom = 38.0
+offset_left = 210.0
+offset_top = 12.0
+offset_right = 1110.0
+offset_bottom = 57.0
 text = "战 斗 日 志"
 
 [node name="BattleLog" type="RichTextLabel" parent="LogPanel" unique_id=243548439]
 layout_mode = 0
-offset_left = 140.0
-offset_top = 45.0
-offset_right = 740.0
-offset_bottom = 170.0
+offset_left = 210.0
+offset_top = 67.5
+offset_right = 1110.0
+offset_bottom = 255.0
 bbcode_enabled = true
 
 [node name="SkipButton" type="Button" parent="LogPanel" unique_id=521647677]
 layout_mode = 0
-offset_left = 800.0
-offset_top = 45.0
-offset_right = 960.0
-offset_bottom = 80.0
+offset_left = 1200.0
+offset_top = 67.5
+offset_right = 1440.0
+offset_bottom = 120.0
 text = "跳过"
 
 [node name="TurnTimer" type="Timer" parent="." unique_id=903184029]

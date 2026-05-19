@@ -142,6 +142,13 @@ const ENEMY_SPRITE_PATHS: Dictionary = {
 const DEFAULT_HERO_SPRITE: String = "res://assets/characters/default_hero_frames.tres"
 const DEFAULT_ENEMY_SPRITE: String = "res://assets/characters/enemies/default_enemy_frames.tres"
 
+# --- 选人界面立绘路径配置 ---
+const HERO_PORTRAIT_PATHS: Dictionary = {
+	"hero_warrior": "res://assets/characters/hero/warrior.png",
+	"hero_shadow_dancer": "res://assets/characters/shinobi/shinobi.png",
+	"hero_iron_guard": "res://assets/characters/hero/paladin.png",
+}
+
 ## 获取英雄精灵图路径
 static func get_hero_sprite_path(hero_config_id: int) -> String:
 	return HERO_SPRITE_PATHS.get(hero_config_id, DEFAULT_HERO_SPRITE)
@@ -149,6 +156,23 @@ static func get_hero_sprite_path(hero_config_id: int) -> String:
 ## 获取敌人精灵图路径
 static func get_enemy_sprite_path(enemy_config_id: int) -> String:
 	return ENEMY_SPRITE_PATHS.get(enemy_config_id, DEFAULT_ENEMY_SPRITE)
+
+## 获取英雄选人界面立绘路径
+static func get_hero_portrait_path(hero_id: String) -> String:
+	return HERO_PORTRAIT_PATHS.get(hero_id, "")
+
+## 获取伙伴头像路径
+func get_partner_avatar_path(partner_id: String) -> String:
+	var cfg := get_partner_config(partner_id)
+	return cfg.get("avatar_path", "")
+
+## 获取稀有度颜色
+static func get_rarity_color(rarity: String) -> Color:
+	match rarity:
+		"S": return Color("#E6C040")  ## 暗金
+		"A": return Color("#5A8FD0")  ## 蓝
+		"B": return Color("#4ECDC4")  ## 青
+		_:   return Color("#888888")  ## 灰
 
 ## 获取精灵图动画帧配置
 static func get_sprite_anim_config(_path: String) -> Dictionary:
@@ -206,39 +230,57 @@ const _FALLBACK_HERO_CONFIGS: Dictionary = {
 const _FALLBACK_PARTNER_CONFIGS: Dictionary = {
 	"partner_swordsman": {
 		"partner_id": "partner_swordsman",
-		"partner_name": "剑士",
-		"role": "输出型·力量",
+		"name": "剑士",
+		"role": "输出",
 		"portrait_color": "#E74C3C",
+		"rarity_str": "B",
+		"skill_charge_max": 3,
+		"avatar_path": "",
 	},
 	"partner_scout": {
 		"partner_id": "partner_scout",
-		"partner_name": "斥候",
-		"role": "输出型·敏捷",
+		"name": "斥候",
+		"role": "输出",
 		"portrait_color": "#2ECC71",
+		"rarity_str": "B",
+		"skill_charge_max": 3,
+		"avatar_path": "",
 	},
 	"partner_shieldguard": {
 		"partner_id": "partner_shieldguard",
-		"partner_name": "盾卫",
-		"role": "防御型·体魄",
+		"name": "盾卫",
+		"role": "防御",
 		"portrait_color": "#3498DB",
+		"rarity_str": "B",
+		"skill_charge_max": 3,
+		"avatar_path": "",
 	},
 	"partner_pharmacist": {
 		"partner_id": "partner_pharmacist",
-		"partner_name": "药师",
-		"role": "辅助型·精神",
+		"name": "药师",
+		"role": "辅助",
 		"portrait_color": "#F1C40F",
+		"rarity_str": "B",
+		"skill_charge_max": 3,
+		"avatar_path": "",
 	},
 	"partner_sorcerer": {
 		"partner_id": "partner_sorcerer",
-		"partner_name": "术士",
-		"role": "控场型·技巧",
+		"name": "术士",
+		"role": "控场",
 		"portrait_color": "#9B59B6",
+		"rarity_str": "A",
+		"skill_charge_max": 3,
+		"avatar_path": "",
 	},
 	"partner_hunter": {
 		"partner_id": "partner_hunter",
-		"partner_name": "猎人",
-		"role": "斩杀型·技巧",
+		"name": "猎人",
+		"role": "斩杀",
 		"portrait_color": "#E67E22",
+		"rarity_str": "B",
+		"skill_charge_max": 3,
+		"avatar_path": "",
 	},
 }
 
@@ -276,6 +318,35 @@ func _load_all_configs() -> void:
 		if not cfg.has("sprite_path"):
 			var eid: int = cfg.get("id", int(enemy_id))
 			cfg["sprite_path"] = get_enemy_sprite_path(eid)
+	
+	## 为伙伴配置补充 HUD 所需统一字段
+	for partner_id in _partner_configs.keys():
+		var cfg: Dictionary = _partner_configs[partner_id]
+		if not cfg.has("role"):
+			var title: String = cfg.get("title", "")
+			if title.contains("输出"):
+				cfg["role"] = "输出"
+			elif title.contains("防御"):
+				cfg["role"] = "防御"
+			elif title.contains("辅助"):
+				cfg["role"] = "辅助"
+			elif title.contains("控场"):
+				cfg["role"] = "控场"
+			elif title.contains("斩杀"):
+				cfg["role"] = "斩杀"
+			else:
+				cfg["role"] = "伙伴"
+		if not cfg.has("avatar_path"):
+			cfg["avatar_path"] = ""  ## 占位，后续有资源后填充
+		if not cfg.has("skill_charge_max"):
+			cfg["skill_charge_max"] = 3
+		if not cfg.has("rarity_str"):
+			var rarity_int: int = cfg.get("rarity", 1)
+			match rarity_int:
+				3: cfg["rarity_str"] = "A"
+				2: cfg["rarity_str"] = "B"
+				1: cfg["rarity_str"] = "C"
+				_: cfg["rarity_str"] = "C"
 	
 	push_warning("[ConfigManager] Configs loaded. H:%d P:%d S:%d E:%d F:%d A:%d PVP:%d Shop:%d Node:%d Score:%d Support:%d" % [_hero_configs.size(), _partner_configs.size(), _skill_configs.size(), _enemy_configs.size(), _formula_configs.size(), _partner_assist_configs.size(), _pvp_opponent_configs.size(), _shop_configs.size(), _node_configs.size(), _scoring_configs.size(), _partner_support_configs.size()])
 
@@ -448,6 +519,16 @@ func get_all_partner_config_ids() -> Array[int]:
 
 func get_hero_id_by_config_id(config_id: int) -> String:
 	return _HERO_ID_MAP.get(str(config_id), "")
+
+
+func get_hero_config_id_by_hero_id(hero_id: String) -> int:
+	for config_id_str in _HERO_ID_MAP.keys():
+		if _HERO_ID_MAP[config_id_str] == hero_id:
+			return int(config_id_str)
+	# 如果 hero_id 本身就是数字字符串
+	if hero_id.is_valid_int():
+		return int(hero_id)
+	return 0
 
 
 func get_final_boss_configs() -> Dictionary:

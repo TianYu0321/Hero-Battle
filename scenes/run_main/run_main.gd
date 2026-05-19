@@ -53,6 +53,10 @@ extends Control
 @onready var enter_combat_button: Button = $CombatConfirmPanel/EnterCombatButton
 @onready var return_button: Button = $CombatConfirmPanel/ReturnButton
 
+@onready var outing_popup: OutingPopup = $OutingPopup
+
+@onready var partner_panel: PanelContainer = $PartnerHUDLayer/PartnerPanel
+
 @onready var training_select_buttons: Array[Button] = [
 	$TrainingPanel/AttrRow1/SelectBtn,
 	$TrainingPanel/AttrRow2/SelectBtn,
@@ -78,6 +82,10 @@ var _pending_battle_result: Dictionary = {}
 var _cached_node_options: Array = []
 var _cached_enemy_data: Dictionary = {}
 
+## 伙伴 HUD
+var _partner_slots: Array[Control] = []
+var _max_partner_slots: int = 4
+
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
 	OPTION_SELECT,	 # 显示4个选项按钮
@@ -94,7 +102,7 @@ var _current_ui_state: UISceneState = UISceneState.LOADING
 func _process(_delta: float) -> void:
 	# 安全检测：UIModalBlocker 不应该在没有任何面板打开时保持 visible
 	if ui_modal_blocker.visible:
-		var any_modal_visible: bool = shop_panel.visible or battle_summary_panel.visible or rescue_panel.visible or training_panel.visible or combat_confirm_panel.visible
+		var any_modal_visible: bool = shop_panel.visible or battle_summary_panel.visible or rescue_panel.visible or training_panel.visible or combat_confirm_panel.visible or outing_popup.visible
 		if not any_modal_visible:
 			print("[RunMain] 安全检测：UIModalBlocker 异常可见，自动隐藏")
 			ui_modal_blocker.visible = false
@@ -131,6 +139,9 @@ func _ready() -> void:
 	EventBus.enemy_encountered.connect(_on_enemy_encountered)
 	EventBus.node_resolved.connect(_on_node_resolved)
 	EventBus.battle_ended.connect(_on_battle_ended)
+	EventBus.partner_unlocked.connect(_on_partner_unlocked)
+	EventBus.partner_skill_triggered.connect(_on_partner_skill_triggered)
+	EventBus.partner_charge_changed.connect(_on_partner_charge_changed)
 
 	# --- 暂停菜单信号 ---
 	pause_menu.resume_requested.connect(_on_resume_game)
@@ -146,7 +157,13 @@ func _ready() -> void:
 	# --- 商店关闭按钮 ---
 	var shop_close_button: Button = $ShopPanel/ContentVBox/CloseButton
 	shop_close_button.pressed.connect(_on_shop_close_pressed)
+	
+	# --- 外出事件弹窗信号 ---
+	outing_popup.confirmed.connect(_on_outing_confirmed)
 
+	# --- 伙伴 HUD 初始化 ---
+	_init_partner_slots()
+	
 	# --- 实例化并启动 RunController ---
 	_run_controller = RunController.new()
 	_run_controller.name = "RunController"
@@ -191,6 +208,7 @@ func _transition_ui_state(new_state: UISceneState) -> void:
 	rescue_panel.visible = false
 	shop_panel.visible = false
 	enemy_info_panel.visible = false
+	outing_popup.visible = false
 	
 	# 再按需显示
 	match new_state:
@@ -202,6 +220,8 @@ func _transition_ui_state(new_state: UISceneState) -> void:
 			rescue_panel.visible = true
 		UISceneState.SHOP_BROWSE:
 			shop_panel.visible = true
+		UISceneState.EVENT_RESULT:
+			outing_popup.visible = true
 		UISceneState.BATTLE_PREVIEW:
 			pass  # TODO
 
@@ -237,6 +257,8 @@ func _update_hud() -> void:
 	player_agi_label.text = "敏捷: %d" % hero_data.get("current_agi", 0)
 	player_tec_label.text = "技巧: %d" % hero_data.get("current_tec", 0)
 	player_mnd_label.text = "精神: %d" % hero_data.get("current_mnd", 0)
+	
+	_update_partner_hud()
 
 
 func _input(event: InputEvent) -> void:
@@ -275,6 +297,14 @@ func _on_node_button_pressed(index: int) -> void:
 	else:
 		# 其他选项直接执行
 		_run_controller.select_node(index)
+		match node_type:
+			NodePoolSystem.NodeType.REST:
+				var heal_amount: int = _run_controller.get_last_rest_heal_amount()
+				if heal_amount > 0:
+					_show_rest_feedback(heal_amount)
+			NodePoolSystem.NodeType.OUTING:
+				# 外出事件已在 _on_node_resolved 中处理日志打印
+				pass
 
 
 func _show_combat_preview(opt: Dictionary, index: int) -> void:
@@ -451,14 +481,42 @@ func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
 			_transition_ui_state(UISceneState.RESCUE_SELECT)
 			_last_rescue_candidates = panel_data.get("candidates", [])
 			_show_rescue_panel_details(_last_rescue_candidates)
+		"OUTING_PANEL":
+			_transition_ui_state(UISceneState.EVENT_RESULT)
+			var summary: Dictionary = _run_controller.get_current_run_summary()
+			var hero_data: Dictionary = summary.get("hero", {})
+			var current_gold: int = summary.get("gold", 0)
+			var current_hp: int = hero_data.get("current_hp", 999)
+			outing_popup.setup(panel_data, current_gold, current_hp)
 		"SHOP_PANEL":
 			_transition_ui_state(UISceneState.SHOP_BROWSE)
 			_show_shop_panel(panel_data.get("items", []))
 			_show_modal_panel(shop_panel)
 
 
-func _on_panel_closed(_panel_name: String, _close_reason: String) -> void:
+func _on_panel_closed(panel_name: String, close_reason: String) -> void:
 	# 面板关闭后回到选项状态
+	if panel_name == "RESCUE_PANEL":
+		if close_reason == "completed" or close_reason == "partner_selected":
+			## 伙伴已招募，自动弹出商店（防御性处理：当前 RC 已自动发射 panel_opened，此处兜底）
+			_auto_open_shop_after_rescue()
+			return
+		## 放弃救援，直接回选项
+	
+	_transition_ui_state(UISceneState.OPTION_SELECT)
+	_update_hud()
+
+
+func _auto_open_shop_after_rescue() -> void:
+	## 从当前节点选项中找 SHOP 节点（防御性：通常由 RC 直接打开商店）
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var node_options: Array = summary.get("node_options", [])
+	for opt in node_options:
+		if opt.get("node_type", 0) == NodePoolSystem.NodeType.SHOP:
+			## 找到商店选项，直接打开商店面板
+			_run_controller.select_node(node_options.find(opt))
+			return
+	## 找不到商店节点（正常情况：RC 已直接打开商店）
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 	_update_hud()
 
@@ -466,6 +524,15 @@ func _on_panel_closed(_panel_name: String, _close_reason: String) -> void:
 func _on_training_completed(_attr_code: int, attr_name: String, gain_value: int, new_total: int, proficiency_stage: String, bonus_applied: int) -> void:
 	_update_hud()
 	print("[RunMain] 训练完成: %s +%d (当前%d, %s, 伙伴加成%d)" % [attr_name, gain_value, new_total, proficiency_stage, bonus_applied])
+
+
+func _on_outing_confirmed(choice_index: int) -> void:
+	print("[RunMain] 外出事件选择: index=%d" % choice_index)
+	if _run_controller != null:
+		_run_controller.select_outing_choice(choice_index)
+		_update_hud()
+	## 外出事件完成后 RunController 会调用 _finish_node_execution 推进层数
+	## 不需要手动切换状态，让 node_options_presented 信号驱动
 
 
 func _on_floor_advanced(_new_floor: int, _floor_type: String, _is_special: bool) -> void:
@@ -589,7 +656,7 @@ func _show_modal_panel(panel: Control) -> void:
 	ui_modal_blocker.visible = true
 	ui_modal_blocker.z_index = panel.z_index - 1 if panel.z_index > 0 else 50
 	_current_ui_state = UISceneState.LOADING
-	# 只隐藏 option_container，保留 HudContainer / PlayerInfoPanel / PartnerContainer
+	# 只隐藏 option_container，保留 HudContainer / PlayerInfoPanel / PartnerHUDLayer
 	option_container.visible = false
 	panel.visible = true
 	panel.z_index = 100
@@ -622,10 +689,17 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 	var enemies_arr: Array = battle_result.get("enemies", [{}])
 	var enemy_data_for_sprite: Dictionary = enemies_arr[0] if enemies_arr.size() > 0 else {}
 	var enemy_sprite_path: String = enemy_data_for_sprite.get("sprite_path", "")
-	## fallback：如果 enemy_data 没有，再查 ConfigManager
+	## fallback：如果 enemy_data 没有 sprite_path，再查 ConfigManager
 	if enemy_sprite_path.is_empty():
-		var enemy_config_id: int = enemy_data_for_sprite.get("config_id", 2001)
-		enemy_sprite_path = ConfigManager.get_enemy_sprite_path(enemy_config_id)
+		# PVP 中的"敌人"是玩家镜像，有 hero_id 但没有 config_id，应使用英雄精灵图
+		var enemy_hero_id: String = enemy_data_for_sprite.get("hero_id", "")
+		if not enemy_hero_id.is_empty():
+			# 通过 hero_id 查找对应 config_id
+			var enemy_hero_config_id: int = ConfigManager.get_hero_config_id_by_hero_id(enemy_hero_id)
+			enemy_sprite_path = ConfigManager.get_hero_sprite_path(enemy_hero_config_id)
+		else:
+			var enemy_config_id: int = enemy_data_for_sprite.get("config_id", 2001)
+			enemy_sprite_path = ConfigManager.get_enemy_sprite_path(enemy_config_id)
 	battle_result["enemy_sprite_path"] = enemy_sprite_path
 	
 	var recorder = battle_result.get("playback_recorder", null)
@@ -644,6 +718,11 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		battle_animation_panel.reset_panel()
 		_show_modal_panel(battle_animation_panel)
 		
+		# 先连接 confirmed 信号，再启动 playback
+		# 因为 start_playback 内部可能在 HP<=0 时直接 emit confirmed（短路结算）
+		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
+			battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)
+		
 		battle_animation_panel.start_playback(
 			recorder, hero_name, enemy_name,
 			hero_max_hp, enemy_max_hp,
@@ -654,9 +733,6 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 			battle_result.get("hero_sprite_path", ""),
 			battle_result.get("enemy_sprite_path", "")
 		)
-		
-		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
-			battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)
 	else:
 		# 没有录像，直接显示结算面板
 		_show_battle_summary(battle_result)
@@ -809,3 +885,285 @@ func _get_current_hero_hp() -> int:
 	var summary: Dictionary = _run_controller.get_current_run_summary()
 	var hero: Dictionary = summary.get("hero", {})
 	return hero.get("current_hp", 100)
+
+
+# ============================================================
+# 伙伴 HUD
+# ============================================================
+
+func _init_partner_slots() -> void:
+	## 清空并创建 4 个占位 slot
+	var partner_list: VBoxContainer = partner_panel.get_node("PartnerList")
+	for child in partner_list.get_children():
+		if child.name != "PartnerTitle":
+			child.queue_free()
+	_partner_slots.clear()
+	
+	for i in range(_max_partner_slots):
+		var slot := _create_partner_slot(i)
+		partner_list.add_child(slot)
+		_partner_slots.append(slot)
+		slot.visible = false
+	
+	## PartnerPanel 背景样式
+	var panel_bg := StyleBoxFlat.new()
+	panel_bg.bg_color = Color(0.06, 0.06, 0.08, 0.85)
+	panel_bg.corner_radius_top_left = 6
+	panel_bg.corner_radius_top_right = 6
+	panel_bg.corner_radius_bottom_left = 6
+	panel_bg.corner_radius_bottom_right = 6
+	partner_panel.add_theme_stylebox_override("panel", panel_bg)
+	
+	partner_panel.visible = false
+
+func _create_partner_slot(index: int) -> PanelContainer:
+	var slot := PanelContainer.new()
+	slot.name = "PartnerSlot_%d" % index
+	slot.custom_minimum_size = Vector2(160, 56)
+	
+	## 默认边框样式
+	var default_style := StyleBoxFlat.new()
+	default_style.bg_color = Color(0.08, 0.08, 0.1, 0.7)
+	default_style.border_color = Color(0.25, 0.25, 0.3, 0.5)
+	default_style.border_width_left = 1
+	default_style.border_width_top = 1
+	default_style.border_width_right = 1
+	default_style.border_width_bottom = 1
+	default_style.corner_radius_top_left = 4
+	default_style.corner_radius_top_right = 4
+	default_style.corner_radius_bottom_left = 4
+	default_style.corner_radius_bottom_right = 4
+	slot.add_theme_stylebox_override("panel", default_style)
+	
+	## Hover 效果
+	var hover_style := StyleBoxFlat.new()
+	hover_style.bg_color = Color(0.1, 0.1, 0.14, 0.8)
+	hover_style.border_color = Color(0.35, 0.55, 0.85, 0.6)
+	hover_style.border_width_left = 1
+	hover_style.border_width_top = 1
+	hover_style.border_width_right = 1
+	hover_style.border_width_bottom = 1
+	hover_style.corner_radius_top_left = 4
+	hover_style.corner_radius_top_right = 4
+	hover_style.corner_radius_bottom_left = 4
+	hover_style.corner_radius_bottom_right = 4
+	
+	slot.mouse_entered.connect(func():
+		slot.add_theme_stylebox_override("panel", hover_style)
+	)
+	slot.mouse_exited.connect(func():
+		slot.add_theme_stylebox_override("panel", default_style)
+	)
+	
+	var hbox := HBoxContainer.new()
+	hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
+	hbox.add_theme_constant_override("separation", 6)
+	slot.add_child(hbox)
+	
+	## 稀有度色条
+	var rarity_badge := ColorRect.new()
+	rarity_badge.name = "RarityBadge"
+	rarity_badge.custom_minimum_size = Vector2(4, 48)
+	rarity_badge.color = Color("#888888")
+	hbox.add_child(rarity_badge)
+	
+	## 头像
+	var avatar := TextureRect.new()
+	avatar.name = "Avatar"
+	avatar.custom_minimum_size = Vector2(48, 48)
+	avatar.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	hbox.add_child(avatar)
+	
+	## 信息区
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 2)
+	hbox.add_child(vbox)
+	
+	var name_label := Label.new()
+	name_label.name = "NameLabel"
+	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_color_override("font_color", Color("#E6C040"))
+	vbox.add_child(name_label)
+	
+	var level_label := Label.new()
+	level_label.name = "LevelLabel"
+	level_label.add_theme_font_size_override("font_size", 11)
+	level_label.add_theme_color_override("font_color", Color("#888888"))
+	vbox.add_child(level_label)
+	
+	## 技能充能条
+	var gauge := ProgressBar.new()
+	gauge.name = "SkillGauge"
+	gauge.custom_minimum_size = Vector2(90, 4)
+	gauge.max_value = 3
+	gauge.value = 0
+	gauge.show_percentage = false
+	
+	## 底色
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.15, 0.15, 0.18, 1)
+	bg_style.corner_radius_top_left = 2
+	bg_style.corner_radius_top_right = 2
+	bg_style.corner_radius_bottom_left = 2
+	bg_style.corner_radius_bottom_right = 2
+	gauge.add_theme_stylebox_override("background", bg_style)
+	
+	vbox.add_child(gauge)
+	
+	return slot
+
+func _update_partner_hud() -> void:
+	if _run_controller == null:
+		return
+	
+	var partners: Array = _run_controller.get_partners()
+	
+	for i in range(_max_partner_slots):
+		var slot: Control = _partner_slots[i] if i < _partner_slots.size() else null
+		if slot == null:
+			continue
+		
+		if i < partners.size():
+			var partner = partners[i]
+			_fill_partner_slot(slot, partner)
+			slot.visible = true
+		else:
+			slot.visible = false
+	
+	## 总面板：有伙伴时显示，无伙伴时隐藏
+	partner_panel.visible = (partners.size() > 0)
+
+func _fill_partner_slot(slot: Control, partner) -> void:
+	var hbox: HBoxContainer = slot.get_child(0)
+	var rarity_badge: ColorRect = hbox.get_node("RarityBadge")
+	var avatar: TextureRect = hbox.get_node("Avatar")
+	var vbox: VBoxContainer = hbox.get_child(2)
+	var name_label: Label = vbox.get_node("NameLabel")
+	var level_label: Label = vbox.get_node("LevelLabel")
+	var gauge: ProgressBar = vbox.get_node("SkillGauge")
+	
+	var config_id: int = partner.partner_config_id if partner is RuntimePartner else partner.get("partner_config_id", 0)
+	var cfg: Dictionary = ConfigManager.get_partner_config(str(config_id))
+	
+	## 稀有度色条
+	var rarity: String = cfg.get("rarity_str", "C")
+	rarity_badge.color = ConfigManager.get_rarity_color(rarity)
+	
+	## 头像
+	var avatar_path: String = cfg.get("avatar_path", "")
+	if not avatar_path.is_empty():
+		avatar.texture = load(avatar_path)
+	else:
+		avatar.texture = null
+	
+	## 名字
+	var p_name: String = cfg.get("name", "???")
+	name_label.text = p_name
+	
+	## 等级
+	var level: int = partner.current_level if partner is RuntimePartner else partner.get("current_level", 1)
+	level_label.text = "Lv.%d | %s" % [level, cfg.get("role", "伙伴")]
+	
+	## 技能充能
+	var charge: int = partner.skill_charge if partner is RuntimePartner else partner.get("skill_charge", 0)
+	var charge_max: int = partner.skill_charge_max if partner is RuntimePartner else partner.get("skill_charge_max", cfg.get("skill_charge_max", 3))
+	gauge.max_value = charge_max
+	
+	## Tween 动画更新充能条
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(gauge, "value", float(charge), 0.3)
+	
+	## 颜色：满充能闪烁暗金
+	if charge >= charge_max:
+		_flash_gauge_ready(gauge)
+	else:
+		_stop_gauge_flash(gauge)
+		_set_gauge_fill_color(gauge, Color("#5A8FD0"))
+
+func _flash_gauge_ready(gauge: ProgressBar) -> void:
+	if gauge.has_meta("flash_tween"):
+		var old: Tween = gauge.get_meta("flash_tween")
+		if old != null and old.is_valid():
+			old.kill()
+	
+	var tween := create_tween().set_loops()
+	tween.tween_callback(_set_gauge_fill_color.bind(gauge, Color("#E6C040")))
+	tween.tween_interval(0.4)
+	tween.tween_callback(_set_gauge_fill_color.bind(gauge, Color("#FFF0AA")))
+	tween.tween_interval(0.4)
+	gauge.set_meta("flash_tween", tween)
+
+func _stop_gauge_flash(gauge: ProgressBar) -> void:
+	if gauge.has_meta("flash_tween"):
+		var old: Tween = gauge.get_meta("flash_tween")
+		if old != null and old.is_valid():
+			old.kill()
+		gauge.remove_meta("flash_tween")
+
+func _set_gauge_fill_color(gauge: ProgressBar, color: Color) -> void:
+	var fill_style := StyleBoxFlat.new()
+	fill_style.bg_color = color
+	fill_style.corner_radius_top_left = 2
+	fill_style.corner_radius_top_right = 2
+	fill_style.corner_radius_bottom_left = 2
+	fill_style.corner_radius_bottom_right = 2
+	gauge.add_theme_stylebox_override("fill", fill_style)
+
+func _on_partner_unlocked(_config_id: String, partner_name: String, _slot_index: int, _turn: int, _role: String) -> void:
+	_update_partner_hud()
+	_show_floating_text("+%s 加入队伍！" % partner_name, Color("#4ECDC4"))
+	
+	## 对最后一个可见 slot 执行缩放弹出动画
+	var last_visible_index: int = -1
+	for i in range(_partner_slots.size()):
+		if _partner_slots[i].visible:
+			last_visible_index = i
+	
+	if last_visible_index >= 0:
+		var slot: Control = _partner_slots[last_visible_index]
+		slot.pivot_offset = Vector2(80, 28)
+		slot.scale = Vector2(0.5, 0.5)
+		slot.modulate.a = 0.0
+		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(slot, "scale", Vector2.ONE, 0.4)
+		tween.parallel().tween_property(slot, "modulate:a", 1.0, 0.3)
+
+func _on_partner_skill_triggered(_config_id: String, skill_name: String, effect_desc: String) -> void:
+	_show_floating_text("%s: %s" % [skill_name, effect_desc], Color("#E6C040"))
+
+func _on_partner_charge_changed(_config_id: String, _current: int, _max_charge: int) -> void:
+	_update_partner_hud()
+
+func _show_rest_feedback(heal_amount: int) -> void:
+	## 在 HeroHPBar 上方飘出 "+XX HP" 绿色文字
+	_show_floating_text("+%d HP" % heal_amount, Color("#00FF88"))
+	
+	## HP 条闪烁绿色后恢复白色
+	if hp_label != null:
+		var hp_tween := create_tween()
+		hp_tween.tween_property(hp_label, "modulate", Color(0.5, 1.0, 0.5), 0.2)
+		hp_tween.tween_property(hp_label, "modulate", Color.WHITE, 0.3)
+
+
+func _show_floating_text(text: String, color: Color) -> void:
+	## 简单飘字提示（可在后续替换为更复杂的动画系统）
+	var label := Label.new()
+	label.text = text
+	label.modulate = color
+	label.add_theme_font_size_override("font_size", 18)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(label)
+	
+	## 使用最小尺寸直接居中，无需等待布局
+	var min_size: Vector2 = label.get_combined_minimum_size()
+	label.position = Vector2(size.x / 2 - min_size.x / 2, size.y / 2)
+	
+	var tween := create_tween()
+	tween.tween_property(label, "position:y", label.position.y - 80, 1.0)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 1.0)
+	tween.tween_callback(func():
+		if is_instance_valid(label):
+			label.queue_free()
+	)

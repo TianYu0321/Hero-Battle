@@ -17,7 +17,7 @@ extends Control
 @onready var _hero_list_container: VBoxContainer = $UILayer/LeftPanel/HeroListContainer
 
 # --- 右侧面板 ---
-@onready var _big_portrait: ColorRect = $UILayer/RightPanel/HeroBigPortrait
+@onready var _big_portrait: TextureRect = $UILayer/RightPanel/HeroBigPortrait
 @onready var _silhouette_label: Label = $UILayer/RightPanel/HeroBigPortrait/SilhouetteLabel
 @onready var _hero_name_label: Label = $UILayer/RightPanel/HeroNameLabel
 @onready var _hero_role_label: Label = $UILayer/RightPanel/HeroRoleLabel
@@ -242,6 +242,7 @@ func _update_right_panel(hero_id: String, is_unlocked: bool) -> void:
 		return
 	
 	var portrait_color := Color.html(config.get("portrait_color", "#888888"))
+	var portrait_path: String = ConfigManager.get_hero_portrait_path(hero_id)
 	
 	# 立绘 fade 切换
 	var tween_out := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -250,13 +251,25 @@ func _update_right_panel(hero_id: String, is_unlocked: bool) -> void:
 	await tween_out.finished
 	
 	if is_unlocked:
-		_big_portrait.color = portrait_color
+		# 尝试加载立绘图片，失败则使用纯色背景
+		if not portrait_path.is_empty():
+			var tex: Texture2D = load(portrait_path)
+			if tex != null:
+				_big_portrait.texture = tex
+				_big_portrait.modulate = Color.WHITE
+			else:
+				_big_portrait.texture = null
+				_big_portrait.modulate = portrait_color
+		else:
+			_big_portrait.texture = null
+			_big_portrait.modulate = portrait_color
 		_silhouette_label.visible = false
 		_hero_name_label.text = config.get("hero_name", "")
 		_hero_role_label.text = config.get("class_desc", "")
 		_lock_overlay.visible = false
 	else:
-		_big_portrait.color = Color(0.06, 0.06, 0.08, 1)
+		_big_portrait.texture = null
+		_big_portrait.modulate = Color(0.06, 0.06, 0.08, 1)
 		_silhouette_label.visible = true
 		_hero_name_label.text = "???"
 		_hero_role_label.text = "???"

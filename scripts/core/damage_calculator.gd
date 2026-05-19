@@ -215,9 +215,10 @@ static func spawn_enemy(enemy_config: Dictionary, hero_stats: Dictionary) -> Dic
 ## 生成主角战斗实例
 static func spawn_hero(hero_id: String, hero_stats: Dictionary) -> Dictionary:
 	var dc: DamageCalculator = DamageCalculator.new(randi())
+	var hero_cfg: Dictionary = ConfigManager.get_hero_config(hero_id)
 	var hero: Dictionary = {
 		"unit_id": "hero",
-		"name": hero_id,
+		"name": hero_cfg.get("hero_name", hero_id),
 		"unit_type": "HERO",
 		"hero_id": hero_id,
 		"stats": hero_stats.duplicate(),
