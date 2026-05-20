@@ -7,12 +7,10 @@ extends Control
 @onready var semi_transparent_bg: ColorRect = $SemiTransparentBg
 
 ## HUD 信息条（顶部）
-@onready var hero_portrait_hud: ColorRect = $HudContainer/HeroCard/Portrait
 @onready var hero_name_label: Label = $HudContainer/HeroCard/NameLabel
 @onready var hero_hp_bar: ProgressBar = $HudContainer/HeroCard/HpBar
 @onready var hero_hp_meta: Label = $HudContainer/HeroCard/HpMeta
 
-@onready var enemy_portrait_hud: ColorRect = $HudContainer/EnemyCard/Portrait
 @onready var enemy_name_label: Label = $HudContainer/EnemyCard/NameLabel
 @onready var enemy_hp_bar: ProgressBar = $HudContainer/EnemyCard/HpBar
 @onready var enemy_hp_meta: Label = $HudContainer/EnemyCard/HpMeta
@@ -147,8 +145,6 @@ func _ready() -> void:
 
 func _apply_dark_theme() -> void:
 	semi_transparent_bg.color = Color(0.05, 0.05, 0.08, 0.92)
-	hero_portrait_hud.color = COL_BLUE_DEEP
-	enemy_portrait_hud.color = COL_RED_DEEP
 
 func _apply_theme_colors() -> void:
 	var theme := get_theme()

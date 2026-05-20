@@ -1,10 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 [ext_resource type="PackedScene" uid="uid://battlesummary01" path="res://scenes/run_main/battle_summary_panel.tscn" id="3_bsp"]
 [ext_resource type="PackedScene" path="res://scenes/run_main/battle_animation_panel.tscn" id="4_bap"]
 [ext_resource type="PackedScene" uid="uid://outingpopup01" path="res://scenes/outing/outing_popup.tscn" id="5_op"]
+[ext_resource type="PackedScene" path="res://scenes/rescue/rescue_popup.tscn" id="6_rp"]
 
 [node name="RunMain" type="Control"]
 layout_mode = 3
@@ -271,38 +272,8 @@ text = "预计损失: ???"
 layout_mode = 2
 text = "风险: ???"
 
-[node name="RescuePanel" type="Panel" parent="."]
+[node name="RescuePopup" parent="." instance=ExtResource("6_rp")]
 visible = false
-layout_mode = 0
-offset_left = 360.0
-offset_top = 300.0
-offset_right = 960.0
-offset_bottom = 630.0
-
-[node name="TitleLabel" type="Label" parent="RescuePanel"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 45.0
-grow_horizontal = 2
-text = "选择一名伙伴加入"
-horizontal_alignment = 1
-
-[node name="CandidatesContainer" type="HBoxContainer" parent="RescuePanel"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -320.0
-offset_top = -140.0
-offset_right = 320.0
-offset_bottom = 140.0
-grow_horizontal = 2
-grow_vertical = 2
-alignment = 1
-theme_override_constants/separation = 24
 
 [node name="PauseMenu" parent="." instance=ExtResource("2_pause")]
 

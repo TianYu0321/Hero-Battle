@@ -118,7 +118,7 @@ func _update_checkbox_states() -> void:
 		var slot: Control = _partner_grid.get_child(slot_index)
 		if slot == null:
 			continue
-		var check_box: CheckBox = slot.get_node("SelectCheck")
+		var check_box: CheckBox = slot.get_node("Margin/VBox/SelectCheck")
 		if not check_box.button_pressed:
 			check_box.disabled = is_full
 		slot_index += 1

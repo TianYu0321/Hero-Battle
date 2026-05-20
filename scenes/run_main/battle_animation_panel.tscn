@@ -37,12 +37,6 @@ offset_top = 22.5
 offset_right = 525.0
 offset_bottom = 217.5
 
-[node name="Portrait" type="ColorRect" parent="HudContainer/HeroCard" unique_id=1982153985]
-layout_mode = 0
-offset_right = 150.0
-offset_bottom = 165.0
-color = Color(0.08, 0.18, 0.35, 1)
-
 [node name="NameLabel" type="Label" parent="HudContainer/HeroCard" unique_id=1272777026]
 layout_mode = 0
 offset_left = 172.5
@@ -96,13 +90,6 @@ offset_left = 1290.0
 offset_top = 22.5
 offset_right = 1770.0
 offset_bottom = 217.5
-
-[node name="Portrait" type="ColorRect" parent="HudContainer/EnemyCard" unique_id=1452233566]
-layout_mode = 0
-offset_left = 330.0
-offset_right = 480.0
-offset_bottom = 165.0
-color = Color(0.35, 0.06, 0.04, 1)
 
 [node name="NameLabel" type="Label" parent="HudContainer/EnemyCard" unique_id=1470198696]
 layout_mode = 0

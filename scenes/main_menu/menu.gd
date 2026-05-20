@@ -8,9 +8,9 @@
 class_name MenuUI
 extends Control
 
-@onready var _btn_new_game: Button = $UILayer/MenuButtons/BtnNewGame
-@onready var _btn_continue: Button = $UILayer/MenuButtons/BtnContinue
-@onready var _btn_quit: Button = $UILayer/MenuButtons/BtnQuit
+@onready var _btn_new_game: BaseButton = $UILayer/MenuButtons/BtnNewGameWrapper/BtnNewGame
+@onready var _btn_continue: BaseButton = $UILayer/MenuButtons/BtnContinueWrapper/BtnContinue
+@onready var _btn_quit: BaseButton = $UILayer/MenuButtons/BtnQuitWrapper/BtnQuit
 @onready var _menu_button: Button = $UILayer/MenuButton
 @onready var _pause_menu: PauseMenu = $PauseMenu
 @onready var _leaderboard_panel: Panel = $UILayer/LeaderboardPanel
@@ -26,9 +26,10 @@ var _settings_panel: Control = null
 @onready var _tower_glow_2: Sprite2D = $BackgroundLayer/TowerGlow2
 @onready var _tower_glow_3: Sprite2D = $BackgroundLayer/TowerGlow3
 @onready var _character_layer: CanvasLayer = $CharacterLayer
+@onready var _rain_parent: Node2D = $BackgroundLayer/RainParent
 
 var _fx_config: Dictionary = {}
-var _menu_buttons: Array[Button] = []
+var _menu_buttons: Array[BaseButton] = []
 var _menu_hovered_count: int = 0
 
 var _glow_base_alpha: float = 0.0
@@ -64,22 +65,38 @@ func _ready() -> void:
 		$UILayer.add_child(_settings_panel)
 		_settings_panel.visible = false
 	
-	# 收集左侧菜单按钮并设置样式 + hover
+	# 收集左侧菜单按钮
 	_menu_buttons = [_btn_new_game, _btn_continue, _btn_quit]
-	var btn_archive: Button = get_node_or_null("UILayer/MenuButtons/BtnArchive")
-	var btn_pvp: Button = get_node_or_null("UILayer/MenuButtons/BtnPVP")
-	var btn_shop: Button = get_node_or_null("UILayer/MenuButtons/BtnShop")
-	var btn_leaderboard: Button = get_node_or_null("UILayer/MenuButtons/BtnLeaderboard")
-	var btn_settings: Button = get_node_or_null("UILayer/MenuButtons/BtnSettings")
+	var btn_archive: BaseButton = get_node_or_null("UILayer/IconBar/BtnArchiveWrapper/BtnArchive")
+	var btn_pvp: BaseButton = get_node_or_null("UILayer/IconBar/BtnPVPWrapper/BtnPVP")
+	var btn_shop: BaseButton = get_node_or_null("UILayer/IconBar/BtnShopWrapper/BtnShop")
+	var btn_leaderboard: BaseButton = get_node_or_null("UILayer/IconBar/BtnLeaderboardWrapper/BtnLeaderboard")
+	var btn_settings: BaseButton = get_node_or_null("UILayer/MenuButtons/BtnSettingsWrapper/BtnSettings")
 	if btn_archive != null: _menu_buttons.append(btn_archive)
 	if btn_pvp != null: _menu_buttons.append(btn_pvp)
 	if btn_shop != null: _menu_buttons.append(btn_shop)
 	if btn_leaderboard != null: _menu_buttons.append(btn_leaderboard)
 	if btn_settings != null: _menu_buttons.append(btn_settings)
-	
+
+	# 判断存档，无存档时彻底移除继续游戏按钮，让下方按钮自动补上
+	var save_data = SaveManager.load_latest_run()
+	var is_valid = SaveManager.is_valid_save(save_data)
+	if not is_valid and _btn_continue != null:
+		var wrapper = _btn_continue.get_parent()
+		wrapper.get_parent().remove_child(wrapper)
+		wrapper.queue_free()
+		_menu_buttons.erase(_btn_continue)
+		_btn_continue = null
+	print("[MainMenu] 继续游戏按钮显隐: ", is_valid)
+
+	# 统一设置样式 + hover
 	for btn in _menu_buttons:
+		if not is_instance_valid(btn):
+			continue
 		_setup_button_style(btn)
-		_setup_menu_button_hover(btn)
+		# 已有 menu_button.gd 脚本的 TextureButton 自带悬停动画，不再叠加
+		if btn.get_script() == null or btn.get_script().resource_path != "res://scripts/ui/menu_button.gd":
+			_setup_menu_button_hover(btn)
 	_setup_button_style(_menu_button)
 	_setup_button_hover(_menu_button)
 
@@ -115,8 +132,9 @@ func _ready() -> void:
 		btn_leaderboard.visible = true
 		btn_leaderboard.disabled = false
 		btn_leaderboard.pressed.connect(_on_leaderboard_pressed)
-		_setup_button_style(btn_leaderboard)
-		_setup_button_hover(btn_leaderboard)
+		if btn_leaderboard.get_script() == null or btn_leaderboard.get_script().resource_path != "res://scripts/ui/menu_button.gd":
+			_setup_button_style(btn_leaderboard)
+			_setup_button_hover(btn_leaderboard)
 		print("[MainMenu] 排行榜按钮已启用")
 	else:
 		push_warning("[MainMenu] BtnLeaderboard 未找到")
@@ -131,24 +149,23 @@ func _ready() -> void:
 	# 主菜单中隐藏PauseMenu的"返回主菜单"按钮
 	_pause_menu.set_is_main_menu(true)
 
-	var save_data = SaveManager.load_latest_run()
-	var is_valid = SaveManager.is_valid_save(save_data)
-	if _btn_continue != null:
-		_btn_continue.visible = is_valid
-	print("[MainMenu] 继续游戏按钮显隐: ", is_valid)
-
 	_update_pvp_archive_display()
 	
 	# 调试：确认所有按钮状态
 	for btn in _menu_buttons:
 		if is_instance_valid(btn):
-			print("[MainMenu] 按钮 '%s': visible=%s global_pos=%s size=%s modulate=%s" % [btn.text, btn.visible, btn.global_position, btn.size, btn.modulate])
+			var btn_label = btn.get("text") if btn.get("text") != null else btn.name
+			print("[MainMenu] 按钮 '%s': visible=%s global_pos=%s size=%s modulate=%s" % [btn_label, btn.visible, btn.global_position, btn.size, btn.modulate])
 		else:
 			push_warning("[MainMenu] 按钮为 null 或无效实例")
 	if is_instance_valid(_menu_button):
 		print("[MainMenu] 设置按钮: visible=%s global_pos=%s size=%s" % [_menu_button.visible, _menu_button.global_position, _menu_button.size])
 	else:
 		push_warning("[MainMenu] 设置按钮为 null 或无效实例")
+	
+	# 启动下雨和镜头呼吸
+	_start_rain()
+	_start_camera_breath()
 	
 	EventBus.save_loaded.connect(_on_save_loaded)
 	EventBus.load_failed.connect(_on_load_failed)
@@ -323,6 +340,85 @@ func _apply_fx_config() -> void:
 		_start_floor_pulse(floor_cfg)
 	else:
 		_floor_light.visible = false
+
+
+# ========== 下雨效果 ==========
+
+func _start_rain() -> void:
+	## 第一层：近景大雨滴
+	var rain_near := GPUParticles2D.new()
+	rain_near.name = "RainNear"
+	rain_near.position = Vector2(960, -100)
+	rain_near.amount = 300
+	rain_near.lifetime = 1.2
+	rain_near.preprocess = 2.0
+	rain_near.visibility_rect = Rect2(-200, -200, 2240, 1480)
+	
+	var mat_near := ParticleProcessMaterial.new()
+	mat_near.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	mat_near.emission_box_extents = Vector3(1200, 10, 1)
+	mat_near.direction = Vector3(0.15, 1, 0)
+	mat_near.spread = 2.0
+	mat_near.initial_velocity_min = 500.0
+	mat_near.initial_velocity_max = 700.0
+	mat_near.gravity = Vector3(0, 800, 0)
+	mat_near.scale_min = 1.0
+	mat_near.scale_max = 2.0
+	mat_near.color = Color(0.55, 0.65, 0.75, 0.35)
+	rain_near.process_material = mat_near
+	
+	var drop_texture_near := GradientTexture2D.new()
+	drop_texture_near.gradient = Gradient.new()
+	drop_texture_near.gradient.colors = [Color(1,1,1,0.6), Color(1,1,1,0)]
+	drop_texture_near.width = 2
+	drop_texture_near.height = 24
+	drop_texture_near.fill_from = Vector2(0.5, 0)
+	drop_texture_near.fill_to = Vector2(0.5, 1)
+	rain_near.texture = drop_texture_near
+	
+	_rain_parent.add_child(rain_near)
+	
+	## 第二层：远景小雨滴（更淡更细）
+	var rain_far := GPUParticles2D.new()
+	rain_far.name = "RainFar"
+	rain_far.position = Vector2(960, -50)
+	rain_far.amount = 400
+	rain_far.lifetime = 2.0
+	rain_far.preprocess = 3.0
+	rain_far.visibility_rect = Rect2(-200, -200, 2240, 1480)
+	
+	var mat_far := ParticleProcessMaterial.new()
+	mat_far.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	mat_far.emission_box_extents = Vector3(1400, 10, 1)
+	mat_far.direction = Vector3(0.1, 1, 0)
+	mat_far.spread = 5.0
+	mat_far.initial_velocity_min = 300.0
+	mat_far.initial_velocity_max = 450.0
+	mat_far.gravity = Vector3(0, 500, 0)
+	mat_far.scale_min = 0.5
+	mat_far.scale_max = 1.0
+	mat_far.color = Color(0.45, 0.50, 0.60, 0.15)
+	rain_far.process_material = mat_far
+	
+	var drop_texture_far := GradientTexture2D.new()
+	drop_texture_far.gradient = Gradient.new()
+	drop_texture_far.gradient.colors = [Color(1,1,1,0.3), Color(1,1,1,0)]
+	drop_texture_far.width = 1
+	drop_texture_far.height = 16
+	drop_texture_far.fill_from = Vector2(0.5, 0)
+	drop_texture_far.fill_to = Vector2(0.5, 1)
+	rain_far.texture = drop_texture_far
+	
+	_rain_parent.add_child(rain_far)
+
+
+# ========== 镜头呼吸（背景轻微缩放） ==========
+
+func _start_camera_breath() -> void:
+	_bg_texture.pivot_offset = Vector2(960, 540)  ## 1920x1080 中心
+	var tween := create_tween().set_loops()
+	tween.tween_property(_bg_texture, "scale", Vector2(1.02, 1.02), 6.0)
+	tween.tween_property(_bg_texture, "scale", Vector2(1.0, 1.0), 6.0)
 
 
 # ========== Tween 缓动解析辅助 ==========
@@ -566,7 +662,7 @@ const COLOR_BTN_BORDER_PRESSED := Color(0.78, 0.63, 0.18, 1)
 const COLOR_BTN_TEXT := Color(0.901961, 0.752941, 0.25098, 1)
 const COLOR_BTN_TEXT_DISABLED := Color(0.4, 0.4, 0.4, 1)
 
-func _setup_button_style(button: Button) -> void:
+func _setup_button_style(button: BaseButton) -> void:
 	if button == null or not is_instance_valid(button):
 		push_warning("[MainMenu] _setup_button_style: button 为 null")
 		return
@@ -638,14 +734,14 @@ func _setup_button_style(button: Button) -> void:
 
 # ========== Hover  glow 增强交互 ==========
 
-func _setup_menu_button_hover(button: Button) -> void:
+func _setup_menu_button_hover(button: BaseButton) -> void:
 	if button == null or not is_instance_valid(button):
 		push_warning("[MainMenu] _setup_menu_button_hover: button 为 null")
 		return
 	button.mouse_entered.connect(func(): _on_menu_button_hover_entered(button))
 	button.mouse_exited.connect(func(): _on_menu_button_hover_exited(button))
 
-func _on_menu_button_hover_entered(button: Button) -> void:
+func _on_menu_button_hover_entered(button: BaseButton) -> void:
 	_menu_hovered_count += 1
 	if _menu_hovered_count == 1:
 		_enhance_glows(true)
@@ -653,7 +749,7 @@ func _on_menu_button_hover_entered(button: Button) -> void:
 	tween.tween_property(button, "scale", Vector2.ONE * 1.05, 0.15)
 	tween.parallel().tween_property(button, "modulate", Color(1.2, 1.2, 1.2), 0.15)
 
-func _on_menu_button_hover_exited(button: Button) -> void:
+func _on_menu_button_hover_exited(button: BaseButton) -> void:
 	_menu_hovered_count = maxi(_menu_hovered_count - 1, 0)
 	if _menu_hovered_count == 0:
 		_enhance_glows(false)
@@ -694,7 +790,7 @@ func _enhance_glows(active: bool) -> void:
 
 # ========== 原有业务逻辑（保持不变）==========
 
-func _safe_connect_pressed(button: Button, callback: Callable) -> void:
+func _safe_connect_pressed(button: BaseButton, callback: Callable) -> void:
 	if button == null or not is_instance_valid(button):
 		push_warning("[MainMenu] 尝试连接 null/无效按钮的 pressed 信号，callback=%s" % callback.get_method())
 		return
@@ -832,7 +928,7 @@ func _show_panel(panel: Control) -> void:
 	tween.tween_property(panel, "scale", Vector2.ONE, 0.2)
 	tween.parallel().tween_property(panel, "modulate:a", 1.0, 0.2)
 
-func _setup_button_hover(button: Button) -> void:
+func _setup_button_hover(button: BaseButton) -> void:
 	if button == null or not is_instance_valid(button):
 		push_warning("[MainMenu] _setup_button_hover: button 为 null")
 		return

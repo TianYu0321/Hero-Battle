@@ -28,8 +28,7 @@ extends Control
 @onready var battle_animation_panel: BattleAnimationPanel = $BattleAnimationPanel
 @onready var ui_modal_blocker: ColorRect = $UIModalBlocker
 
-@onready var rescue_panel: Control = $RescuePanel
-@onready var candidates_container: HBoxContainer = $RescuePanel/CandidatesContainer
+@onready var rescue_popup: RescuePopup = $RescuePopup
 
 @onready var pause_menu: PauseMenu = $PauseMenu
 @onready var menu_button: Button = $MenuButton
@@ -93,7 +92,7 @@ var _current_ui_state: UISceneState = UISceneState.LOADING
 func _process(_delta: float) -> void:
 	# 安全检测：UIModalBlocker 不应该在没有任何面板打开时保持 visible
 	if ui_modal_blocker.visible:
-		var any_modal_visible: bool = shop_panel.visible or battle_summary_panel.visible or rescue_panel.visible or training_panel.visible or combat_confirm_panel.visible or outing_popup.visible
+		var any_modal_visible: bool = shop_panel.visible or battle_summary_panel.visible or rescue_popup.visible or training_panel.visible or combat_confirm_panel.visible or outing_popup.visible
 		if not any_modal_visible:
 			print("[RunMain] 安全检测：UIModalBlocker 异常可见，自动隐藏")
 			ui_modal_blocker.visible = false
@@ -141,7 +140,8 @@ func _ready() -> void:
 	# --- 菜单按钮 ---
 	menu_button.pressed.connect(_on_menu_button_pressed)
 
-	# --- 救援面板按钮绑定（改为动态卡片，不在 _ready 绑定） ---
+	# --- 救援面板按钮绑定 ---
+	rescue_popup.partner_selected.connect(_on_rescue_partner_selected)
 	
 	# --- 商店关闭按钮 ---
 	var shop_close_button: Button = $ShopPanel/ContentVBox/CloseButton
@@ -194,7 +194,7 @@ func _transition_ui_state(new_state: UISceneState) -> void:
 	# 先全部隐藏
 	option_container.visible = false
 	training_panel.visible = false
-	rescue_panel.visible = false
+	rescue_popup.visible = false
 	shop_panel.visible = false
 	enemy_info_panel.visible = false
 	outing_popup.visible = false
@@ -206,7 +206,7 @@ func _transition_ui_state(new_state: UISceneState) -> void:
 		UISceneState.TRAINING_SELECT:
 			training_panel.visible = true
 		UISceneState.RESCUE_SELECT:
-			rescue_panel.visible = true
+			rescue_popup.visible = true
 		UISceneState.SHOP_BROWSE:
 			shop_panel.visible = true
 		UISceneState.EVENT_RESULT:
@@ -469,7 +469,7 @@ func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
 		"RESCUE_PANEL":
 			_transition_ui_state(UISceneState.RESCUE_SELECT)
 			_last_rescue_candidates = panel_data.get("candidates", [])
-			_show_rescue_panel_details(_last_rescue_candidates)
+			rescue_popup.show_popup(_last_rescue_candidates)
 		"OUTING_PANEL":
 			_transition_ui_state(UISceneState.EVENT_RESULT)
 			var summary: Dictionary = _run_controller.get_current_run_summary()
@@ -486,6 +486,7 @@ func _on_panel_opened(panel_name: String, panel_data: Dictionary) -> void:
 func _on_panel_closed(panel_name: String, close_reason: String) -> void:
 	# 面板关闭后回到选项状态
 	if panel_name == "RESCUE_PANEL":
+		rescue_popup.hide_popup()
 		if close_reason == "completed" or close_reason == "partner_selected":
 			## 伙伴已招募，自动弹出商店（防御性处理：当前 RC 已自动发射 panel_opened，此处兜底）
 			_auto_open_shop_after_rescue()
@@ -542,106 +543,6 @@ func _show_training_panel_details(_panel_data: Dictionary) -> void:
 		var level: int = (count / 5) + 1
 		training_lv_labels[i].text = "LV:%d" % level
 
-
-func _show_rescue_panel_details(candidates: Array) -> void:
-	_selected_rescue_partner_id = -1
-	## 清空旧卡片
-	for child in candidates_container.get_children():
-		child.queue_free()
-	
-	## 创建卡片
-	for i in range(candidates.size()):
-		var card := _create_rescue_card(candidates[i])
-		candidates_container.add_child(card)
-
-func _create_rescue_card(candidate: Dictionary) -> Control:
-	var card := Control.new()
-	card.custom_minimum_size = Vector2(200, 280)
-	
-	## 卡片框背景（按伙伴ID+等级）
-	var partner_id: String = str(candidate.get("partner_id", ""))
-	var level: int = int(candidate.get("level", 1))
-	level = clampi(level, 1, 5)
-	var card_bg := TextureRect.new()
-	card_bg.name = "CardBg"
-	card_bg.layout_mode = 1
-	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	card_bg.stretch_mode = TextureRect.STRETCH_SCALE
-	card_bg.texture = load(ConfigManager.get_partner_card_path(partner_id, level))
-	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.add_child(card_bg)
-	
-	## 内容区（留边距避免遮挡卡片框边框）
-	var margin := MarginContainer.new()
-	margin.layout_mode = 1
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 14)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_right", 14)
-	margin.add_theme_constant_override("margin_bottom", 14)
-	card.add_child(margin)
-	
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 6)
-	margin.add_child(vbox)
-	
-	## 稀有度角标
-	var rarity: String = candidate.get("rarity_str", "C")
-	var border_color: Color = _get_rarity_color(rarity)
-	var badge := Label.new()
-	badge.text = rarity
-	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 14)
-	badge.add_theme_color_override("font_color", border_color)
-	vbox.add_child(badge)
-	
-	## 头像
-	var portrait := TextureRect.new()
-	portrait.custom_minimum_size = Vector2(120, 120)
-	portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var portrait_path: String = candidate.get("portrait_path", "")
-	if portrait_path.is_empty():
-		portrait_path = ConfigManager.get_partner_portrait_path(int(candidate.get("partner_id", 0)))
-	var tex: Texture2D = _resolve_texture_from_path(portrait_path)
-	if tex != null:
-		portrait.texture = tex
-	vbox.add_child(portrait)
-	
-	## 名字
-	var name_label := Label.new()
-	name_label.text = candidate.get("name", "???")
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 16)
-	name_label.add_theme_color_override("font_color", Color("#E6C040"))
-	vbox.add_child(name_label)
-	
-	## 职业/定位
-	var role_label := Label.new()
-	role_label.text = candidate.get("role", "伙伴")
-	role_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	role_label.add_theme_font_size_override("font_size", 12)
-	role_label.add_theme_color_override("font_color", Color("#888888"))
-	vbox.add_child(role_label)
-	
-	## 招募按钮
-	var partner_config_id: int = int(candidate.get("partner_id", 0))
-	var btn := Button.new()
-	btn.text = "招募"
-	btn.custom_minimum_size = Vector2(120, 36)
-	btn.pressed.connect(func(): _on_rescue_partner_selected(partner_config_id))
-	vbox.add_child(btn)
-	
-	return card
-
-func _get_rarity_color(rarity: String) -> Color:
-	match rarity:
-		"S": return Color("#E6C040")
-		"A": return Color("#5A8FD0")
-		"B": return Color("#4ECDC4")
-		_:   return Color("#888888")
 
 func _on_rescue_partner_selected(partner_config_id: int) -> void:
 	print("[RunMain] _on_rescue_partner_selected 被调用: partner_config_id=%d" % partner_config_id)
