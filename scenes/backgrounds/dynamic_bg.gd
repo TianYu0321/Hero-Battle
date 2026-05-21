@@ -1,109 +1,348 @@
 extends Control
 
 ## ==========================================
-## 动态背景控制器 — PVE 分层背景动画
-## 所有可调参数集中在下方
+## 动态背景控制器 - PVE 三阶段分层视差背景
 ## ==========================================
 
-# ---------- 纹理路径 ----------
-@export_group("图层纹理路径")
-@export var sky_texture_path:       String = "res://assets/backgrounds/pve/stages/4.png"
-@export var window_texture_path:    String = "res://assets/backgrounds/pve/stages/2.png"
-@export var ground_texture_path:    String = "res://assets/backgrounds/pve/stages/5.png"
-@export var bat_texture_path:       String = "res://assets/backgrounds/pve/stages/3.png"
-@export var foreground_texture_path: String = "res://assets/backgrounds/pve/stages/1.png"
+enum StageType { FOREST, CASTLE, TERRACE }
 
-# ---------- 天空视差 ----------
-@export_group("天空视差")
-@export var sky_drift_speed:   float = 6.0    ## 漂移速度 (px/s)
-@export var sky_drift_range:   float = 30.0   ## 最大漂移距离 (px)
+const CONFIG_PATH: String = "res://resources/configs/bg_stage_configs.json"
+var _stage_config: Dictionary = {}
 
-# ---------- 蝙蝠层 ----------
-@export_group("蝙蝠层")
-@export var bat_drift_speed:       float = 10.0   ## 横向漂移速度 (px/s)
-@export var bat_drift_range:       float = 20.0   ## 横向漂移范围 (px)
-@export var bat_breathe_min:       float = 0.65   ## 透明度最小值
-@export var bat_breathe_max:       float = 1.0    ## 透明度最大值
-@export var bat_breathe_duration:  float = 4.0    ## 呼吸周期 (s)
+func _load_stage_config() -> void:
+	var file := FileAccess.open(CONFIG_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("[DynamicBg] 配置文件不存在: " + CONFIG_PATH)
+		return
+	var json := JSON.new()
+	var err := json.parse(file.get_as_text())
+	if err != OK:
+		push_warning("[DynamicBg] JSON 解析失败: " + CONFIG_PATH)
+		return
+	var raw: Dictionary = json.data.get("stages", {})
+	_stage_config[StageType.FOREST] = _parse_stage(raw.get("forest", {}))
+	_stage_config[StageType.CASTLE] = _parse_stage(raw.get("castle", {}))
+	_stage_config[StageType.TERRACE] = _parse_stage(raw.get("terrace", {}))
 
-# ---------- 前景装饰 ----------
-@export_group("前景装饰")
-@export var fg_float_range:      float = 4.0    ## 上下浮动范围 (px)
-@export var fg_float_duration:   float = 5.0    ## 浮动周期 (s)
+func _parse_stage(data: Dictionary) -> Dictionary:
+	var result := data.duplicate(true)
+	var fc: Array = result.get("fog_color", [0.5, 0.5, 0.5, 1.0])
+	result["fog_color"] = Color(fc[0], fc[1], fc[2], fc[3])
+	return result
 
-# ---------- 窗外光效 ----------
-@export_group("窗外光效")
-@export var glow_color:          Color = Color(1.0, 0.92, 0.75, 1.0)
-@export var glow_min_alpha:      float = 0.12
-@export var glow_max_alpha:      float = 0.30
-@export var glow_duration:       float = 6.0
-@export var glow_scale:          float = 1.15    ## 光效比屏幕大多少倍
-
-# ---------- 雾气 ----------
-@export_group("雾气")
-@export var fog_color:   Color = Color(0.65, 0.70, 0.78, 1.0)
-@export var fog_alpha:   float = 0.045
-
-# ---------- 暗角 ----------
-@export_group("暗角")
-@export var vignette_color:   Color = Color(0.0, 0.0, 0.0, 1.0)
-@export var vignette_alpha:   float = 0.55
-@export var vignette_softness: float = 0.35     ## 0=硬边, 1=极软
-
-# ---------- Dust 粒子 ----------
-@export_group("Dust 粒子")
-@export var dust_amount:     int = 25
-@export var dust_speed:      float = 15.0
-@export var dust_lifetime:   float = 8.0
-@export var dust_size_min:   float = 0.4
-@export var dust_size_max:   float = 1.6
-
-# ==========================================
-# 节点引用
-# ==========================================
-@onready var sky_layer:        Sprite2D = $SkyLayer
-@onready var window_layer:     Sprite2D = $WindowFrameLayer
-@onready var ground_layer:     Sprite2D = $GroundLayer
-@onready var bat_layer:        Sprite2D = $BatLayer
-@onready var foreground_layer: Sprite2D = $ForegroundLayer
-@onready var light_glow:       Sprite2D = $LightGlow
-@onready var fog_overlay:      Sprite2D = $FogOverlay
+@onready var base_layer: Sprite2D = $BaseLayer
+@onready var parallax_container: Node2D = $ParallaxContainer
+@onready var fog_overlay: Sprite2D = $FogOverlay
 @onready var vignette_overlay: Sprite2D = $VignetteOverlay
-@onready var dust_particles:   CPUParticles2D = $DustParticles
+@onready var effect_particles: CPUParticles2D = $EffectParticles
 
 var _screen_size: Vector2
 var _screen_center: Vector2
+var _current_stage: StageType = -1
+var _parallax_sprites: Array[Sprite2D] = []
+var _parallax_drift: Array[float] = []
+var _mouse_pos: Vector2
+var _drift_time: float = 0.0
+var _flyer: Sprite2D = null
+var _flyer_time: float = 0.0
+var _editor_panel: PanelContainer = null
 
 func _ready() -> void:
 	_screen_size = get_viewport_rect().size
 	_screen_center = _screen_size / 2.0
-	
-	_setup_texture_layers()
-	_setup_light_glow()
-	_setup_fog()
+	_mouse_pos = _screen_center
+	_load_stage_config()
+	_setup_overlays()
 	_setup_vignette()
-	_setup_particles()
-	_start_animations()
+	if EventBus.has_signal("floor_changed"):
+		EventBus.floor_changed.connect(_on_floor_changed)
+	load_stage_for_floor(1)
+	_setup_editor()
 
-# ==========================================
-# 图层初始化
-# ==========================================
-func _setup_texture_layers() -> void:
-	var layers: Array[Sprite2D] = [sky_layer, window_layer, ground_layer, bat_layer, foreground_layer]
-	var paths: Array[String] = [sky_texture_path, window_texture_path, ground_texture_path, bat_texture_path, foreground_texture_path]
+func _setup_editor() -> void:
+	var canvas := CanvasLayer.new()
+	canvas.name = "BgEditorCanvas"
+	canvas.layer = 100
+	add_child(canvas)
 	
-	for i in range(layers.size()):
-		var layer: Sprite2D = layers[i]
-		var path: String = paths[i]
-		if not path.is_empty() and FileAccess.file_exists(path):
-			layer.texture = load(path)
-		else:
-			push_warning("[DynamicBg] 纹理不存在: %s" % path)
-		
-		_fit_sprite_to_screen(layer)
-		layer.position = _screen_center
+	var panel := preload("res://scenes/backgrounds/bg_editor_panel.gd").new()
+	panel.name = "BgEditorPanel"
+	canvas.add_child(panel)
+	_editor_panel = panel
+	panel.setup(self)
+	panel.position = Vector2(20, 20)
+	panel.visible = false
 
-func _fit_sprite_to_screen(sprite: Sprite2D) -> void:
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F7:
+		if _editor_panel != null:
+			_editor_panel.visible = not _editor_panel.visible
+			_editor_panel.sync_from_bg()
+			_set_ui_visible(not _editor_panel.visible)
+
+var _ui_visibility_backup: Dictionary = {}
+
+func _set_ui_visible(visible: bool) -> void:
+	var parent := get_parent()
+	if parent == null:
+		return
+	if visible:
+		# 恢复：只把之前被隐藏的节点恢复为 true，原本就是 false 的保持 false
+		for child in parent.get_children():
+			if child == self:
+				continue
+			if child.name in _ui_visibility_backup:
+				child.visible = _ui_visibility_backup[child.name]
+		_ui_visibility_backup.clear()
+	else:
+		# 隐藏：备份当前可见状态，然后把所有可见的 UI 节点隐藏
+		_ui_visibility_backup.clear()
+		for child in parent.get_children():
+			if child == self:
+				continue
+			if child.name == "RunController":
+				continue
+			_ui_visibility_backup[child.name] = child.visible
+			child.visible = false
+
+func _process(delta: float) -> void:
+	_mouse_pos = get_viewport().get_mouse_position()
+	_drift_time += delta
+	_update_parallax()
+	_update_flyer(delta)
+
+func _on_floor_changed(current_floor: int, _max_floor: int, _floor_type: String) -> void:
+	load_stage_for_floor(current_floor)
+
+static func get_stage_type(floor: int) -> StageType:
+	if floor <= 10:
+		return StageType.FOREST
+	elif floor <= 20:
+		return StageType.CASTLE
+	else:
+		return StageType.TERRACE
+
+func load_stage_for_floor(floor: int) -> void:
+	var stage: StageType = get_stage_type(floor)
+	if stage == _current_stage:
+		return
+	_current_stage = stage
+	var config: Dictionary = _stage_config[stage]
+	
+	var base_path: String = config["base"]
+	if FileAccess.file_exists(base_path):
+		base_layer.texture = load(base_path)
+		_fit_sprite_cover(base_layer)
+		base_layer.position = _screen_center
+		base_layer.visible = config.get("base_visible", true)
+	else:
+		push_warning("[DynamicBg] 底图不存在: %s" % base_path)
+	
+	_clear_parallax()
+	
+	var layers: Array = config["layers"]
+	for i in range(layers.size()):
+		var layer_data: Dictionary = layers[i]
+		var sprite := Sprite2D.new()
+		sprite.name = "Parallax_%d" % i
+		sprite.centered = false
+		var tex_path: String = layer_data["path"]
+		if FileAccess.file_exists(tex_path):
+			sprite.texture = load(tex_path)
+			var tex_w: float = sprite.texture.get_width()
+			var tex_h: float = sprite.texture.get_height()
+			var base_scale: float = _screen_size.x / tex_w
+			var layer_scale: float = layer_data.get("scale", 1.0)
+			sprite.scale = Vector2(base_scale * layer_scale, base_scale * layer_scale)
+			var base_y: float = _screen_size.y - tex_h * base_scale * layer_scale
+			var off_x: float = layer_data.get("offset_x", 0.0)
+			var off_y: float = layer_data.get("offset_y", 0.0)
+			sprite.position = Vector2(off_x, base_y + off_y)
+		else:
+			push_warning("[DynamicBg] 视差纹理不存在: %s" % tex_path)
+		parallax_container.add_child(sprite)
+		_parallax_sprites.append(sprite)
+		_parallax_drift.append(0.0)
+	
+	fog_overlay.modulate = Color(1, 1, 1, config["fog_alpha"])
+	var fog_img := Image.create(int(_screen_size.x), int(_screen_size.y), false, Image.FORMAT_RGBA8)
+	fog_img.fill(config["fog_color"])
+	fog_overlay.texture = ImageTexture.create_from_image(fog_img)
+	_setup_effect(config["effect"])
+	_setup_flyer(stage)
+	# 应用保存的全局参数覆盖默认值
+	var saved_amount: int = config.get("particle_amount", -1)
+	if saved_amount >= 0:
+		effect_particles.amount = saved_amount
+	var saved_pspeed: float = config.get("particle_speed", -1.0)
+	if saved_pspeed >= 0:
+		effect_particles.initial_velocity_max = saved_pspeed
+		effect_particles.initial_velocity_min = saved_pspeed * 0.3
+	var saved_psize: float = config.get("particle_size", -1.0)
+	if saved_psize >= 0:
+		effect_particles.scale_amount_max = saved_psize
+		effect_particles.scale_amount_min = saved_psize * 0.4
+	set_meta("flyer_speed", config.get("flyer_speed", 90.0))
+	set_meta("flyer_y", config.get("flyer_y", 200.0))
+	set_meta("flyer_amp", config.get("flyer_amp", 35.0))
+	set_meta("drift_speed", config.get("drift_speed", 0.3))
+	set_meta("drift_amp", config.get("drift_amp", 1.0))
+
+func _update_parallax() -> void:
+	var offset: Vector2 = _mouse_pos - _screen_center
+	for i in range(_parallax_sprites.size()):
+		var sprite: Sprite2D = _parallax_sprites[i]
+		var config: Dictionary = _stage_config[_current_stage]["layers"][i]
+		var depth: float = config["depth"]
+		# 鼠标视差 + 正弦波自动漂移(统一方向, 避免Tween冲突)
+		var drift_speed: float = get_meta("drift_speed", 0.3)
+		var drift_amp: float = get_meta("drift_amp", 1.0)
+		var layer_drift_phase: float = config.get("drift_phase", i * 0.7)
+		var layer_drift_amp: float = config.get("drift_amp", 1.0)
+		var drift: float = sin(_drift_time * drift_speed + layer_drift_phase) * (6.0 + depth * 8.0) * drift_amp * layer_drift_amp
+		var user_off_x: float = config.get("offset_x", 0.0)
+		var target_x: float = user_off_x - offset.x * depth * 0.12 + drift
+		sprite.position.x = lerp(sprite.position.x, target_x, 0.08)
+
+
+func _setup_flyer(stage: StageType) -> void:
+	if _flyer != null:
+		_flyer.queue_free()
+		_flyer = null
+	var cfg: Dictionary = _stage_config.get(stage, {})
+	if not cfg.get("flyer_enabled", false):
+		return
+	_flyer = Sprite2D.new()
+	_flyer.name = "Flyer"
+	var img := Image.create(28, 20, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	for x in range(28):
+		for y in range(20):
+			var dx := absf(x - 14.0)
+			var dy := absf(y - 10.0)
+			if dy < 10.0 - dx * 0.6 or (dx < 5.0 and dy < 8.0):
+				img.set_pixel(x, y, Color(0.08, 0.08, 0.12, 0.55))
+	_flyer.texture = ImageTexture.create_from_image(img)
+	_flyer.position = Vector2(-60, 200)
+	add_child(_flyer)
+	_flyer_time = 0.0
+
+func _update_flyer(delta: float) -> void:
+	if _flyer == null:
+		return
+	_flyer_time += delta
+	var speed: float = get_meta("flyer_speed", 90.0)
+	var amplitude: float = get_meta("flyer_amp", 35.0)
+	var base_y: float = get_meta("flyer_y", 200.0)
+	var cycle_width: float = 2200.0
+	var t: float = fmod(_flyer_time * speed, cycle_width)
+	var x: float = t - 100.0
+	var y: float = base_y + sin(_flyer_time * 1.5) * amplitude
+	_flyer.position = Vector2(x, y)
+	# 根据方向翻转
+	_flyer.flip_h = false
+
+func _setup_effect(effect_type: String) -> void:
+	match effect_type:
+		"forest":
+			_setup_forest_effect()
+		"castle":
+			_setup_castle_effect()
+		"terrace":
+			_setup_terrace_effect()
+
+func _setup_forest_effect() -> void:
+	effect_particles.amount = 30
+	effect_particles.lifetime = 6.0
+	effect_particles.preprocess = 6.0
+	effect_particles.speed_scale = 0.3
+	effect_particles.direction = Vector2(0.1, 0.8)
+	effect_particles.spread = 30.0
+	effect_particles.gravity = Vector2(0, 20)
+	effect_particles.initial_velocity_min = 10.0
+	effect_particles.initial_velocity_max = 30.0
+	effect_particles.angular_velocity_min = -20.0
+	effect_particles.angular_velocity_max = 20.0
+	effect_particles.scale_amount_min = 0.5
+	effect_particles.scale_amount_max = 2.0
+	effect_particles.color = Color(0.7, 0.6, 0.4, 0.4)
+	effect_particles.color_ramp = _make_gradient([
+		Color(0.7, 0.6, 0.4, 0.0),
+		Color(0.7, 0.6, 0.4, 0.5),
+		Color(0.7, 0.6, 0.4, 0.0),
+	])
+	_effect_particle_texture(4)
+	_setup_emission_rect()
+	effect_particles.emitting = true
+
+func _setup_castle_effect() -> void:
+	effect_particles.amount = 50
+	effect_particles.lifetime = 5.0
+	effect_particles.preprocess = 5.0
+	effect_particles.speed_scale = 0.4
+	effect_particles.direction = Vector2(0.3, 0.9)
+	effect_particles.spread = 20.0
+	effect_particles.gravity = Vector2(0, 10)
+	effect_particles.initial_velocity_min = 20.0
+	effect_particles.initial_velocity_max = 50.0
+	effect_particles.angular_velocity_min = 0.0
+	effect_particles.angular_velocity_max = 0.0
+	effect_particles.scale_amount_min = 0.3
+	effect_particles.scale_amount_max = 1.2
+	effect_particles.color = Color(0.9, 0.95, 1.0, 0.5)
+	effect_particles.color_ramp = _make_gradient([
+		Color(0.9, 0.95, 1.0, 0.0),
+		Color(0.9, 0.95, 1.0, 0.6),
+		Color(0.9, 0.95, 1.0, 0.0),
+	])
+	_effect_particle_texture(3)
+	_setup_emission_rect()
+	effect_particles.emitting = true
+
+func _setup_terrace_effect() -> void:
+	effect_particles.amount = 40
+	effect_particles.lifetime = 8.0
+	effect_particles.preprocess = 8.0
+	effect_particles.speed_scale = 0.2
+	effect_particles.direction = Vector2(0.5, -0.2)
+	effect_particles.spread = 45.0
+	effect_particles.gravity = Vector2.ZERO
+	effect_particles.initial_velocity_min = 5.0
+	effect_particles.initial_velocity_max = 20.0
+	effect_particles.angular_velocity_min = -5.0
+	effect_particles.angular_velocity_max = 5.0
+	effect_particles.scale_amount_min = 0.4
+	effect_particles.scale_amount_max = 1.5
+	effect_particles.color = Color(0.7, 0.75, 1.0, 0.35)
+	effect_particles.color_ramp = _make_gradient([
+		Color(0.7, 0.75, 1.0, 0.0),
+		Color(0.7, 0.75, 1.0, 0.5),
+		Color(0.7, 0.75, 1.0, 0.0),
+	])
+	_effect_particle_texture(3)
+	_setup_emission_rect()
+	effect_particles.emitting = true
+
+func _setup_emission_rect() -> void:
+	effect_particles.position = _screen_center
+	effect_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	effect_particles.emission_rect_extents = Vector2(_screen_size.x * 0.5, _screen_size.y * 0.5)
+
+func _effect_particle_texture(size_px: int) -> void:
+	var pimg := Image.create(size_px, size_px, false, Image.FORMAT_RGBA8)
+	pimg.fill(Color.WHITE)
+	effect_particles.texture = ImageTexture.create_from_image(pimg)
+
+func _make_gradient(colors: Array[Color]) -> Gradient:
+	var grad := Gradient.new()
+	grad.colors = colors
+	var offsets: Array[float] = []
+	for i in range(colors.size()):
+		offsets.append(float(i) / float(colors.size() - 1))
+	grad.offsets = offsets
+	return grad
+
+func _fit_sprite_cover(sprite: Sprite2D) -> void:
 	if sprite.texture == null:
 		return
 	var tex_size: Vector2 = sprite.texture.get_size()
@@ -113,121 +352,32 @@ func _fit_sprite_to_screen(sprite: Sprite2D) -> void:
 	sprite.scale = Vector2(cover_scale, cover_scale)
 	sprite.centered = true
 
-# ==========================================
-# 光效初始化
-# ==========================================
-func _setup_light_glow() -> void:
-	var w: int = int(_screen_size.x * glow_scale)
-	var h: int = int(_screen_size.y * glow_scale)
-	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
-	img.fill(glow_color)
-	
-	light_glow.texture = ImageTexture.create_from_image(img)
-	light_glow.scale = Vector2.ONE
-	light_glow.position = _screen_center
-	light_glow.centered = true
-	light_glow.modulate = Color(1, 1, 1, glow_max_alpha)
+func _clear_parallax() -> void:
+	for sprite in _parallax_sprites:
+		if is_instance_valid(sprite):
+			sprite.queue_free()
+	_parallax_sprites.clear()
+	_parallax_drift.clear()
 
-# ==========================================
-# 雾气初始化
-# ==========================================
-func _setup_fog() -> void:
-	var img := Image.create(int(_screen_size.x), int(_screen_size.y), false, Image.FORMAT_RGBA8)
-	img.fill(fog_color)
-	fog_overlay.texture = ImageTexture.create_from_image(img)
+func _setup_overlays() -> void:
 	fog_overlay.scale = Vector2.ONE
 	fog_overlay.position = _screen_center
 	fog_overlay.centered = true
-	fog_overlay.modulate = Color(1, 1, 1, fog_alpha)
 
-# ==========================================
-# 暗角初始化 — 径向渐变
-# ==========================================
 func _setup_vignette() -> void:
 	var tex := GradientTexture2D.new()
 	tex.gradient = Gradient.new()
 	tex.gradient.colors = [
-		Color(vignette_color.r, vignette_color.g, vignette_color.b, 0.0),
-		Color(vignette_color.r, vignette_color.g, vignette_color.b, vignette_alpha),
+		Color(0.0, 0.0, 0.0, 0.0),
+		Color(0.0, 0.0, 0.0, 0.50),
 	]
 	tex.gradient.offsets = [0.0, 1.0]
 	tex.fill = GradientTexture2D.FILL_RADIAL
 	tex.fill_from = Vector2(0.5, 0.5)
-	tex.fill_to = Vector2(vignette_softness + 0.5, 0.5)
+	tex.fill_to = Vector2(0.85, 0.5)
 	tex.width = int(_screen_size.x)
 	tex.height = int(_screen_size.y)
-	
 	vignette_overlay.texture = tex
 	vignette_overlay.scale = Vector2.ONE
 	vignette_overlay.position = _screen_center
 	vignette_overlay.centered = true
-
-# ==========================================
-# Dust 粒子初始化
-# ==========================================
-func _setup_particles() -> void:
-	dust_particles.position = _screen_center
-	dust_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
-	dust_particles.emission_rect_extents = Vector2(_screen_size.x * 0.5, _screen_size.y * 0.5)
-	dust_particles.amount = dust_amount
-	dust_particles.lifetime = dust_lifetime
-	dust_particles.preprocess = dust_lifetime
-	dust_particles.speed_scale = 0.25
-	dust_particles.direction = Vector2(0.15, -0.4)
-	dust_particles.spread = 25.0
-	dust_particles.gravity = Vector2.ZERO
-	dust_particles.initial_velocity_min = dust_speed * 0.3
-	dust_particles.initial_velocity_max = dust_speed
-	dust_particles.angular_velocity_min = -10.0
-	dust_particles.angular_velocity_max = 10.0
-	dust_particles.angle_min = 0.0
-	dust_particles.angle_max = 360.0
-	dust_particles.scale_amount_min = dust_size_min
-	dust_particles.scale_amount_max = dust_size_max
-	dust_particles.color = Color(1.0, 1.0, 1.0, 0.25)
-	dust_particles.color_ramp = _make_dust_fade_ramp()
-	
-	## 小圆点纹理
-	var pimg := Image.create(3, 3, false, Image.FORMAT_RGBA8)
-	pimg.fill(Color.WHITE)
-	dust_particles.texture = ImageTexture.create_from_image(pimg)
-	dust_particles.emitting = true
-
-func _make_dust_fade_ramp() -> GradientTexture1D:
-	var grad := Gradient.new()
-	grad.colors = [Color(1, 1, 1, 0), Color(1, 1, 1, 0.3), Color(1, 1, 1, 0)]
-	grad.offsets = [0.0, 0.5, 1.0]
-	var tex := GradientTexture1D.new()
-	tex.gradient = grad
-	tex.width = 64
-	return tex
-
-# ==========================================
-# 动画启动
-# ==========================================
-func _start_animations() -> void:
-	## 1. 天空视差：非常慢的来回漂移
-	var sky_t := create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	var sky_half: float = sky_drift_range / sky_drift_speed
-	sky_t.tween_property(sky_layer, "position:x", _screen_center.x + sky_drift_range, sky_half)
-	sky_t.tween_property(sky_layer, "position:x", _screen_center.x - sky_drift_range, sky_half)
-	
-	## 2. 蝙蝠层：横向漂移 + 透明度呼吸
-	var bat_pos_t := create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	var bat_half: float = bat_drift_range / bat_drift_speed
-	bat_pos_t.tween_property(bat_layer, "position:x", _screen_center.x + bat_drift_range, bat_half)
-	bat_pos_t.tween_property(bat_layer, "position:x", _screen_center.x - bat_drift_range, bat_half)
-	
-	var bat_alpha_t := create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	bat_alpha_t.tween_property(bat_layer, "modulate:a", bat_breathe_min, bat_breathe_duration * 0.5)
-	bat_alpha_t.tween_property(bat_layer, "modulate:a", bat_breathe_max, bat_breathe_duration * 0.5)
-	
-	## 3. 前景装饰：极轻微上下浮动
-	var fg_t := create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	fg_t.tween_property(foreground_layer, "position:y", _screen_center.y - fg_float_range, fg_float_duration * 0.5)
-	fg_t.tween_property(foreground_layer, "position:y", _screen_center.y + fg_float_range, fg_float_duration * 0.5)
-	
-	## 4. 光效呼吸
-	var glow_t := create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	glow_t.tween_property(light_glow, "modulate:a", glow_min_alpha, glow_duration * 0.5)
-	glow_t.tween_property(light_glow, "modulate:a", glow_max_alpha, glow_duration * 0.5)

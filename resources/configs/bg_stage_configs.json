@@ -1,0 +1,217 @@
+{
+	"stages": {
+		"castle": {
+			"base": "res://assets/backgrounds/pve/stages2/castle.png",
+			"base_visible": false,
+			"drift_amp": 1.0,
+			"drift_speed": 0.3,
+			"effect": "castle",
+			"flyer_amp": 35.0,
+			"flyer_enabled": false,
+			"flyer_speed": 90.0,
+			"flyer_y": 200.0,
+			"fog_alpha": 0.05,
+			"fog_color": [
+				0.600000023841858,
+				0.649999976158142,
+				0.75,
+				1.0
+			],
+			"layers": [
+				{
+					"depth": 0.5,
+					"drift_amp": 1.0,
+					"drift_phase": 0.0,
+					"offset_x": -69.0,
+					"offset_y": -300.0,
+					"path": "res://assets/backgrounds/pve/stages2/4.png",
+					"scale": 1.1
+				},
+				{
+					"depth": 1.0,
+					"drift_amp": 1.0,
+					"drift_phase": 0.8,
+					"offset_x": -161.0,
+					"offset_y": 138.0,
+					"path": "res://assets/backgrounds/pve/stages2/5.png",
+					"scale": 1.2
+				},
+				{
+					"depth": 0.35,
+					"drift_amp": 1.0,
+					"drift_phase": 1.4,
+					"offset_x": -107.0,
+					"offset_y": -621.0,
+					"path": "res://assets/backgrounds/pve/stages2/3.png",
+					"scale": 1.05
+				},
+				{
+					"depth": 0.75,
+					"drift_amp": 1.0,
+					"drift_phase": 2.1,
+					"offset_x": -92.0,
+					"offset_y": -162.0,
+					"path": "res://assets/backgrounds/pve/stages2/2.png",
+					"scale": 1.1
+				},
+				{
+					"depth": 0.15,
+					"drift_amp": 1.0,
+					"drift_phase": 2.8,
+					"offset_x": -92.0,
+					"offset_y": -23.0,
+					"path": "res://assets/backgrounds/pve/stages2/1.png",
+					"scale": 1.1
+				}
+			],
+			"particle_amount": 30,
+			"particle_size": 2.0,
+			"particle_speed": 30.0
+		},
+		"forest": {
+			"base": "res://assets/backgrounds/pve/stages1/dead forest.png",
+			"base_visible": false,
+			"drift_amp": 1.0,
+			"drift_speed": 0.8,
+			"effect": "forest",
+			"flyer_amp": 35.0,
+			"flyer_enabled": true,
+			"flyer_speed": 80.0,
+			"flyer_y": 200.0,
+			"fog_alpha": 0.08,
+			"fog_color": [
+				0.540000021457672,
+				0.660000026226044,
+				0.550000011920929,
+				1.0
+			],
+			"layers": [
+				{
+					"depth": 1.05,
+					"drift_amp": 1.0,
+					"drift_phase": 0.0,
+					"offset_x": -808.0,
+					"offset_y": -554.0,
+					"path": "res://assets/backgrounds/pve/stages1/6.png",
+					"scale": 1.5
+				},
+				{
+					"depth": 1.35,
+					"drift_amp": 1.0,
+					"drift_phase": 0.7,
+					"offset_x": -185.0,
+					"offset_y": 162.0,
+					"path": "res://assets/backgrounds/pve/stages1/5.png",
+					"scale": 1.25
+				},
+				{
+					"depth": 0.1,
+					"drift_amp": 1.0,
+					"drift_phase": 0.7,
+					"offset_x": 185.0,
+					"offset_y": -415.0,
+					"path": "res://assets/backgrounds/pve/stages1/4.png",
+					"scale": 1.15
+				},
+				{
+					"depth": 0.65,
+					"drift_amp": 1.0,
+					"drift_phase": 0.8,
+					"offset_x": 208.0,
+					"offset_y": -300.0,
+					"path": "res://assets/backgrounds/pve/stages1/3.png",
+					"scale": 0.95
+				},
+				{
+					"depth": 1.25,
+					"drift_amp": 1.0,
+					"drift_phase": 0.9,
+					"offset_x": -231.0,
+					"offset_y": -116.0,
+					"path": "res://assets/backgrounds/pve/stages1/2.png",
+					"scale": 1.2
+				},
+				{
+					"depth": 0.1,
+					"drift_amp": 1.0,
+					"drift_phase": 0.9,
+					"offset_x": 23.0,
+					"offset_y": 1.0,
+					"path": "res://assets/backgrounds/pve/stages1/1.png",
+					"scale": 0.95
+				}
+			],
+			"particle_amount": 100,
+			"particle_size": 2.0,
+			"particle_speed": 30.0
+		},
+		"terrace": {
+			"base": "res://assets/backgrounds/pve/stages3/terrace.png",
+			"base_visible": false,
+			"drift_amp": 1.0,
+			"drift_speed": 0.3,
+			"effect": "terrace",
+			"flyer_amp": 35.0,
+			"flyer_enabled": false,
+			"flyer_speed": 90.0,
+			"flyer_y": 200.0,
+			"fog_alpha": 0.11,
+			"fog_color": [
+				0.449999988079071,
+				0.400000005960464,
+				0.649999976158142,
+				1.0
+			],
+			"layers": [
+				{
+					"depth": 0.3,
+					"drift_amp": 1.0,
+					"drift_phase": 0.0,
+					"offset_x": -254.0,
+					"offset_y": -646.0,
+					"path": "res://assets/backgrounds/pve/stages3/4.png",
+					"scale": 1.25
+				},
+				{
+					"depth": 0.55,
+					"drift_amp": 1.0,
+					"drift_phase": 0.7,
+					"offset_x": -185.0,
+					"offset_y": 184.0,
+					"path": "res://assets/backgrounds/pve/stages3/5.png",
+					"scale": 1.25
+				},
+				{
+					"depth": 1.2,
+					"drift_amp": 1.0,
+					"drift_phase": 0.6,
+					"offset_x": 715.0,
+					"offset_y": -762.0,
+					"path": "res://assets/backgrounds/pve/stages3/3.png",
+					"scale": 0.25
+				},
+				{
+					"depth": 0.8,
+					"drift_amp": 1.0,
+					"drift_phase": 0.7,
+					"offset_x": -116.0,
+					"offset_y": -115.0,
+					"path": "res://assets/backgrounds/pve/stages3/2.png",
+					"scale": 1.15
+				},
+				{
+					"depth": 0.95,
+					"drift_amp": 1.0,
+					"drift_phase": 0.6,
+					"offset_x": -161.0,
+					"offset_y": -23.0,
+					"path": "res://assets/backgrounds/pve/stages3/1.png",
+					"scale": 1.15
+				}
+			],
+			"particle_amount": 30.0,
+			"particle_size": 2.0,
+			"particle_speed": 30.0
+		}
+	}
+}

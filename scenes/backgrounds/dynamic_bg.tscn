@@ -12,23 +12,10 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("1_dbgd")
 
-[node name="SkyLayer" type="Sprite2D" parent="."]
+[node name="BaseLayer" type="Sprite2D" parent="."]
 centered = true
 
-[node name="WindowFrameLayer" type="Sprite2D" parent="."]
-centered = true
-
-[node name="GroundLayer" type="Sprite2D" parent="."]
-centered = true
-
-[node name="BatLayer" type="Sprite2D" parent="."]
-centered = true
-
-[node name="ForegroundLayer" type="Sprite2D" parent="."]
-centered = true
-
-[node name="LightGlow" type="Sprite2D" parent="."]
-centered = true
+[node name="ParallaxContainer" type="Node2D" parent="."]
 
 [node name="FogOverlay" type="Sprite2D" parent="."]
 centered = true
@@ -36,4 +23,4 @@ centered = true
 [node name="VignetteOverlay" type="Sprite2D" parent="."]
 centered = true
 
-[node name="DustParticles" type="CPUParticles2D" parent="."]
+[node name="EffectParticles" type="CPUParticles2D" parent="."]

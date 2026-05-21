@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/run_main/battle_animation_panel.tscn" id="4_bap"]
 [ext_resource type="PackedScene" uid="uid://outingpopup01" path="res://scenes/outing/outing_popup.tscn" id="5_op"]
 [ext_resource type="PackedScene" path="res://scenes/rescue/rescue_popup.tscn" id="6_rp"]
+[ext_resource type="PackedScene" uid="uid://dynamicbg01" path="res://scenes/backgrounds/dynamic_bg.tscn" id="7_dbg"]
 
 [node name="RunMain" type="Control"]
 layout_mode = 3
@@ -15,6 +16,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_abc12")
+
+[node name="DynamicBg" parent="." instance=ExtResource("7_dbg")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="MenuButton" type="Button" parent="."]
 layout_mode = 1
