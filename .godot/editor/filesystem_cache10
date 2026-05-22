@@ -1,5 +1,5 @@
 63f7b34db8d8cdea90c76aacccf841ec
-::res://::1779466307
+::res://::1779474312
 ::res://addons/::1779378685
 ::res://addons/addons/::1778871196
 ::res://addons/addons/theme_gen/::1778871196
@@ -448,7 +448,7 @@ LV2.png::CompressedTexture2D::7500598535915396811::1779179079::1779182896::1::::
 LV3.png::CompressedTexture2D::5630825943111402297::1779179084::1779182896::1::::<><><>0<>0<>657edc3f4cbcd369790d7a5a3378ab4a<>res://.godot/imported/LV3.png-113a218b0998d2f446511e7dfbf89f5c.ctex::
 LV4.png::CompressedTexture2D::5773430228577807981::1779179090::1779182896::1::::<><><>0<>0<>da5463fe6df8b65aa8aacdc0e6bc994a<>res://.godot/imported/LV4.png-f4a61e8adb35c56ea588c79a04a45eb2.ctex::
 LV5.png::CompressedTexture2D::4017897867332181122::1779179094::1779182896::1::::<><><>0<>0<>5318d0ff7199f96156c3a0422374c318<>res://.godot/imported/LV5.png-35430e4333312a9a74740a7177e12c7f.ctex::
-::res://assets/characters/card/partners/::1779469031
+::res://assets/characters/card/partners/::1779469171
 partner_hunter_lv1.png::CompressedTexture2D::4736488771737782616::1779293843::1779469171::1::::<><><>0<>0<>1a8fee6047def9219c8fd98116cf2e19<>res://.godot/imported/partner_hunter_lv1.png-cbcf3af44838eb423e43e1f3ca48b150.ctex::
 partner_hunter_lv2.png::CompressedTexture2D::6843396468285831716::1779293895::1779469171::1::::<><><>0<>0<>71c2b64a653f7d5707570580e77f0876<>res://.godot/imported/partner_hunter_lv2.png-8e73617570689abbf6fece646a816a96.ctex::
 partner_hunter_lv3.png::CompressedTexture2D::5321639940985005377::1779293922::1779469171::1::::<><><>0<>0<>92a769e7b010ee821633389fd2f35c3a<>res://.godot/imported/partner_hunter_lv3.png-160f9dfdf3e69c44a9c76528d9350d02.ctex::
@@ -606,11 +606,11 @@ icons.png::CompressedTexture2D::3061496120431288436::1779357248::1779357300::1::
 logo.png::CompressedTexture2D::17232502825398186::1779357248::1779357300::1::::<><><>0<>0<>0bbeecc6d4aa9dc035d2879c22eecc09<>res://.godot/imported/logo.png-fa3fc20b848ae99c0bdb3ed4afe315af.ctex::
 ::res://autoload/::1778952838
 audio_manager.gd::GDScript::7887373177378120365::1779084595::0::1::::<>Node<><>0<>0<><>::
-config_manager.gd::GDScript::6669216324424158771::1779184980::0::1::::<>Node<><>0<>0<><>::
+config_manager.gd::GDScript::6669216324424158771::1779472498::0::1::::<>Node<><>0<>0<><>::
 event_bus.gd::GDScript::624577216022475290::1779102189::0::1::::<>Node<><>0<>0<><>::
 game_manager.gd::GDScript::933307150271136425::1779088903::0::1::::<>Node<><>0<>0<><>::
 save_manager.gd::GDScript::7324539117998813799::1779044786::0::1::::<>Node<><>0<>0<><>::
-::res://Docs/::1779380697
+::res://Docs/::1779478556
 architecture-decoupling-audit.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
 phase0-task-distribution.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
 Phase1_Acceptance_Report.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
@@ -703,6 +703,8 @@ PVP异步镜像任务卡.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
 ::res://Docs/0522改动/::1779463970
 demo_猎人冲刺斩杀_改动记录.md::TextFile::-1::1779463970::0::1::::<><><>0<>0<><>::
 SD_纸片小剧场风格定义文档_v0.2.md::TextFile::-1::1779380309::0::1::::<><><>0<>0<><>::
+::res://Docs/0523改动/::1779478557
+任务卡_主菜单UI改造.md::TextFile::-1::1779478537::0::1::::<><><>0<>0<><>::
 ::res://Docs/BugReport/::1778952893
 BugFix_Report_20260510.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
 Bug_001_archive_saved_duplicate_signal.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
@@ -729,9 +731,10 @@ Phase2_Test_Report_20260511.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>
 phase1-code-task-cards.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
 plan.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
 summary_dependency_graph.md::TextFile::-1::1778952893::0::1::::<><><>0<>0<><>::
-::res://nanobanana-output/::1779362002
+::res://nanobanana-output/::1779480278
 a_2d_anime_style_game_background.png::CompressedTexture2D::3939628354628836375::1779361987::1779362002::0::::<><><>0<>0<>d43c7f35d016f2b024b2be37d9d9b0fb<>::
 a_2d_anime_style_game_background_1.png::CompressedTexture2D::2354937596089749609::1779361995::1779362002::0::::<><><>0<>0<>04517f07b797a96bf5c2fd99e5e13787<>::
+Gemini_Generated_Image_5s4acn5s4acn5s4a.png::CompressedTexture2D::8396369070988405145::1779480044::1779480690::1::::<><><>0<>0<>34b93e7a1fc3574aa00e82cc07514c3f<>res://.godot/imported/Gemini_Generated_Image_5s4acn5s4acn5s4a.png-2ba8fe8f397b200f81a1582bd16f3c19.ctex::
 ::res://phantom-camera-17dfc5a2c7040fd6faf0bef758f5f89a92af7ff0/::1779377620
 ::res://phantom-camera-17dfc5a2c7040fd6faf0bef758f5f89a92af7ff0/addons/::1779377620
 ::res://phantom-camera-17dfc5a2c7040fd6faf0bef758f5f89a92af7ff0/addons/phantom_camera/::1779377621
@@ -893,7 +896,7 @@ button_focus.tres::StyleBoxFlat::1106322926052085743::1779377621::0::1::::<><><>
 button_hover.tres::StyleBoxFlat::2151354179275418664::1779377621::0::1::::<><><>0<>0<><>::
 button_normal.tres::StyleBoxFlat::2549607310371774247::1779377621::0::1::::<><><>0<>0<><>::
 theme.tres::Theme::2909626652912860453::1779377621::0::1::::<><><>0<>0<><>::uid://dve7mgsjik4dg::::res://addons/phantom_camera/fonts/Nunito-Regular.ttf<>uid://5weqvkjsfso3::::res://addons/phantom_camera/themes/button_hover.tres<>uid://bclbwo3xrdat0::::res://addons/phantom_camera/themes/button_normal.tres
-::res://resources/::1779379302
+::res://resources/::1779479257
 actor_anim_data.gd::GDScript::732135257980267886::1779378524::0::1::::ActorAnimData<>Resource<><>0<>0<><>::
 actor_data.gd::GDScript::9210176403422095545::1779379263::0::1::::ActorData<>Resource<><>0<>0<><>::
 actor_data_gorgen.tres::Resource/ActorData::-1::1779379294::0::1::::<><><>0<>0<><>::
@@ -918,6 +921,10 @@ shop_configs.json::JSON::-1::1778827986::0::1::::<><><>0<>0<><>::
 shop_items.json::JSON::-1::1778827986::0::1::::<><><>0<>0<><>::
 skill_configs.json::JSON::-1::1778827986::0::1::::<><><>0<>0<><>::
 training_level_configs.json::JSON::-1::1778827986::0::1::::<><><>0<>0<><>::
+::res://resources/shaders/::1779479932
+title_glow.gdshader::Shader::3239726162809134709::1779479508::0::1::::<><><>0<>0<><>::
+::res://resources/themes/::1779479533
+menu_theme.tres::Theme::-1::1779479533::0::1::::<><><>0<>0<><>::
 ::res://resources/virtual_archives/::1778827170
 VIR_001.json::JSON::-1::1778827986::0::1::::<><><>0<>0<><>::
 VIR_002.json::JSON::-1::1778827986::0::1::::<><><>0<>0<><>::
@@ -953,8 +960,8 @@ leaderboard_panel.tscn::PackedScene::-1::1779099200::0::1::::<><><>0<>0<><>::res
 ranking_row.gd::GDScript::603606977648222233::1778827986::0::1::::<>HBoxContainer<><>0<>0<><>::
 ranking_row.tscn::PackedScene::-1::1779099200::0::1::::<><><>0<>0<><>::res://scenes/leaderboard/ranking_row.gd
 ::res://scenes/main_menu/::1779371996
-menu.gd::GDScript::587589824777460322::1779372255::0::1::::MenuUI<>Control<><>0<>0<><>::
-menu.tscn::PackedScene::6554368614887292099::1779372033::0::1::::<><><>0<>0<><>::uid://imvrvpyuknvu::::res://scenes/main_menu/menu.gd<>uid://c0m8q1p2x3y5a::::res://scenes/menu/pause_menu.tscn<>res://scenes/leaderboard/leaderboard_panel.tscn<>uid://5capyn311p6p::::res://assets/backgrounds/pve/menu/开始冒险.png<>uid://ufawm2h2bjau::::res://assets/backgrounds/pve/menu/开始冒险2.png<>res://scenes/shop/shop_popup.tscn<>uid://cwptyjdpr73xj::::res://scripts/ui/menu_button.gd<>uid://dv1iyaf152ymf::::res://assets/backgrounds/menu_bg.png<>uid://dis1outfgbe7j::::res://assets/backgrounds/pve/menu/继续冒险.png<>uid://cgw6crux5gj7::::res://assets/backgrounds/pve/menu/继续冒险2.png<>uid://bb6otgktyyu7m::::res://assets/backgrounds/pve/menu/系统设置.png<>uid://ck163y7ol5gh0::::res://assets/backgrounds/pve/menu/系统设置2.png<>uid://bqu0ex61xsott::::res://assets/backgrounds/pve/menu/退出游戏.png<>uid://cjc5y8wb7ywi2::::res://assets/backgrounds/pve/menu/退出游戏2.png<>uid://dj6vc5mptdha::::res://assets/backgrounds/pve/menu/存档.png<>uid://dkq4mdhglbxln::::res://assets/backgrounds/pve/menu/存档2.png<>uid://6t6f1c5iitr5::::res://assets/backgrounds/pve/menu/PVP对战.png<>uid://bdij6mb070q1p::::res://assets/backgrounds/pve/menu/PVP对战2.png<>uid://bu45bcsp2rly8::::res://assets/backgrounds/pve/menu/商店.png<>uid://uym8hv2fgdmj::::res://assets/backgrounds/pve/menu/商店2.png<>uid://bng0vyp28kqfc::::res://assets/backgrounds/pve/menu/排行榜.png<>uid://m8u3uat5cktu::::res://assets/backgrounds/pve/menu/排行榜2.png
+menu.gd::GDScript::587589824777460322::1779479646::0::1::::MenuUI<>Control<><>0<>0<><>::
+menu.tscn::PackedScene::6554368614887292099::1779480281::0::1::::<><><>0<>0<><>::uid://imvrvpyuknvu::::res://scenes/main_menu/menu.gd<>uid://c0m8q1p2x3y5a::::res://scenes/menu/pause_menu.tscn<>res://scenes/leaderboard/leaderboard_panel.tscn<>uid://5capyn311p6p::::res://assets/backgrounds/pve/menu/开始冒险.png<>uid://ufawm2h2bjau::::res://assets/backgrounds/pve/menu/开始冒险2.png<>res://scenes/shop/shop_popup.tscn<>uid://cwptyjdpr73xj::::res://scripts/ui/menu_button.gd<>uid://dv1iyaf152ymf::::res://assets/backgrounds/menu_bg.png<>uid://dis1outfgbe7j::::res://assets/backgrounds/pve/menu/继续冒险.png<>uid://cgw6crux5gj7::::res://assets/backgrounds/pve/menu/继续冒险2.png<>uid://bb6otgktyyu7m::::res://assets/backgrounds/pve/menu/系统设置.png<>uid://ck163y7ol5gh0::::res://assets/backgrounds/pve/menu/系统设置2.png<>uid://bqu0ex61xsott::::res://assets/backgrounds/pve/menu/退出游戏.png<>uid://cjc5y8wb7ywi2::::res://assets/backgrounds/pve/menu/退出游戏2.png<>uid://dj6vc5mptdha::::res://assets/backgrounds/pve/menu/存档.png<>uid://dkq4mdhglbxln::::res://assets/backgrounds/pve/menu/存档2.png<>uid://6t6f1c5iitr5::::res://assets/backgrounds/pve/menu/PVP对战.png<>uid://bdij6mb070q1p::::res://assets/backgrounds/pve/menu/PVP对战2.png<>uid://bu45bcsp2rly8::::res://assets/backgrounds/pve/menu/商店.png<>uid://uym8hv2fgdmj::::res://assets/backgrounds/pve/menu/商店2.png<>uid://bng0vyp28kqfc::::res://assets/backgrounds/pve/menu/排行榜.png<>uid://m8u3uat5cktu::::res://assets/backgrounds/pve/menu/排行榜2.png
 ::res://scenes/menu/::1778952852
 pause_menu.gd::GDScript::2486319506638144365::1778827986::0::1::::PauseMenu<>CanvasLayer<><>0<>0<><>::
 pause_menu.tscn::PackedScene::6554368614887292108::1779099200::0::1::::<><><>0<>0<><>::res://scenes/menu/pause_menu.gd
@@ -967,9 +974,9 @@ pvp_lobby.tscn::PackedScene::-1::1779099200::0::1::::<><><>0<>0<><>::res://scene
 ::res://scenes/rescue/::1779358436
 rescue_popup.gd::GDScript::3271411198868347936::1779367177::0::1::::RescuePopup<>Control<><>0<>0<><>::
 rescue_popup.tscn::PackedScene::202480261523917151::1779358436::0::1::::<><><>0<>0<><>::uid://biocnv2v3sp7u::::res://scenes/rescue/rescue_popup.gd
-::res://scenes/run_main/::1779469038
-battle_animation_panel.gd::GDScript::2976978516352853055::1779469038::0::1::::BattleAnimationPanel<>Control<><>0<>0<><>::
-battle_animation_panel.tscn::PackedScene::202480261523917150::1779468329::0::1::::<><><>0<>0<><>::uid://biocnv2v3sp7t::::res://scenes/run_main/battle_animation_panel.gd
+::res://scenes/run_main/::1779475221
+battle_animation_panel.gd::GDScript::2976978516352853055::1779479896::0::1::::BattleAnimationPanel<>Control<><>0<>0<><>::
+battle_animation_panel.tscn::PackedScene::202480261523917150::1779478866::0::1::::<><><>0<>0<><>::uid://biocnv2v3sp7t::::res://scenes/run_main/battle_animation_panel.gd
 battle_summary_panel.gd::GDScript::6251344695526243157::1778871194::0::1::::BattleSummaryPanel<>PanelContainer<><>0<>0<><>::
 battle_summary_panel.tscn::PackedScene::1495776401771099732::1779099200::0::1::::<><><>0<>0<><>::res://scenes/run_main/battle_summary_panel.gd
 combat_confirm_panel.gd::GDScript::1533294738398988338::1778827986::0::1::::CombatConfirmPanel<>Panel<><>0<>0<><>::
@@ -1064,7 +1071,7 @@ virtual_archive_pool.gd::GDScript::3573693986255314848::1778827986::0::1::::Virt
 menu_button.gd::GDScript::6349158553700196023::1779358436::0::1::::<>TextureButton<><>0<>0<><>::
 ::res://shaders/::1779358436
 health_bar.gdshader::Shader::5857965089439035973::1778827986::0::1::::<><><>0<>0<><>::
-portrait_overlay.gdshader::Shader::8189640379681918746::1779456143::0::1::::<><><>0<>0<><>::
+portrait_overlay.gdshader::Shader::8189640379681918746::1779473259::0::1::::<><><>0<>0<><>::
 radial_burst.gdshader::Shader::6391211815849599525::1779173519::0::1::::<><><>0<>0<><>::
 ::res://test/::1779450663
 sheet1_f00.png::CompressedTexture2D::8668687087215708788::1779380810::1779381494::1::::<><><>0<>0<>bc64a3ced3ec50a4ffeacc86ffb701cf<>res://.godot/imported/sheet1_f00.png-8d982f21460751aba23fbdde67e5e1ff.ctex::

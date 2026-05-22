@@ -20,13 +20,11 @@ extends Control
 
 ## 战斗展示卡牌（StageArea）
 @onready var hero_card: Control = $StageArea/HeroCard
-@onready var hero_portrait: TextureRect = $StageArea/HeroCard/Portrait
-@onready var hero_portrait_overlay: ColorRect = $StageArea/HeroCard/Portrait/PortraitOverlay
+@onready var hero_portrait: Sprite2D = $StageArea/HeroCard/Portrait
 @onready var hero_glow: ColorRect = $StageArea/HeroCard/Portrait/GlowOverlay
 
 @onready var enemy_card: Control = $StageArea/EnemyCard
-@onready var enemy_portrait: TextureRect = $StageArea/EnemyCard/Portrait
-@onready var enemy_portrait_overlay: ColorRect = $StageArea/EnemyCard/Portrait/PortraitOverlay
+@onready var enemy_portrait: Sprite2D = $StageArea/EnemyCard/Portrait
 @onready var enemy_glow: ColorRect = $StageArea/EnemyCard/Portrait/GlowOverlay
 
 @onready var stage_name_label: Label = $StageArea/StageName
@@ -65,6 +63,8 @@ var _is_frenzy_active: bool = false
 ## 卡牌原始位置缓存
 var _hero_card_orig_pos: Vector2 = Vector2.ZERO
 var _enemy_card_orig_pos: Vector2 = Vector2.ZERO
+var _hero_portrait_orig_pos: Vector2 = Vector2.ZERO
+var _enemy_portrait_orig_pos: Vector2 = Vector2.ZERO
 
 ## 伙伴链
 var _chain_slots: Array[Control] = []
@@ -78,6 +78,11 @@ var _hero_death_tween: Tween = null
 var _enemy_death_tween: Tween = null
 var _hp_bar_flash_tween: Tween = null
 var _hunter_poses: Dictionary = {}
+var _hero_poses: Dictionary = {}
+var _enemy_poses: Dictionary = {}
+var _hero_breath_tween: Tween = null
+var _enemy_breath_tween: Tween = null
+var _pending_ultimate: bool = false
 
 signal confirmed
 
@@ -120,23 +125,38 @@ func _ready() -> void:
 	## 缓存卡牌原始位置
 	_hero_card_orig_pos = hero_card.position
 	_enemy_card_orig_pos = enemy_card.position
+	_hero_portrait_orig_pos = hero_portrait.position
+	_enemy_portrait_orig_pos = enemy_portrait.position
 	
 	## 初始化伙伴链
 	_init_chain_slots()
 	_load_hunter_poses()
+	_load_hero_poses()
+	_load_enemy_poses()
+
+	## 设置初始 Pose
+	_set_pose(hero_portrait, _hero_poses.get("idle"))
+	_set_pose(enemy_portrait, _enemy_poses.get("idle"))
+	hero_portrait.scale = Vector2.ONE * 0.7
+	enemy_portrait.scale = Vector2.ONE * 0.7
+	enemy_portrait.flip_h = true
+
+	## 启动呼吸动画
+	_start_idle_breath(hero_portrait, 1.0)
+	_start_idle_breath(enemy_portrait, 1.2)
 	
 	## 初始化 Overlay Shader
 	var overlay_mat := ShaderMaterial.new()
 	overlay_mat.shader = preload("res://shaders/portrait_overlay.gdshader")
 	overlay_mat.set_shader_parameter("flash", 0.0)
 	overlay_mat.set_shader_parameter("saturation", 1.0)
-	hero_portrait_overlay.material = overlay_mat
+	hero_portrait.material = overlay_mat
 	
 	var enemy_overlay_mat := ShaderMaterial.new()
 	enemy_overlay_mat.shader = preload("res://shaders/portrait_overlay.gdshader")
 	enemy_overlay_mat.set_shader_parameter("flash", 0.0)
 	enemy_overlay_mat.set_shader_parameter("saturation", 1.0)
-	enemy_portrait_overlay.material = enemy_overlay_mat
+	enemy_portrait.material = enemy_overlay_mat
 	
 	## 灰烬粒子
 	var _ash_parent := Node2D.new()
@@ -261,14 +281,12 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 	_play_next_turn()
 
 func _reset_card_overlay(is_hero: bool) -> void:
-	var overlay: ColorRect = hero_portrait_overlay if is_hero else enemy_portrait_overlay
+	var portrait: Sprite2D = hero_portrait if is_hero else enemy_portrait
 	var glow: ColorRect = hero_glow if is_hero else enemy_glow
-	var portrait: TextureRect = hero_portrait if is_hero else enemy_portrait
-	overlay.color = Color(1, 1, 1, 0)
-	if overlay.material != null:
-		overlay.material.set_shader_parameter("flash", 0.0)
-		overlay.material.set_shader_parameter("saturation", 1.0)
-		overlay.material.set_shader_parameter("input_texture", portrait.texture)
+	portrait.modulate = Color.WHITE
+	if portrait.material != null:
+		portrait.material.set_shader_parameter("flash", 0.0)
+		portrait.material.set_shader_parameter("saturation", 1.0)
 	glow.color = Color(1, 1, 1, 0)
 
 # ==========================================
@@ -357,8 +375,10 @@ func _process_event(evt: Dictionary) -> void:
 					anim_action = "attack"
 			
 			if actor == hero_name_label.text:
+				_pending_ultimate = (anim_action == "ultimate" and not is_miss)
 				_play_card_attack(true, anim_action)
 			elif actor == enemy_name_label.text:
+				_pending_ultimate = (anim_action == "ultimate" and not is_miss)
 				_play_card_attack(false, anim_action)
 			else:
 				print("[BattleAnim] ⚠ actor 不匹配，不播放攻击动画")
@@ -371,9 +391,9 @@ func _process_event(evt: Dictionary) -> void:
 			
 			if unit_id == "hero" or unit_id.begins_with("hero"):
 				_hero_hp = maxi(0, hp)
-				_flash_overlay(true, is_crit)
 				
-				VFX.flash_white(hero_portrait_overlay, 0.1)
+				
+				_flash_sprite(hero_portrait)
 				VFX.screen_shake(8.0, 0.15)
 				
 				if is_crit:
@@ -381,7 +401,8 @@ func _process_event(evt: Dictionary) -> void:
 					VFX.freeze_frame(0.08, 0.05)
 				
 				VFX.spawn_damage_number(hero_card.global_position + hero_card.size / 2, damage, is_crit)
-				_play_card_hurt(true, is_crit)
+				_play_card_hurt(true, is_crit, _pending_ultimate)
+				_pending_ultimate = false
 				
 				AudioManager.play_sfx("hero_hit")
 				
@@ -392,9 +413,9 @@ func _process_event(evt: Dictionary) -> void:
 					AudioManager.play_sfx("defeat")
 			else:
 				_enemy_hp = maxi(0, hp)
-				_flash_overlay(false, is_crit)
 				
-				VFX.flash_white(enemy_portrait_overlay, 0.1)
+				
+				_flash_sprite(enemy_portrait)
 				VFX.screen_shake(8.0, 0.15)
 				
 				if is_crit:
@@ -402,7 +423,8 @@ func _process_event(evt: Dictionary) -> void:
 					VFX.freeze_frame(0.08, 0.05)
 				
 				VFX.spawn_damage_number(enemy_card.global_position + enemy_card.size / 2, damage, is_crit)
-				_play_card_hurt(false, is_crit)
+				_play_card_hurt(false, is_crit, _pending_ultimate)
+				_pending_ultimate = false
 				
 				AudioManager.play_sfx("enemy_hit")
 				
@@ -457,7 +479,7 @@ func _process_event(evt: Dictionary) -> void:
 		"ultimate_triggered":
 			var log_text: String = data.get("log", "")
 			battle_log.append_text("[color=#E6C040]  %s[/color]\n" % log_text)
-			_screen_shake()
+			_screen_shake(18.0, 0.35)
 			AudioManager.play_sfx("ultimate")
 			_play_card_attack(true, "ultimate")
 			_spawn_skill_aura(Color("#E6C040"))
@@ -477,78 +499,168 @@ func _process_event(evt: Dictionary) -> void:
 # ==========================================
 func _play_card_attack(is_hero: bool, action_type: String) -> void:
 	var card: Control = hero_card if is_hero else enemy_card
-	var orig_pos: Vector2 = _hero_card_orig_pos if is_hero else _enemy_card_orig_pos
+	var portrait: Sprite2D = hero_portrait if is_hero else enemy_portrait
+	var orig_pos: Vector2 = _hero_portrait_orig_pos if is_hero else _enemy_portrait_orig_pos
 	var dir: float = 1.0 if is_hero else -1.0
+	var poses: Dictionary = _hero_poses if is_hero else _enemy_poses
 	
 	## 停止该卡牌的旧攻击/受击 tween，避免冲突
 	if is_hero:
+		_stop_idle_breath(hero_portrait)
 		if _hero_attack_tween != null and _hero_attack_tween.is_valid():
 			_hero_attack_tween.kill()
 		if _hero_hurt_tween != null and _hero_hurt_tween.is_valid():
 			_hero_hurt_tween.kill()
 	else:
+		_stop_idle_breath(enemy_portrait)
 		if _enemy_attack_tween != null and _enemy_attack_tween.is_valid():
 			_enemy_attack_tween.kill()
 		if _enemy_hurt_tween != null and _enemy_hurt_tween.is_valid():
 			_enemy_hurt_tween.kill()
 	
+	var orig_scale_x: float = abs(portrait.scale.x)
+	var sign_x: float = sign(portrait.scale.x)
+	if sign_x == 0: sign_x = 1
+	
 	match action_type:
 		"ultimate":
+			## skill1 翻面蓄力
 			var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 			if is_hero: _hero_attack_tween = tween
 			else: _enemy_attack_tween = tween
-			tween.tween_property(card, "scale", Vector2(1.15, 1.15), 0.2)
-			tween.tween_property(card, "scale", Vector2.ONE, 0.3)
-			tween.parallel().tween_property(card, "position:x", orig_pos.x + dir * 30, 0.15)
-			tween.tween_property(card, "position:x", orig_pos.x, 0.2)
-			_spawn_slash_trail(card.global_position + card.size / 2,
-							   (enemy_card if is_hero else hero_card).global_position + (enemy_card if is_hero else hero_card).size / 2,
+			_tween_flip_to_pose(tween, portrait, poses.get("skill1", poses.get("idle")), 0.15)
+			tween.tween_property(portrait, "scale", Vector2.ONE * 1.15, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			tween.parallel().tween_property(portrait, "position:y", orig_pos.y - 20, 0.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			tween.tween_property(portrait, "scale", Vector2.ONE * 0.7, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+			tween.parallel().tween_property(portrait, "position:y", orig_pos.y, 0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			## skill2 翻面突进
+			tween.tween_interval(0.15)
+			_tween_flip_to_pose(tween, portrait, poses.get("skill2", poses.get("idle")), 0.12)
+			tween.tween_property(portrait, "position:x", orig_pos.x + dir * 280, 0.12)
+			tween.parallel().tween_property(portrait, "rotation", dir * 0.25, 0.12)
+			tween.tween_property(portrait, "position:x", orig_pos.x, 0.2)
+			tween.parallel().tween_property(portrait, "rotation", 0.0, 0.2)
+			## 回 idle
+			tween.tween_interval(0.4)
+			tween.tween_callback(func():
+				_tween_flip_to_pose(create_tween(), portrait, poses.get("idle"), 0.12)
+				_start_idle_breath(portrait, 1.2 if not is_hero else 1.0)
+			)
+			_spawn_slash_trail(portrait.global_position,
+							   (enemy_portrait if is_hero else hero_portrait).global_position,
 							   is_hero)
 		"skill":
 			_card_glow_pulse(card, Color("#E6C040"), 0.3)
 			var tween := create_tween()
 			if is_hero: _hero_attack_tween = tween
 			else: _enemy_attack_tween = tween
-			tween.tween_property(card, "position:x", orig_pos.x + dir * 15, 0.1)
-			tween.tween_property(card, "position:x", orig_pos.x, 0.15)
-			_spawn_slash_trail(card.global_position + card.size / 2,
-							   (enemy_card if is_hero else hero_card).global_position + (enemy_card if is_hero else hero_card).size / 2,
+			_tween_flip_to_pose(tween, portrait, poses.get("skill", poses.get("idle")), 0.15)
+			tween.tween_property(portrait, "position:x", orig_pos.x + dir * 120, 0.1)
+			tween.parallel().tween_property(portrait, "rotation", dir * 0.12, 0.1)
+			tween.tween_property(portrait, "position:x", orig_pos.x, 0.15)
+			tween.parallel().tween_property(portrait, "rotation", 0.0, 0.15)
+			## 回 idle
+			tween.tween_callback(func():
+				_tween_flip_to_pose(create_tween(), portrait, poses.get("idle"), 0.12)
+				_start_idle_breath(portrait, 1.2)
+			)
+			_spawn_slash_trail(portrait.global_position,
+							   (enemy_portrait if is_hero else hero_portrait).global_position,
 							   is_hero)
 		_:
+			## 普通攻击
 			var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			if is_hero: _hero_attack_tween = tween
 			else: _enemy_attack_tween = tween
-			tween.tween_property(card, "position:x", orig_pos.x + dir * 20, 0.08)
-			tween.tween_property(card, "position:x", orig_pos.x, 0.12)
-			_spawn_slash_trail(card.global_position + card.size / 2,
-							   (enemy_card if is_hero else hero_card).global_position + (enemy_card if is_hero else hero_card).size / 2,
+			_tween_flip_to_pose(tween, portrait, poses.get("attack", poses.get("idle")), 0.15)
+			tween.tween_property(portrait, "position:x", orig_pos.x + dir * 120, 0.1)
+			tween.parallel().tween_property(portrait, "rotation", dir * 0.12, 0.1)
+			tween.tween_property(portrait, "position:x", orig_pos.x, 0.15)
+			tween.parallel().tween_property(portrait, "rotation", 0.0, 0.15)
+			## 回 idle
+			tween.tween_callback(func():
+				_tween_flip_to_pose(create_tween(), portrait, poses.get("idle"), 0.12)
+				_start_idle_breath(portrait, 1.2)
+			)
+			_spawn_slash_trail(portrait.global_position,
+							   (enemy_portrait if is_hero else hero_portrait).global_position,
 							   is_hero)
 
-func _play_card_hurt(is_hero: bool, is_crit: bool) -> void:
-	var card: Control = hero_card if is_hero else enemy_card
-	var orig_pos: Vector2 = _hero_card_orig_pos if is_hero else _enemy_card_orig_pos
-	var shake: float = 8.0 if is_crit else 4.0
+func _play_card_hurt(is_hero: bool, is_crit: bool, is_knockback: bool = false) -> void:
+	var portrait: Sprite2D = hero_portrait if is_hero else enemy_portrait
+	var orig_pos: Vector2 = _hero_portrait_orig_pos if is_hero else _enemy_portrait_orig_pos
+	var poses: Dictionary = _hero_poses if is_hero else _enemy_poses
 	var back_dir: float = -1.0 if is_hero else 1.0
+	
+	var shake: float
+	var back_rot: float
+	var fly_time: float
+	var recover_time: float
+	var stay_time: float
+	
+	if is_knockback:
+		shake = 100.0
+		back_rot = 0.35
+		fly_time = 0.1
+		recover_time = 0.4
+		stay_time = 0.4
+	elif is_crit:
+		shake = 8.0
+		back_rot = 0.1
+		fly_time = 0.06
+		recover_time = 0.15
+		stay_time = 0.2
+	else:
+		shake = 4.0
+		back_rot = 0.1
+		fly_time = 0.06
+		recover_time = 0.15
+		stay_time = 0.2
 	
 	## 停止旧的 hurt tween，避免冲突
 	if is_hero:
+		_stop_idle_breath(hero_portrait)
 		if _hero_hurt_tween != null and _hero_hurt_tween.is_valid():
 			_hero_hurt_tween.kill()
 	else:
+		_stop_idle_breath(enemy_portrait)
 		if _enemy_hurt_tween != null and _enemy_hurt_tween.is_valid():
 			_enemy_hurt_tween.kill()
+	
+	var orig_scale_x: float = abs(portrait.scale.x)
+	var sign_x: float = sign(portrait.scale.x)
+	if sign_x == 0: sign_x = 1
 	
 	var tween := create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 	if is_hero: _hero_hurt_tween = tween
 	else: _enemy_hurt_tween = tween
-	tween.tween_property(card, "position:x", orig_pos.x + back_dir * shake, 0.06)
-	tween.parallel().tween_property(card, "rotation", back_dir * 0.05, 0.06)
-	tween.tween_property(card, "position:x", orig_pos.x, 0.1)
-	tween.parallel().tween_property(card, "rotation", 0.0, 0.1)
+	
+	## 翻面到 hit pose
+	tween.tween_property(portrait, "scale:x", 0.06 * sign_x, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_callback(func(): _set_pose(portrait, poses.get("hit", poses.get("idle"))))
+	tween.tween_property(portrait, "scale:x", orig_scale_x * sign_x, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	
+	## 弹性后仰 / 击飞
+	tween.tween_property(portrait, "position:x", orig_pos.x + back_dir * shake, fly_time)
+	tween.parallel().tween_property(portrait, "rotation", back_dir * back_rot, fly_time)
+	tween.tween_property(portrait, "position:x", orig_pos.x, recover_time)
+	tween.parallel().tween_property(portrait, "rotation", 0.0, recover_time)
+	
+	## 停留后再回 idle
+	tween.tween_interval(stay_time)
+	
+	## 回 idle
+	tween.tween_callback(func():
+		var t2 := create_tween()
+		t2.tween_property(portrait, "scale:x", 0.06 * sign_x, 0.06).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		t2.tween_callback(func(): _set_pose(portrait, poses.get("idle")))
+		t2.tween_property(portrait, "scale:x", orig_scale_x * sign_x, 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		t2.tween_callback(func(): _start_idle_breath(portrait, 1.2))
+	)
 
 func _play_card_death(is_hero: bool) -> void:
 	var card: Control = hero_card if is_hero else enemy_card
-	var overlay: ColorRect = hero_portrait_overlay if is_hero else enemy_portrait_overlay
+	var portrait: Sprite2D = hero_portrait if is_hero else enemy_portrait
 	
 	## 防止重复播放死亡动画
 	if card.modulate.a <= 0.0 or not card.visible:
@@ -574,8 +686,8 @@ func _play_card_death(is_hero: bool) -> void:
 	if is_hero: _hero_death_tween = gray_tween
 	else: _enemy_death_tween = gray_tween
 	gray_tween.tween_method(func(t: float):
-		if is_instance_valid(overlay) and overlay.material != null:
-			overlay.material.set_shader_parameter("saturation", 1.0 - t)
+		if is_instance_valid(portrait) and portrait.material != null:
+			portrait.material.set_shader_parameter("saturation", 1.0 - t)
 	, 0.0, 1.0, 0.5)
 	
 	var fade_tween := create_tween()
@@ -584,8 +696,8 @@ func _play_card_death(is_hero: bool) -> void:
 		if is_instance_valid(card):
 			card.visible = false
 			card.modulate.a = 1.0
-		if is_instance_valid(overlay) and overlay.material != null:
-			overlay.material.set_shader_parameter("saturation", 1.0)
+		if is_instance_valid(portrait) and portrait.material != null:
+			portrait.material.set_shader_parameter("saturation", 1.0)
 	)
 
 func _card_glow_pulse(card: Control, glow_color: Color, duration: float) -> void:
@@ -610,24 +722,10 @@ func _card_glow_pulse(card: Control, glow_color: Color, duration: float) -> void
 	tween.tween_property(glow, "color:a", 0.6, duration * 0.3)
 	tween.tween_property(glow, "color:a", 0.0, duration * 0.7)
 
-func _flash_overlay(is_hero: bool, is_crit: bool) -> void:
-	var overlay: ColorRect = hero_portrait_overlay if is_hero else enemy_portrait_overlay
-	if not is_instance_valid(overlay):
-		return
-	
-	## 停止旧的 flash tween
-	if overlay.has_meta("flash_tween"):
-		var old: Tween = overlay.get_meta("flash_tween")
-		if old != null and old.is_valid():
-			old.kill()
-		overlay.remove_meta("flash_tween")
-	
-	var flash_color: Color = COL_CRIT if is_crit else Color(1, 1, 1)
-	overlay.color = flash_color
+func _flash_sprite(sprite: Sprite2D) -> void:
+	sprite.modulate = Color(2.5, 2.5, 2.5, 1.0)
 	var tween := create_tween()
-	overlay.set_meta("flash_tween", tween)
-	tween.tween_property(overlay, "color:a", 0.8, 0.05)
-	tween.tween_property(overlay, "color:a", 0.0, 0.15)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
 
 # ==========================================
 # VFX 辅助
@@ -775,7 +873,7 @@ func _fly_partner_avatar(slot: Control, _is_level5: bool) -> void:
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(flying, "global_position", target, 0.3)
 	tween.tween_callback(func():
-		_flash_overlay(false, false)
+		_flash_sprite(enemy_portrait)
 		_play_card_hurt(false, false)
 	)
 	tween.tween_property(flying, "global_position", start, 0.25)
@@ -885,19 +983,24 @@ func _create_placeholder_texture(is_hero: bool) -> GradientTexture2D:
 	gradient.height = 200
 	return gradient
 
-func _load_card_portrait(portrait: TextureRect, path: String, is_hero: bool) -> void:
+func _load_card_portrait(portrait: Sprite2D, path: String, is_hero: bool) -> void:
 	var texture: Texture2D = _resolve_texture_from_path(path)
 	if texture == null:
 		if not path.is_empty():
 			push_warning("[BattleAnimation] 无法加载头像: %s" % path)
-		portrait.texture = _create_placeholder_texture(is_hero)
-	else:
-		portrait.texture = texture
+		## 路径为空时使用已有的 pose 纹理，不覆盖为 placeholder
+		var poses: Dictionary = _hero_poses if is_hero else _enemy_poses
+		texture = poses.get("idle") as Texture2D
+		if texture == null:
+			texture = _create_placeholder_texture(is_hero)
+	portrait.texture = texture
+	## 同步更新 pose 字典中的 idle 纹理（仅当传入了有效路径时）
+	## 注意：不覆盖 attack/hit/skill1/skill2/victory，保留 _load_hero_poses 加载的完整 pose 图
+	if not path.is_empty():
+		var poses: Dictionary = _hero_poses if is_hero else _enemy_poses
+		poses["idle"] = texture
 	
-	## 同步更新 overlay shader 的 input_texture
-	var overlay: ColorRect = hero_portrait_overlay if portrait == hero_portrait else enemy_portrait_overlay
-	if overlay.material != null:
-		overlay.material.set_shader_parameter("input_texture", portrait.texture)
+
 
 # ==========================================
 # HP 条与辅助
@@ -927,6 +1030,19 @@ func _on_skip() -> void:
 		_event_tween.kill()
 	_show_result()
 
+func _play_victory_pose(is_hero: bool) -> void:
+	var portrait: Sprite2D = hero_portrait if is_hero else enemy_portrait
+	var poses: Dictionary = _hero_poses if is_hero else _enemy_poses
+	var orig_scale_x: float = abs(portrait.scale.x)
+	var sign_x: float = sign(portrait.scale.x)
+	if sign_x == 0: sign_x = 1
+	
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(portrait, "scale:x", 0.06 * sign_x, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_callback(func(): _set_pose(portrait, poses.get("victory", poses.get("idle"))))
+	tween.tween_property(portrait, "scale:x", orig_scale_x * sign_x, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 func _show_result() -> void:
 	_is_playing = false
 	turn_timer.stop()
@@ -934,6 +1050,12 @@ func _show_result() -> void:
 		return
 	_result_emitted = true
 	
+	
+	## 胜利/失败 Pose
+	if _hero_hp <= 0 and _enemy_hp > 0:
+		_play_victory_pose(false)
+	elif _enemy_hp <= 0 and _hero_hp > 0:
+		_play_victory_pose(true)
 	_update_hp_display()
 	
 	if _hero_hp <= 0:
@@ -959,9 +1081,19 @@ func reset_panel() -> void:
 	_events_by_turn = {}
 	_turn_keys = []
 	_is_frenzy_active = false
+	_pending_ultimate = false
 	_stop_frenzy_glow()
 	_clear_damage_numbers()
 	battle_log.text = ""
+	
+	## Kill 所有残留 tween
+	if _hero_attack_tween != null and _hero_attack_tween.is_valid(): _hero_attack_tween.kill()
+	if _enemy_attack_tween != null and _enemy_attack_tween.is_valid(): _enemy_attack_tween.kill()
+	if _hero_hurt_tween != null and _hero_hurt_tween.is_valid(): _hero_hurt_tween.kill()
+	if _enemy_hurt_tween != null and _enemy_hurt_tween.is_valid(): _enemy_hurt_tween.kill()
+	if _hero_death_tween != null and _hero_death_tween.is_valid(): _hero_death_tween.kill()
+	if _enemy_death_tween != null and _enemy_death_tween.is_valid(): _enemy_death_tween.kill()
+	if _event_tween != null and _event_tween.is_valid(): _event_tween.kill()
 	
 	## 重置主角/敌方卡牌
 	hero_card.visible = true
@@ -977,6 +1109,23 @@ func reset_panel() -> void:
 	enemy_card.rotation = 0.0
 	enemy_card.scale = Vector2.ONE
 	_reset_card_overlay(false)
+	
+	## 重置 Portrait
+	_stop_idle_breath(hero_portrait)
+	_stop_idle_breath(enemy_portrait)
+	if hero_portrait != null:
+		hero_portrait.position = _hero_portrait_orig_pos
+		hero_portrait.rotation = 0.0
+		hero_portrait.scale = Vector2.ONE * 0.7
+		_set_pose(hero_portrait, _hero_poses.get("idle"))
+		_start_idle_breath(hero_portrait, 1.2)
+	if enemy_portrait != null:
+		enemy_portrait.position = _enemy_portrait_orig_pos
+		enemy_portrait.rotation = 0.0
+		enemy_portrait.scale = Vector2.ONE * 0.7
+		enemy_portrait.flip_h = true
+		_set_pose(enemy_portrait, _enemy_poses.get("idle"))
+		_start_idle_breath(enemy_portrait, 1.2)
 	
 	## 清理5级伙伴动画节点
 	for child in partner_anim_container.get_children():
@@ -1074,11 +1223,18 @@ func _clear_damage_numbers() -> void:
 		if is_instance_valid(child) and child is Label and child.name.begins_with("DamageNum_"):
 			child.queue_free()
 
-func _screen_shake() -> void:
+func _screen_shake(strength: float = 4.0, duration: float = 0.1) -> void:
+	var camera: Camera2D = get_viewport().get_camera_2d()
+	if camera == null:
+		return
+	var orig_offset: Vector2 = camera.offset
 	var tween := create_tween()
-	tween.tween_property(self, "position:x", position.x + 3, 0.05)
-	tween.tween_property(self, "position:x", position.x - 3, 0.05)
-	tween.tween_property(self, "position:x", position.x, 0.05)
+	var steps: int = int(duration * 60)
+	for i in range(steps):
+		var offset: Vector2 = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * strength
+		tween.tween_property(camera, "offset", orig_offset + offset, 0.016)
+		strength *= 0.9
+	tween.tween_property(camera, "offset", orig_offset, 0.05)
 
 func _flash_partner_icon(_partner_name: String) -> void:
 	pass
@@ -1090,7 +1246,7 @@ func _flash_partner_icon(_partner_name: String) -> void:
 func _load_hunter_poses() -> void:
 	var base: String = "res://assets/characters/partner/hunter/"
 	for pose_name in ["idle", "ready", "action"]:
-		var path: String = base + pose_name + ".png"
+		var path: String = base + pose_name + "/" + pose_name + ".png"
 		var tex: Texture2D = _resolve_texture_from_path(path)
 		if tex != null:
 			_hunter_poses[pose_name] = tex
@@ -1100,7 +1256,7 @@ func _play_hunter_dash_slash() -> void:
 		return
 	var sprite := Sprite2D.new()
 	sprite.texture = _hunter_poses["idle"]
-	sprite.scale = Vector2(0.6, 0.6)
+	sprite.scale = Vector2(0.3, 0.3)
 	sprite.modulate.a = 0.0
 	var slash_pos_global: Vector2 = enemy_card.global_position + enemy_card.size / 2 + Vector2(-150, 0)
 	var start_global: Vector2 = slash_pos_global + Vector2(-700, 0)
@@ -1110,7 +1266,7 @@ func _play_hunter_dash_slash() -> void:
 	## 阶段1: 登场蓄力
 	var enter_tween := create_tween().set_parallel()
 	enter_tween.tween_property(sprite, "modulate:a", 1.0, 0.25)
-	enter_tween.tween_property(sprite, "scale", Vector2(0.8, 0.8), 0.25).set_trans(Tween.TRANS_BACK)
+	enter_tween.tween_property(sprite, "scale", Vector2(0.5, 0.5), 0.25).set_trans(Tween.TRANS_BACK)
 	await enter_tween.finished
 	_switch_partner_pose(sprite, _hunter_poses["ready"])
 	var dash_trail: CPUParticles2D = VFX.create_dash_trail(sprite, Vector2.ZERO)
@@ -1122,7 +1278,7 @@ func _play_hunter_dash_slash() -> void:
 	_switch_partner_pose(sprite, _hunter_poses["action"])
 	VFX.freeze_frame(0.1, 0.05)
 	VFX.screen_shake(12.0, 0.25)
-	VFX.flash_white(enemy_portrait_overlay, 0.1)
+	_flash_sprite(enemy_portrait)
 	VFX.spawn_energy_burst(slash_pos_global, Color(0.8, 0.3, 0.9))
 	VFX.spawn_combo_ring(slash_pos_global)
 	_play_card_hurt(false, false)
@@ -1179,3 +1335,86 @@ func _spawn_sfx_text(pos: Vector2, text: String, color: Color = Color.WHITE) -> 
 		if is_instance_valid(label):
 			label.queue_free()
 	)
+
+
+# ==========================================
+# Pose 加载与切换（Demo 迁移）
+# ==========================================
+func _load_hero_poses() -> void:
+	var base: String = "res://assets/characters/hero/shinobi/"
+	var idle_tex: Texture2D = _resolve_texture_from_path(base + "idle/shinobi_idle_01.png")
+	var attack_tex: Texture2D = _resolve_texture_from_path(base + "attack/shinobi_attack_01.png")
+	var hit_tex: Texture2D = _resolve_texture_from_path(base + "hit/shinobi_hit_01.png")
+	var skill1_tex: Texture2D = _resolve_texture_from_path(base + "skill1/shinobi_skill1_01.png")
+	var skill2_tex: Texture2D = _resolve_texture_from_path(base + "skill2/shinobi_skill2_01.png")
+	var victory_tex: Texture2D = _resolve_texture_from_path(base + "victory/shinobi_victory_01.png")
+	
+	for key in ["idle", "attack", "hit", "skill", "skill1", "skill2", "victory"]:
+		_hero_poses[key] = idle_tex
+	_hero_poses["attack"] = attack_tex
+	_hero_poses["hit"] = hit_tex
+	_hero_poses["skill"] = skill1_tex
+	_hero_poses["skill1"] = skill1_tex
+	_hero_poses["skill2"] = skill2_tex
+	_hero_poses["victory"] = victory_tex
+
+func _load_enemy_poses() -> void:
+	## 敌人复用主角素材，但敌方朝向 flip_h 已在 _ready() 中设置
+	var base: String = "res://assets/characters/hero/shinobi/"
+	var idle_tex: Texture2D = _resolve_texture_from_path(base + "idle/shinobi_idle_01.png")
+	var attack_tex: Texture2D = _resolve_texture_from_path(base + "attack/shinobi_attack_01.png")
+	var hit_tex: Texture2D = _resolve_texture_from_path(base + "hit/shinobi_hit_01.png")
+	var skill1_tex: Texture2D = _resolve_texture_from_path(base + "skill1/shinobi_skill1_01.png")
+	var skill2_tex: Texture2D = _resolve_texture_from_path(base + "skill2/shinobi_skill2_01.png")
+	var victory_tex: Texture2D = _resolve_texture_from_path(base + "victory/shinobi_victory_01.png")
+	
+	for key in ["idle", "attack", "hit", "skill1", "skill2", "victory"]:
+		_enemy_poses[key] = idle_tex
+	_enemy_poses["attack"] = attack_tex
+	_enemy_poses["hit"] = hit_tex
+	_enemy_poses["skill1"] = skill1_tex
+	_enemy_poses["skill2"] = skill2_tex
+	_enemy_poses["victory"] = victory_tex
+
+func _set_pose(sprite: Sprite2D, tex: Texture2D) -> void:
+	if tex != null:
+		sprite.texture = tex
+		sprite.centered = true
+
+func _tween_flip_to_pose(tween: Tween, portrait: Sprite2D, tex: Texture2D, duration: float = 0.18) -> void:
+	if tex == null:
+		return
+	var orig_scale_x: float = abs(portrait.scale.x)
+	var sign_x: float = sign(portrait.scale.x)
+	if sign_x == 0:
+		sign_x = 1
+	## 压缩（翻面）
+	tween.tween_property(portrait, "scale:x", 0.06 * sign_x, duration * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	## 切换 Pose
+	tween.tween_callback(func(): _set_pose(portrait, tex))
+	## 展开（弹回）
+	tween.tween_property(portrait, "scale:x", orig_scale_x * sign_x, duration * 0.65).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func _start_idle_breath(portrait: Sprite2D, speed: float) -> void:
+	if portrait == hero_portrait:
+		if _hero_breath_tween != null and _hero_breath_tween.is_valid():
+			_hero_breath_tween.kill()
+		_hero_breath_tween = create_tween().set_loops()
+		_hero_breath_tween.tween_property(portrait, "position:y", portrait.position.y - 4, speed).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_hero_breath_tween.tween_property(portrait, "position:y", portrait.position.y + 4, speed).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	else:
+		if _enemy_breath_tween != null and _enemy_breath_tween.is_valid():
+			_enemy_breath_tween.kill()
+		_enemy_breath_tween = create_tween().set_loops()
+		_enemy_breath_tween.tween_property(portrait, "position:y", portrait.position.y - 4, speed).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_enemy_breath_tween.tween_property(portrait, "position:y", portrait.position.y + 4, speed).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _stop_idle_breath(portrait: Sprite2D) -> void:
+	if portrait == hero_portrait:
+		if _hero_breath_tween != null and _hero_breath_tween.is_valid():
+			_hero_breath_tween.kill()
+		_hero_breath_tween = null
+	else:
+		if _enemy_breath_tween != null and _enemy_breath_tween.is_valid():
+			_enemy_breath_tween.kill()
+		_enemy_breath_tween = null

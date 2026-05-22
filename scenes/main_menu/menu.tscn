@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://ufawm2h2bjau" path="res://assets/backgrounds/pve/menu/开始冒险2.png" id="4_7p0au"]
 [ext_resource type="PackedScene" path="res://scenes/shop/shop_popup.tscn" id="4_sp"]
 [ext_resource type="Script" uid="uid://cwptyjdpr73xj" path="res://scripts/ui/menu_button.gd" id="5_2qi6g"]
-[ext_resource type="Texture2D" uid="uid://dv1iyaf152ymf" path="res://assets/backgrounds/menu_bg.png" id="5_bg"]
+[ext_resource type="Texture2D" uid="uid://drvi8bqsveu54" path="res://nanobanana-output/Gemini_Generated_Image_5s4acn5s4acn5s4a.png" id="5_bg"]
 [ext_resource type="Texture2D" uid="uid://dis1outfgbe7j" path="res://assets/backgrounds/pve/menu/继续冒险.png" id="6_x7peq"]
 [ext_resource type="Texture2D" uid="uid://cgw6crux5gj7" path="res://assets/backgrounds/pve/menu/继续冒险2.png" id="7_wq8mn"]
 [ext_resource type="Texture2D" uid="uid://bb6otgktyyu7m" path="res://assets/backgrounds/pve/menu/系统设置.png" id="8_7qupa"]
@@ -34,29 +34,36 @@ script = ExtResource("1_menu")
 
 [node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=89529031]
 [node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer" unique_id=696752317]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("5_bg")
+expand_mode = 1
+stretch_mode = 5
+[node name="AmbientParticles" type="Node2D" parent="BackgroundLayer" unique_id=696752318]
 [node name="CharacterLayer" type="CanvasLayer" parent="." unique_id=1760655318]
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=277755031]
 layer = 2
 
 [node name="TitleLabel" type="Label" parent="UILayer" unique_id=1691243069]
-custom_minimum_size = Vector2(500, 80)
+custom_minimum_size = Vector2(500, 120)
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -880.0
-offset_top = 100.0
+offset_top = 60.0
 offset_right = -130.0
-offset_bottom = 175.0
+offset_bottom = 180.0
 grow_horizontal = 2
-theme_override_colors/font_color = Color(0.94, 0.85, 0.47, 1)
-theme_override_colors/font_shadow_color = Color(0.2, 0.05, 0.3, 1)
-theme_override_colors/font_outline_color = Color(0.79, 0.64, 0.15, 1)
-theme_override_constants/shadow_offset_x = 3
+theme_override_colors/font_color = Color(0.101961, 0.101961, 0.101961, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.1)
+theme_override_constants/shadow_offset_x = 0
 theme_override_constants/shadow_offset_y = 3
-theme_override_constants/outline_size = 2
-theme_override_font_sizes/font_size = 48
-text = "赛马娘版Q宠大乐斗"
+theme_override_font_sizes/font_size = 72
+text = "英雄大战 Hero Battle"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -79,77 +86,49 @@ theme_override_constants/separation = 16
 custom_minimum_size = Vector2(386, 120)
 layout_mode = 2
 
-[node name="BtnNewGame" type="TextureButton" parent="UILayer/MenuButtons/BtnNewGameWrapper" unique_id=1940075477]
+[node name="BtnNewGame" type="Button" parent="UILayer/MenuButtons/BtnNewGameWrapper" unique_id=1940075477]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_normal = ExtResource("3_w813m")
-texture_hover = ExtResource("4_7p0au")
-stretch_mode = 5
-script = ExtResource("5_2qi6g")
 
 [node name="BtnContinueWrapper" type="Control" parent="UILayer/MenuButtons" unique_id=1844730878]
 custom_minimum_size = Vector2(386, 120)
 layout_mode = 2
 
-[node name="BtnContinue" type="TextureButton" parent="UILayer/MenuButtons/BtnContinueWrapper" unique_id=1645962086]
+[node name="BtnContinue" type="Button" parent="UILayer/MenuButtons/BtnContinueWrapper" unique_id=1645962086]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_normal = ExtResource("6_x7peq")
-texture_hover = ExtResource("7_wq8mn")
-stretch_mode = 5
-script = ExtResource("5_2qi6g")
 
 [node name="BtnSettingsWrapper" type="Control" parent="UILayer/MenuButtons" unique_id=1435669953]
 custom_minimum_size = Vector2(386, 120)
 layout_mode = 2
 
-[node name="BtnSettings" type="TextureButton" parent="UILayer/MenuButtons/BtnSettingsWrapper" unique_id=723961252]
+[node name="BtnSettings" type="Button" parent="UILayer/MenuButtons/BtnSettingsWrapper" unique_id=723961252]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_normal = ExtResource("8_7qupa")
-texture_hover = ExtResource("9_jsoai")
-stretch_mode = 5
-script = ExtResource("5_2qi6g")
 
 [node name="BtnQuitWrapper" type="Control" parent="UILayer/MenuButtons" unique_id=1986155021]
 custom_minimum_size = Vector2(386, 120)
 layout_mode = 2
 
-[node name="BtnQuit" type="TextureButton" parent="UILayer/MenuButtons/BtnQuitWrapper" unique_id=141750320]
+[node name="BtnQuit" type="Button" parent="UILayer/MenuButtons/BtnQuitWrapper" unique_id=141750320]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_normal = ExtResource("10_r2e6p")
-texture_hover = ExtResource("11_w584y")
-stretch_mode = 5
-script = ExtResource("5_2qi6g")
-
-[node name="MenuButton" type="Button" parent="UILayer" unique_id=2024501554]
-unique_name_in_owner = true
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -180.0
-offset_top = 30.0
-offset_right = -30.0
-offset_bottom = 90.0
-grow_horizontal = 0
-text = "设置"
 
 [node name="PVPHintLabel" type="Label" parent="UILayer" unique_id=62247608]
 anchors_preset = 5
@@ -160,7 +139,7 @@ offset_top = 720.0
 offset_right = 300.0
 offset_bottom = 765.0
 grow_horizontal = 2
-theme_override_colors/font_color = Color(0.8, 0.6, 0.3, 1)
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
 theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -208,68 +187,48 @@ alignment = 1
 custom_minimum_size = Vector2(180, 220)
 layout_mode = 2
 
-[node name="BtnArchive" type="TextureButton" parent="UILayer/IconBar/BtnArchiveWrapper" unique_id=517794432]
+[node name="BtnArchive" type="Button" parent="UILayer/IconBar/BtnArchiveWrapper" unique_id=517794432]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_normal = ExtResource("14_w584y")
-texture_hover = ExtResource("15_a4ftc")
-ignore_texture_size = true
-stretch_mode = 6
-script = ExtResource("5_2qi6g")
 
 [node name="BtnPVPWrapper" type="Control" parent="UILayer/IconBar" unique_id=1463576428]
 custom_minimum_size = Vector2(180, 220)
 layout_mode = 2
 
-[node name="BtnPVP" type="TextureButton" parent="UILayer/IconBar/BtnPVPWrapper" unique_id=1463576429]
+[node name="BtnPVP" type="Button" parent="UILayer/IconBar/BtnPVPWrapper" unique_id=1463576429]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_normal = ExtResource("16_vb2cq")
-texture_hover = ExtResource("17_4k2lj")
-ignore_texture_size = true
-stretch_mode = 6
-script = ExtResource("5_2qi6g")
 
 [node name="BtnShopWrapper" type="Control" parent="UILayer/IconBar" unique_id=631093758]
 custom_minimum_size = Vector2(180, 220)
 layout_mode = 2
 
-[node name="BtnShop" type="TextureButton" parent="UILayer/IconBar/BtnShopWrapper" unique_id=631093759]
+[node name="BtnShop" type="Button" parent="UILayer/IconBar/BtnShopWrapper" unique_id=631093759]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_normal = ExtResource("18_pxbmk")
-texture_hover = ExtResource("19_rour1")
-ignore_texture_size = true
-stretch_mode = 6
-script = ExtResource("5_2qi6g")
 
 [node name="BtnLeaderboardWrapper" type="Control" parent="UILayer/IconBar" unique_id=758523323]
 custom_minimum_size = Vector2(180, 220)
 layout_mode = 2
 
-[node name="BtnLeaderboard" type="TextureButton" parent="UILayer/IconBar/BtnLeaderboardWrapper" unique_id=758523324]
+[node name="BtnLeaderboard" type="Button" parent="UILayer/IconBar/BtnLeaderboardWrapper" unique_id=758523324]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture_normal = ExtResource("20_31is5")
-texture_hover = ExtResource("21_rjhw6")
-ignore_texture_size = true
-stretch_mode = 6
-script = ExtResource("5_2qi6g")
 
 [node name="PauseMenu" parent="." unique_id=128202323 instance=ExtResource("2_pause")]
