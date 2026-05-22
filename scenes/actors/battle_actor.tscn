@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://c8jy5x2q3v7a1"]
+
+[ext_resource type="Script" uid="uid://actor_controller_script" path="res://scripts/actors/actor_controller.gd" id="1_actor"]
+
+[node name="BattleActor" type="Node2D"]
+script = ExtResource("1_actor")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]

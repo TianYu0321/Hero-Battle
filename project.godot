@@ -48,7 +48,7 @@ project/assembly_name="Hero Battle"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/TweenFX/plugin.cfg", "res://addons/addons/theme_gen_save_sync/plugin.cfg", "res://addons/godot_ai/plugin.cfg", "res://addons/vfx_library/plugin.cfg")
+enabled=PackedStringArray("res://addons/TweenFX/plugin.cfg", "res://addons/addons/theme_gen_save_sync/plugin.cfg", "res://addons/godot_ai/plugin.cfg", "res://addons/phantom_camera/plugin.cfg", "res://addons/vfx_library/plugin.cfg")
 
 [input]
 

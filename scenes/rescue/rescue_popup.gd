@@ -38,7 +38,7 @@ func _create_rescue_card(candidate: Dictionary) -> Control:
 	card_bg.layout_mode = 1
 	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	card_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	card_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	card_bg.texture = load(ConfigManager.get_partner_card_path(partner_id, level))
 	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(card_bg)

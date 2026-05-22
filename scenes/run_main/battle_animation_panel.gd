@@ -22,12 +22,12 @@ extends Control
 @onready var hero_card: Control = $StageArea/HeroCard
 @onready var hero_portrait: TextureRect = $StageArea/HeroCard/Portrait
 @onready var hero_portrait_overlay: ColorRect = $StageArea/HeroCard/Portrait/PortraitOverlay
-@onready var hero_glow: ColorRect = $StageArea/HeroCard/GlowOverlay
+@onready var hero_glow: ColorRect = $StageArea/HeroCard/Portrait/GlowOverlay
 
 @onready var enemy_card: Control = $StageArea/EnemyCard
 @onready var enemy_portrait: TextureRect = $StageArea/EnemyCard/Portrait
 @onready var enemy_portrait_overlay: ColorRect = $StageArea/EnemyCard/Portrait/PortraitOverlay
-@onready var enemy_glow: ColorRect = $StageArea/EnemyCard/GlowOverlay
+@onready var enemy_glow: ColorRect = $StageArea/EnemyCard/Portrait/GlowOverlay
 
 @onready var stage_name_label: Label = $StageArea/StageName
 @onready var partner_anim_container: Node2D = $StageArea/PartnerAnimContainer
@@ -77,6 +77,7 @@ var _enemy_hurt_tween: Tween = null
 var _hero_death_tween: Tween = null
 var _enemy_death_tween: Tween = null
 var _hp_bar_flash_tween: Tween = null
+var _hunter_poses: Dictionary = {}
 
 signal confirmed
 
@@ -122,6 +123,7 @@ func _ready() -> void:
 	
 	## 初始化伙伴链
 	_init_chain_slots()
+	_load_hunter_poses()
 	
 	## 初始化 Overlay Shader
 	var overlay_mat := ShaderMaterial.new()
@@ -261,10 +263,12 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 func _reset_card_overlay(is_hero: bool) -> void:
 	var overlay: ColorRect = hero_portrait_overlay if is_hero else enemy_portrait_overlay
 	var glow: ColorRect = hero_glow if is_hero else enemy_glow
+	var portrait: TextureRect = hero_portrait if is_hero else enemy_portrait
 	overlay.color = Color(1, 1, 1, 0)
 	if overlay.material != null:
 		overlay.material.set_shader_parameter("flash", 0.0)
 		overlay.material.set_shader_parameter("saturation", 1.0)
+		overlay.material.set_shader_parameter("input_texture", portrait.texture)
 	glow.color = Color(1, 1, 1, 0)
 
 # ==========================================
@@ -424,7 +428,11 @@ func _process_event(evt: Dictionary) -> void:
 			var slot: Control = _find_chain_slot_by_name(pname)
 			if slot != null:
 				_flash_chain_slot(slot)
-				_fly_partner_avatar(slot, false)
+			if pname == "猎人":
+				_play_hunter_dash_slash()
+			else:
+				if slot != null:
+					_fly_partner_avatar(slot, false)
 		
 		"chain_triggered":
 			var chain_count: int = data.get("chain_count", 0)
@@ -581,7 +589,11 @@ func _play_card_death(is_hero: bool) -> void:
 	)
 
 func _card_glow_pulse(card: Control, glow_color: Color, duration: float) -> void:
-	var glow: ColorRect = card.get_node("GlowOverlay") if card.has_node("GlowOverlay") else null
+	var glow: ColorRect = null
+	if card.has_node("Portrait/GlowOverlay"):
+		glow = card.get_node("Portrait/GlowOverlay")
+	elif card.has_node("GlowOverlay"):
+		glow = card.get_node("GlowOverlay")
 	if glow == null:
 		return
 	
@@ -719,12 +731,14 @@ func _update_chain_slots(partners: Array) -> void:
 			name_label.text = p.get("name", "???")
 			chain_label.text = "x chain %d" % p.get("chain_count", 0)
 			
-			var path: String = p.get("avatar_path", "")
+			var path: String = p.get("icon_path", "")
 			var tex: Texture2D = _resolve_texture_from_path(path)
-			if tex != null:
-				avatar.texture = tex
-			else:
-				avatar.texture = null
+			if tex == null or path.is_empty():
+				var fallback_name: String = p.get("name", "")
+				if not fallback_name.is_empty():
+					var fallback_path: String = "res://assets/characters/partner/" + fallback_name + "/partner_" + fallback_name + "_lv1.png"
+					tex = _resolve_texture_from_path(fallback_path)
+			avatar.texture = tex
 			slot.visible = true
 		else:
 			slot.visible = false
@@ -877,8 +891,13 @@ func _load_card_portrait(portrait: TextureRect, path: String, is_hero: bool) -> 
 		if not path.is_empty():
 			push_warning("[BattleAnimation] 无法加载头像: %s" % path)
 		portrait.texture = _create_placeholder_texture(is_hero)
-		return
-	portrait.texture = texture
+	else:
+		portrait.texture = texture
+	
+	## 同步更新 overlay shader 的 input_texture
+	var overlay: ColorRect = hero_portrait_overlay if portrait == hero_portrait else enemy_portrait_overlay
+	if overlay.material != null:
+		overlay.material.set_shader_parameter("input_texture", portrait.texture)
 
 # ==========================================
 # HP 条与辅助
@@ -1063,3 +1082,100 @@ func _screen_shake() -> void:
 
 func _flash_partner_icon(_partner_name: String) -> void:
 	pass
+
+
+# ==========================================
+# 猎人冲刺斩杀动画
+# ==========================================
+func _load_hunter_poses() -> void:
+	var base: String = "res://assets/characters/partner/hunter/"
+	for pose_name in ["idle", "ready", "action"]:
+		var path: String = base + pose_name + ".png"
+		var tex: Texture2D = _resolve_texture_from_path(path)
+		if tex != null:
+			_hunter_poses[pose_name] = tex
+
+func _play_hunter_dash_slash() -> void:
+	if not _hunter_poses.has("idle") or not _hunter_poses.has("ready") or not _hunter_poses.has("action"):
+		return
+	var sprite := Sprite2D.new()
+	sprite.texture = _hunter_poses["idle"]
+	sprite.scale = Vector2(0.6, 0.6)
+	sprite.modulate.a = 0.0
+	var slash_pos_global: Vector2 = enemy_card.global_position + enemy_card.size / 2 + Vector2(-150, 0)
+	var start_global: Vector2 = slash_pos_global + Vector2(-700, 0)
+	var end_global: Vector2 = slash_pos_global + Vector2(600, 0)
+	sprite.position = partner_anim_container.to_local(start_global)
+	partner_anim_container.add_child(sprite)
+	## 阶段1: 登场蓄力
+	var enter_tween := create_tween().set_parallel()
+	enter_tween.tween_property(sprite, "modulate:a", 1.0, 0.25)
+	enter_tween.tween_property(sprite, "scale", Vector2(0.8, 0.8), 0.25).set_trans(Tween.TRANS_BACK)
+	await enter_tween.finished
+	_switch_partner_pose(sprite, _hunter_poses["ready"])
+	var dash_trail: CPUParticles2D = VFX.create_dash_trail(sprite, Vector2.ZERO)
+	## 阶段2: 冲刺
+	var dash_tween := create_tween()
+	dash_tween.tween_property(sprite, "position", partner_anim_container.to_local(slash_pos_global), 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await dash_tween.finished
+	## 阶段3: 斩击命中
+	_switch_partner_pose(sprite, _hunter_poses["action"])
+	VFX.freeze_frame(0.1, 0.05)
+	VFX.screen_shake(12.0, 0.25)
+	VFX.flash_white(enemy_portrait_overlay, 0.1)
+	VFX.spawn_energy_burst(slash_pos_global, Color(0.8, 0.3, 0.9))
+	VFX.spawn_combo_ring(slash_pos_global)
+	_play_card_hurt(false, false)
+	_spawn_sfx_text(slash_pos_global + Vector2(0, -120), "斩！", Color("#BF4DE6"))
+	await get_tree().create_timer(0.25).timeout
+	if is_instance_valid(dash_trail): dash_trail.queue_free()
+	## 阶段4: 穿出
+	var exit := create_tween()
+	exit.tween_property(sprite, "position", partner_anim_container.to_local(end_global), 0.35)
+	exit.parallel().tween_property(sprite, "modulate:a", 0.0, 0.25)
+	await exit.finished
+	if is_instance_valid(sprite): sprite.queue_free()
+
+func _switch_partner_pose(sprite: Sprite2D, tex: Texture2D) -> void:
+	if tex == null or sprite.texture == tex: return
+	var old_size: Vector2 = sprite.texture.get_size()
+	var new_size: Vector2 = tex.get_size()
+	sprite.texture = tex
+	sprite.position.x += (new_size.x - old_size.x) / 2.0
+	sprite.position.y += (new_size.y - old_size.y) / 2.0
+
+
+# ==========================================
+# SFX 文字弹出
+# ==========================================
+func _spawn_sfx_text(pos: Vector2, text: String, color: Color = Color.WHITE) -> void:
+	var label: Label = Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	label.add_theme_constant_override("shadow_offset_x", 3)
+	label.add_theme_constant_override("shadow_offset_y", 3)
+	label.add_theme_constant_override("outline_size", 3)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+
+	add_child(label)
+	label.global_position = pos
+
+	label.scale = Vector2.ZERO
+	label.rotation = randf_range(-0.15, 0.15)
+
+	var tween: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "scale", Vector2.ONE * 1.3, 0.12)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.08)
+
+	await get_tree().create_timer(0.15).timeout
+
+	var fade: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	fade.tween_property(label, "position:y", pos.y - 80, 0.4)
+	fade.parallel().tween_property(label, "modulate:a", 0.0, 0.4).set_delay(0.15)
+	fade.tween_callback(func():
+		if is_instance_valid(label):
+			label.queue_free()
+	)

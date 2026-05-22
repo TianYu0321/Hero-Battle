@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ActorData" load_steps=3 format=3 uid="uid://actor_data_gorgen"]
+
+[ext_resource type="Script" uid="uid://actor_data_script" path="res://resources/actor_data.gd" id="1_data"]
+[ext_resource type="SpriteFrames" uid="uid://dg1s0h2dujlg8" path="res://assets/characters/gorgen/gorgen.tres" id="2_frames"]
+
+[resource]
+script = ExtResource("1_data")
+display_name = "哥布林"
+description = "凶猛的哥布林战士"
+sprite_frames = ExtResource("2_frames")
+scale = 2.0
+healthbar_color = Color(0.86, 0.32, 0.28, 1)
+healthbar_color_low = Color(0.52, 0.16, 0.14, 1)
+healthbar_color_mid = Color(0.95, 0.72, 0.25, 1)
+idle_return_time = 0.8
+action_map = {
+"attack": "attack",
+"hurt": "hurt",
+"dead": "dead",
+"ultimate": "special",
+"idle": "idle"
+}

@@ -328,6 +328,7 @@ func _show_combat_preview(opt: Dictionary, index: int) -> void:
 		enemy_info_panel.visible = false
 	
 	# 显示确认按钮（进入战斗 / 返回）
+	partner_panel.visible = false
 	combat_confirm_panel.visible = true
 	print("[RunMain] summary_panel.visible=%s" % battle_summary_panel.visible)
 	print("[RunMain] animation_panel.visible=%s" % battle_animation_panel.visible)
@@ -340,6 +341,7 @@ func _on_combat_confirmed() -> void:
 	combat_confirm_panel.visible = false
 	enemy_info_panel.visible = false
 	battle_summary_panel.visible = false  # 确保结算面板隐藏
+	partner_panel.visible = false
 	
 	# 执行战斗（战斗面板由 _on_battle_ended 统一打开）
 	if _combat_selected_index >= 0:
@@ -353,6 +355,7 @@ func _on_combat_cancelled() -> void:
 	combat_confirm_panel.visible = false
 	enemy_info_panel.visible = false
 	option_container.visible = true
+	_update_partner_hud()
 	_combat_selected_index = -1
 	_current_ui_state = UISceneState.OPTION_SELECT
 	print("[RunMain] 取消战斗，恢复选项")
@@ -638,6 +641,7 @@ func _hide_modal_panel(panel: Control) -> void:
 
 
 func _on_battle_ended(battle_result: Dictionary) -> void:
+	partner_panel.visible = false
 	print("[RunMain] 战斗结束: winner=%s, turns=%d" % [
 		battle_result.get("winner", "???"),
 		battle_result.get("turns_elapsed", 0)
@@ -876,7 +880,7 @@ func _get_current_hero_hp() -> int:
 
 func _init_partner_slots() -> void:
 	## 清空并创建 4 个占位 slot
-	var partner_list: VBoxContainer = partner_panel.get_node("PartnerList")
+	var partner_list: HBoxContainer = partner_panel.get_node("PartnerList")
 	for child in partner_list.get_children():
 		if child.name != "PartnerTitle":
 			child.queue_free()
@@ -890,7 +894,7 @@ func _init_partner_slots() -> void:
 	
 	## PartnerPanel 背景样式
 	var panel_bg := StyleBoxFlat.new()
-	panel_bg.bg_color = Color(0.06, 0.06, 0.08, 0.85)
+	panel_bg.bg_color = Color(0.18, 0.14, 0.10, 0.85)
 	panel_bg.corner_radius_top_left = 6
 	panel_bg.corner_radius_top_right = 6
 	panel_bg.corner_radius_bottom_left = 6
@@ -910,7 +914,7 @@ func _create_partner_slot(index: int) -> Control:
 	card_bg.layout_mode = 1
 	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	card_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	card_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	card_bg.texture = load(ConfigManager.get_partner_card_path("", 1))
 	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot.add_child(card_bg)
@@ -952,7 +956,7 @@ func _create_partner_slot(index: int) -> Control:
 	name_label.name = "NameLabel"
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 12)
-	name_label.add_theme_color_override("font_color", Color("#E6C040"))
+	name_label.add_theme_color_override("font_color", Color(0.95, 0.72, 0.25))
 	vbox.add_child(name_label)
 	
 	## 等级 + 职业
@@ -960,7 +964,7 @@ func _create_partner_slot(index: int) -> Control:
 	level_label.name = "LevelLabel"
 	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_label.add_theme_font_size_override("font_size", 10)
-	level_label.add_theme_color_override("font_color", Color("#888888"))
+	level_label.add_theme_color_override("font_color", Color(0.55, 0.48, 0.40))
 	vbox.add_child(level_label)
 	
 	## CHAIN 计数徽章
@@ -968,7 +972,7 @@ func _create_partner_slot(index: int) -> Control:
 	chain_badge.name = "ChainBadge"
 	chain_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	chain_badge.add_theme_font_size_override("font_size", 10)
-	chain_badge.add_theme_color_override("font_color", Color("#5A8FD0"))
+	chain_badge.add_theme_color_override("font_color", Color(0.65, 0.40, 0.80))
 	vbox.add_child(chain_badge)
 	
 	return slot
@@ -1060,9 +1064,9 @@ func _flash_gauge_ready(gauge: ProgressBar) -> void:
 			old.kill()
 	
 	var tween := create_tween().set_loops()
-	tween.tween_callback(_set_gauge_fill_color.bind(gauge, Color("#E6C040")))
+	tween.tween_callback(_set_gauge_fill_color.bind(gauge, Color(0.95, 0.72, 0.25)))
 	tween.tween_interval(0.4)
-	tween.tween_callback(_set_gauge_fill_color.bind(gauge, Color("#FFF0AA")))
+	tween.tween_callback(_set_gauge_fill_color.bind(gauge, Color(1.0, 0.92, 0.70)))
 	tween.tween_interval(0.4)
 	gauge.set_meta("flash_tween", tween)
 
@@ -1103,7 +1107,7 @@ func _stop_slot_flash(slot: Control) -> void:
 
 func _on_partner_unlocked(_config_id: String, partner_name: String, _slot_index: int, _turn: int, _role: String) -> void:
 	_update_partner_hud()
-	_show_floating_text("+%s 加入队伍！" % partner_name, Color("#4ECDC4"))
+	_show_floating_text("+%s 加入队伍！" % partner_name, Color(0.35, 0.75, 0.45))
 	
 	## 对最后一个可见 slot 执行缩放弹出动画
 	var last_visible_index: int = -1
@@ -1121,19 +1125,19 @@ func _on_partner_unlocked(_config_id: String, partner_name: String, _slot_index:
 		tween.parallel().tween_property(slot, "modulate:a", 1.0, 0.3)
 
 func _on_partner_skill_triggered(_config_id: String, skill_name: String, effect_desc: String) -> void:
-	_show_floating_text("%s: %s" % [skill_name, effect_desc], Color("#E6C040"))
+	_show_floating_text("%s: %s" % [skill_name, effect_desc], Color(0.95, 0.72, 0.25))
 
 func _on_partner_charge_changed(_config_id: String, _current: int, _max_charge: int) -> void:
 	_update_partner_hud()
 
 func _show_rest_feedback(heal_amount: int) -> void:
 	## 在 HeroHPBar 上方飘出 "+XX HP" 绿色文字
-	_show_floating_text("+%d HP" % heal_amount, Color("#00FF88"))
+	_show_floating_text("+%d HP" % heal_amount, Color(0.35, 0.75, 0.45))
 	
 	## HP 条闪烁绿色后恢复白色
 	if hp_label != null:
 		var hp_tween := create_tween()
-		hp_tween.tween_property(hp_label, "modulate", Color(0.5, 1.0, 0.5), 0.2)
+		hp_tween.tween_property(hp_label, "modulate", Color(0.35, 0.75, 0.45), 0.2)
 		hp_tween.tween_property(hp_label, "modulate", Color.WHITE, 0.3)
 
 

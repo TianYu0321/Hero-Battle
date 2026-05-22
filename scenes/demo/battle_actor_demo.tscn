@@ -1,0 +1,370 @@
+[gd_scene format=3 uid="uid://d0gwceousmccy"]
+
+[ext_resource type="Script" path="res://scenes/demo/battle_actor_demo.gd" id="1_demo"]
+[ext_resource type="Texture2D" uid="uid://fir8htr5824b" path="res://assets/backgrounds/pve/stages1/dead forest.png" id="2_bg"]
+
+[sub_resource type="Theme" id="Theme_demo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bg"]
+bg_color = Color(0.18, 0.14, 0.1, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fg_hero"]
+bg_color = Color(0.28, 0.6, 0.82, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fg_enemy"]
+bg_color = Color(0.86, 0.32, 0.28, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+bg_color = Color(0.36, 0.28, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.6, 0.5, 0.38, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+content_margin_left = 16.0
+content_margin_top = 8.0
+content_margin_right = 16.0
+content_margin_bottom = 8.0
+bg_color = Color(0.42, 0.32, 0.24, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.95, 0.72, 0.25, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_victory"]
+bg_color = Color(0.15, 0.12, 0.08, 0.92)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.95, 0.72, 0.25, 1)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+
+[node name="BattleActorDemo" type="Control" unique_id=1431650184]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_demo")
+
+[node name="Bg" type="TextureRect" parent="." unique_id=70693332]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="GroundLine" type="ColorRect" parent="." unique_id=958795407]
+layout_mode = 0
+offset_top = 780.0
+offset_right = 1920.0
+offset_bottom = 784.0
+color = Color(0.35, 0.25, 0.18, 1)
+
+[node name="HeroActor" type="Node2D" parent="." unique_id=511281033]
+position = Vector2(400, 700)
+
+[node name="Sprite2D" type="Sprite2D" parent="HeroActor" unique_id=1897448646]
+
+[node name="Shadow" type="Polygon2D" parent="HeroActor" unique_id=1739287109]
+position = Vector2(0, 78)
+color = Color(0, 0, 0, 0.25)
+polygon = PackedVector2Array(-50, 0, -35, 8, 0, 10, 35, 8, 50, 0, 35, -3, 0, -5, -35, -3)
+
+[node name="EnemyActor" type="Node2D" parent="." unique_id=1445537401]
+position = Vector2(1520, 700)
+
+[node name="Sprite2D" type="Sprite2D" parent="EnemyActor" unique_id=345378544]
+
+[node name="Shadow" type="Polygon2D" parent="EnemyActor" unique_id=799503828]
+position = Vector2(0, 58)
+color = Color(0, 0, 0, 0.25)
+polygon = PackedVector2Array(-40, 0, -28, 6, 0, 8, 28, 6, 40, 0, 28, -2, 0, -4, -28, -2)
+
+[node name="PartnerActor" type="Node2D" parent="." unique_id=1492431332]
+position = Vector2(2100, 620)
+
+[node name="Sprite2D" type="Sprite2D" parent="PartnerActor" unique_id=707640957]
+
+[node name="Shadow" type="Polygon2D" parent="PartnerActor" unique_id=2018928027]
+position = Vector2(0, 68)
+color = Color(0, 0, 0, 0.25)
+polygon = PackedVector2Array(-42, 0, -30, 7, 0, 9, 30, 7, 42, 0, 30, -2, 0, -4, -30, -2)
+
+[node name="DamageContainer" type="Control" parent="." unique_id=1117298271]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SfxLayer" type="Node2D" parent="." unique_id=577412336]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=992467757]
+position = Vector2(960, 540)
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=1813745196]
+
+[node name="TitleLabel" type="Label" parent="UI" unique_id=67558928]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 60.0
+grow_horizontal = 2
+theme = SubResource("Theme_demo")
+theme_override_colors/font_color = Color(0.96, 0.92, 0.86, 1)
+theme_override_font_sizes/font_size = 28
+text = "🎭 SD 纸片小剧场战斗 Demo"
+horizontal_alignment = 1
+
+[node name="SubTitle" type="Label" parent="UI" unique_id=218753824]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 60.0
+offset_bottom = 85.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.78, 0.72, 0.64, 1)
+theme_override_font_sizes/font_size = 14
+text = "翻面切 Pose · 拟声词 · 整体倾斜 · 支援登场 · 胜利面板"
+horizontal_alignment = 1
+
+[node name="HeroHP" type="ProgressBar" parent="UI" unique_id=203173005]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -420.0
+offset_top = 120.0
+offset_right = -180.0
+offset_bottom = 148.0
+grow_horizontal = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fg_hero")
+value = 100.0
+
+[node name="HPLabel" type="Label" parent="UI/HeroHP" unique_id=253901348]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.96, 0.92, 0.86, 1)
+theme_override_font_sizes/font_size = 14
+text = "1000 / 1000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HeroName" type="Label" parent="UI" unique_id=1793059809]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -420.0
+offset_top = 95.0
+offset_right = -180.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.28, 0.6, 0.82, 1)
+theme_override_font_sizes/font_size = 18
+text = "【主角】Q版忍者"
+horizontal_alignment = 1
+
+[node name="EnemyHP" type="ProgressBar" parent="UI" unique_id=1837111724]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 180.0
+offset_top = 120.0
+offset_right = 420.0
+offset_bottom = 148.0
+grow_horizontal = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fg_enemy")
+value = 100.0
+
+[node name="HPLabel" type="Label" parent="UI/EnemyHP" unique_id=841748191]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.96, 0.92, 0.86, 1)
+theme_override_font_sizes/font_size = 14
+text = "1000 / 1000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="EnemyName" type="Label" parent="UI" unique_id=1687285771]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 180.0
+offset_top = 95.0
+offset_right = 420.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.86, 0.32, 0.28, 1)
+theme_override_font_sizes/font_size = 18
+text = "【敌人】迷你忍者"
+horizontal_alignment = 1
+
+[node name="ButtonContainer" type="HBoxContainer" parent="UI" unique_id=547924449]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -480.0
+offset_top = -120.0
+offset_right = 480.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="BtnHeroAttack" type="Button" parent="UI/ButtonContainer" unique_id=759495930]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.92, 0.86, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "主角攻击"
+
+[node name="BtnEnemyAttack" type="Button" parent="UI/ButtonContainer" unique_id=1392022631]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.92, 0.86, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "敌人攻击"
+
+[node name="BtnHeroUltimate" type="Button" parent="UI/ButtonContainer" unique_id=829338527]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.72, 0.25, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "主角大招"
+
+[node name="BtnEnemyUltimate" type="Button" parent="UI/ButtonContainer" unique_id=2051722385]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.35, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "敌人大招"
+
+[node name="BtnSupport" type="Button" parent="UI/ButtonContainer" unique_id=1280206996]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.35, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "猎人斩杀"
+
+[node name="BtnReset" type="Button" parent="UI/ButtonContainer" unique_id=565246976]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.92, 0.86, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "重置"
+
+[node name="LogLabel" type="RichTextLabel" parent="UI" unique_id=2137937719]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -200.0
+offset_right = 420.0
+offset_bottom = -20.0
+grow_vertical = 0
+theme_override_colors/default_color = Color(0.78, 0.72, 0.64, 1)
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+scroll_following = true
+
+[node name="VictoryPanel" type="Panel" parent="UI" unique_id=1162097569]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -120.0
+offset_right = 250.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_victory")
+
+[node name="Title" type="Label" parent="UI/VictoryPanel" unique_id=1165316508]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 30.0
+offset_bottom = 100.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 48
+text = "🎉 胜利！"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Subtitle" type="Label" parent="UI/VictoryPanel" unique_id=1564591001]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 100.0
+offset_bottom = 140.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.78, 0.72, 0.64, 1)
+theme_override_font_sizes/font_size = 20
+text = "主角成功击败敌人！"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="pressed" from="UI/ButtonContainer/BtnHeroAttack" to="." method="_on_hero_attack_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnEnemyAttack" to="." method="_on_enemy_attack_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnHeroUltimate" to="." method="_on_hero_ultimate_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnEnemyUltimate" to="." method="_on_enemy_ultimate_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnSupport" to="." method="_on_hunter_assist_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnReset" to="." method="_on_reset_pressed"]

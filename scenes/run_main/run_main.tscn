@@ -115,12 +115,12 @@ text = "LV:0"
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow1"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow1"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow1"]
 layout_mode = 2
@@ -140,12 +140,12 @@ text = "LV:0"
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow2"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow2"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow2"]
 layout_mode = 2
@@ -165,12 +165,12 @@ text = "LV:0"
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow3"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow3"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow3"]
 layout_mode = 2
@@ -190,12 +190,12 @@ text = "LV:0"
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow4"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow4"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow4"]
 layout_mode = 2
@@ -215,12 +215,12 @@ text = "LV:0"
 [node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow5"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow5"]
 custom_minimum_size = Vector2(36.0, 36.0)
 layout_mode = 2
-color = Color(0.8, 0.8, 0.8, 1)
+color = Color(0.45, 0.35, 0.25, 1)
 
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow5"]
 layout_mode = 2
@@ -236,7 +236,7 @@ offset_bottom = 630.0
 [node name="PlayerPortrait" type="ColorRect" parent="PlayerInfoPanel"]
 custom_minimum_size = Vector2(90.0, 90.0)
 layout_mode = 2
-color = Color(0.4, 0.6, 0.9, 1)
+color = Color(0.28, 0.6, 0.82, 1)
 
 [node name="PlayerVitLabel" type="Label" parent="PlayerInfoPanel"]
 layout_mode = 2
@@ -291,23 +291,27 @@ layer = 3
 
 [node name="PartnerPanel" type="PanelContainer" parent="PartnerHUDLayer"]
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -200.0
-offset_top = 120.0
-offset_right = -20.0
-offset_bottom = 600.0
-grow_horizontal = 0
+anchors_preset = 7
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
 
-[node name="PartnerList" type="VBoxContainer" parent="PartnerHUDLayer/PartnerPanel"]
+[node name="PartnerList" type="HBoxContainer" parent="PartnerHUDLayer/PartnerPanel"]
 layout_mode = 2
 theme_override_constants/separation = 8
+alignment = 1
 
 [node name="PartnerTitle" type="Label" parent="PartnerHUDLayer/PartnerPanel/PartnerList"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-theme_override_colors/font_color = Color(0.901961, 0.752941, 0.25098, 1)
+theme_override_colors/font_color = Color(0.95, 0.72, 0.25, 1)
 text = "随行伙伴"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -320,7 +324,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.3)
+color = Color(0.08, 0.06, 0.04, 0.4)
 mouse_filter = 1
 
 [node name="ShopPanel" type="Panel" parent="."]

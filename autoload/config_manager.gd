@@ -127,7 +127,7 @@ const _PARTNER_ID_MAP: Dictionary = {
 # --- 精灵图路径配置 ---
 const HERO_SPRITE_PATHS: Dictionary = {
 	1: "res://assets/characters/warrior/hero_frames.tres",
-	2: "res://assets/characters/shinobi/hero_frames.tres",
+	2: "res://assets/characters/hero/shinobi/idle/shinobi_idle_01.png",
 	3: "res://assets/characters/paladin/hero_frames.tres",
 }
 
@@ -145,7 +145,7 @@ const DEFAULT_ENEMY_SPRITE: String = "res://assets/characters/enemies/default_en
 # --- 选人界面立绘路径配置 ---
 const HERO_PORTRAIT_PATHS: Dictionary = {
 	"hero_warrior": "res://assets/characters/hero/warrior.png",
-	"hero_shadow_dancer": "res://assets/characters/shinobi/shinobi.png",
+	"hero_shadow_dancer": "res://assets/characters/hero/shinobi/idle/shinobi_idle_01.png",
 	"hero_iron_guard": "res://assets/characters/hero/paladin.png",
 }
 

@@ -21,7 +21,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.05, 0.05, 0.08, 0.92)
+color = Color(0.08, 0.06, 0.04, 0.88)
 
 [node name="HudContainer" type="Control" parent="." unique_id=282685133]
 layout_mode = 1
@@ -153,10 +153,10 @@ offset_right = 280.0
 offset_bottom = 280.0
 color = Color(1, 1, 1, 0)
 
-[node name="GlowOverlay" type="ColorRect" parent="StageArea/HeroCard"]
+[node name="GlowOverlay" type="ColorRect" parent="StageArea/HeroCard/Portrait"]
 layout_mode = 0
-offset_right = 300.0
-offset_bottom = 300.0
+offset_right = 280.0
+offset_bottom = 280.0
 color = Color(1, 1, 1, 0)
 
 [node name="EnemyCard" type="Control" parent="StageArea"]
@@ -187,10 +187,10 @@ offset_right = 280.0
 offset_bottom = 280.0
 color = Color(1, 1, 1, 0)
 
-[node name="GlowOverlay" type="ColorRect" parent="StageArea/EnemyCard"]
+[node name="GlowOverlay" type="ColorRect" parent="StageArea/EnemyCard/Portrait"]
 layout_mode = 0
-offset_right = 300.0
-offset_bottom = 300.0
+offset_right = 280.0
+offset_bottom = 280.0
 color = Color(1, 1, 1, 0)
 
 [node name="PartnerAnimContainer" type="Node2D" parent="StageArea"]
@@ -366,6 +366,9 @@ offset_left = 124.0
 offset_right = 200.0
 offset_bottom = 26.0
 text = "x chain 0"
+
+[node name="SfxLayer" type="CanvasLayer" parent="."]
+layer = 6
 
 [node name="VFXLayer" type="CanvasLayer" parent="."]
 layer = 5
