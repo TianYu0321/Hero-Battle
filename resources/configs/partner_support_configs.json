@@ -18,11 +18,11 @@
     "7002": {
       "id": 7002,
       "partner_id": "partner_scout",
-      "supported_attr": 3,
+      "supported_attr": 4,
       "bonus_lv1": 2,
       "bonus_lv3": 4,
       "bonus_lv5": 6,
-      "extra_effect": "",
+      "extra_effect": "锻炼技巧时额外+1金币",
       "cost_hp_on_training": 0
     },
     "7003": {
@@ -58,11 +58,11 @@
     "7006": {
       "id": 7006,
       "partner_id": "partner_hunter",
-      "supported_attr": 4,
+      "supported_attr": 3,
       "bonus_lv1": 2,
       "bonus_lv3": 4,
       "bonus_lv5": 6,
-      "extra_effect": "锻炼技巧时额外+1金币",
+      "extra_effect": "",
       "cost_hp_on_training": 0
     }
   }

@@ -69,7 +69,7 @@ func shadow_dancer_normal_attack(hero: Dictionary, target: Dictionary) -> Array[
 	_dc.apply_damage_packet(target, pkt)
 	return packets
 
-## 影舞者被动技能: 疾风连击（普攻后触发，多段攻击）
+## 影舞者被动技能: 疾风连击（普攻后触发，固定三连击）
 func trigger_shadow_wind(hero: Dictionary, target: Dictionary) -> Array[Dictionary]:
 	var packets: Array[Dictionary] = []
 	var passive_cfg: Dictionary = _get_passive_skill_config(hero)
@@ -77,15 +77,9 @@ func trigger_shadow_wind(hero: Dictionary, target: Dictionary) -> Array[Dictiona
 		return packets
 	
 	var trigger_params: Dictionary = passive_cfg.get("trigger_params", {})
-	var stats: Dictionary = hero.get("stats", {})
-	var segment_min: int = trigger_params.get("segment_min", 2)
-	var segment_max: int = trigger_params.get("segment_max", 4)
-	var segment_attr_bonus: int = trigger_params.get("segment_attr_bonus", 3)
-	var segment_attr_step: int = trigger_params.get("segment_attr_step", 20)
-	
-	var attr_val: int = _get_attr_value(stats, segment_attr_bonus)
-	var segments: int = clampi(segment_min + int(attr_val / segment_attr_step), segment_min, segment_max)
 	var power_scale: float = passive_cfg.get("power_scale", 0.35)
+	## 疾风连击固定三连击
+	var segments: int = 3
 	for i in range(segments):
 		if not target.get("is_alive", false):
 			break

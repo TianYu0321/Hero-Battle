@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/battle/battle_scene.gd" id="1_bscene"]
+[ext_resource type="PackedScene" uid="uid://c5c25kbikw2a" path="res://scenes/run_main/battle_animation_panel.tscn" id="2_bap"]
+
+[node name="BattleScene" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_bscene")
+
+[node name="BattleAnimationPanel" parent="." instance=ExtResource("2_bap")]
+layout_mode = 1

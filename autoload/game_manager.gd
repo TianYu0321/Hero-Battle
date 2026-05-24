@@ -21,7 +21,8 @@ const _SCENE_PATHS: Dictionary = {
 	"HERO_SELECT": "res://scenes/hero_select/hero_select.tscn",
 	"TAVERN": "res://scenes/tavern/tavern.tscn",
 	"RUNNING": "res://scenes/run_main/run_main.tscn",
-	"FINAL_BATTLE": "res://scenes/battle/battle.tscn",
+	"BATTLE": "res://scenes/battle/battle_scene.tscn",
+	"FINAL_BATTLE": "res://scenes/battle/battle_scene.tscn",
 	"SETTLEMENT": "res://scenes/settlement/settlement.tscn",
 	"ARCHIVE_VIEW": "res://scenes/archive_view/archive_view.tscn",
 	"PVP_LOBBY": "res://scenes/pvp_lobby/pvp_lobby.tscn",
@@ -48,6 +49,13 @@ var screen_shake_enabled: bool = true
 var damage_numbers_enabled: bool = true
 
 var pending_archive: Dictionary = {}
+
+## 当前战斗数据（跨场景传递）
+var current_battle_data: Dictionary = {}
+
+## 从战斗场景返回时的数据
+var returning_from_battle: bool = false
+var pending_battle_result: Dictionary = {}
 
 # 运行时选择数据（供RunMain读取启动新局）
 var selected_hero_config_id: int = 0
@@ -134,7 +142,7 @@ func _do_fade_transition(to_state: String) -> bool:
 
 	# Fade in
 	var tween_in: Tween = get_tree().create_tween()
-	tween_in.tween_property(fade_color, "modulate:a", 1.0, 0.25).from(0.0)
+	tween_in.tween_property(fade_color, "modulate:a", 1.0, 0.2).from(0.0)
 	await tween_in.finished
 
 	# Change scene
@@ -142,7 +150,7 @@ func _do_fade_transition(to_state: String) -> bool:
 
 	# Fade out
 	var tween_out: Tween = get_tree().create_tween()
-	tween_out.tween_property(fade_color, "modulate:a", 0.0, 0.25).from(1.0)
+	tween_out.tween_property(fade_color, "modulate:a", 0.0, 0.2).from(1.0)
 	await tween_out.finished
 
 	fade_color.queue_free()
@@ -176,7 +184,7 @@ func get_current_state() -> String:
 func _on_new_game_requested(_hero_id: String) -> void:
 	pending_save_data = {}
 	pending_archive = {}
-	change_scene("HERO_SELECT", "fade")
+	change_scene("HERO_SELECT", "")
 
 func _on_continue_game_requested() -> void:
 	var save_data: Dictionary = SaveManager.load_latest_run()

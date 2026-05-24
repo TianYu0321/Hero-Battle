@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/run_main/battle_animation_panel.tscn" id="4_bap"]
 [ext_resource type="PackedScene" uid="uid://outingpopup01" path="res://scenes/outing/outing_popup.tscn" id="5_op"]
 [ext_resource type="PackedScene" path="res://scenes/rescue/rescue_popup.tscn" id="6_rp"]
+[ext_resource type="PackedScene" path="res://scenes/partner/partner_select_popup.tscn" id="7_psp"]
 [ext_resource type="PackedScene" uid="uid://dynamicbg01" path="res://scenes/backgrounds/dynamic_bg.tscn" id="7_dbg"]
 
 [node name="RunMain" type="Control"]
@@ -28,41 +29,38 @@ grow_vertical = 2
 [node name="MenuButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 1
-offset_left = 1740.0
-offset_top = 30.0
-offset_right = 1890.0
-offset_bottom = 90.0
-text = "菜单"
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -60.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 60.0
 
-[node name="HudContainer" type="Control" parent="."]
+[node name="HudContainer" type="PanelContainer" parent="."]
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 210.0
+offset_bottom = 52.0
 grow_horizontal = 2
 
-[node name="FloorLabel" type="Label" parent="HudContainer"]
-layout_mode = 0
-offset_left = 30.0
-offset_top = 30.0
-offset_right = 225.0
-offset_bottom = 75.0
+[node name="HBoxContainer" type="HBoxContainer" parent="HudContainer"]
+layout_mode = 2
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 1896.0
+offset_bottom = 80.0
+theme_override_constants/separation = 32
+
+[node name="FloorLabel" type="Label" parent="HudContainer/HBoxContainer"]
+layout_mode = 2
 text = "层数: 1/30"
 
-[node name="GoldLabel" type="Label" parent="HudContainer"]
-layout_mode = 0
-offset_left = 270.0
-offset_top = 30.0
-offset_right = 495.0
-offset_bottom = 75.0
+[node name="GoldLabel" type="Label" parent="HudContainer/HBoxContainer"]
+layout_mode = 2
 text = "金币: 0"
 
-[node name="HpLabel" type="Label" parent="HudContainer"]
-layout_mode = 0
-offset_left = 540.0
-offset_top = 30.0
-offset_right = 765.0
-offset_bottom = 75.0
+[node name="HpLabel" type="Label" parent="HudContainer/HBoxContainer"]
+layout_mode = 2
 text = "生命: 100/100"
 
 [node name="OptionContainer" type="VBoxContainer" parent="."]
@@ -103,128 +101,103 @@ horizontal_alignment = 1
 
 [node name="AttrRow1" type="HBoxContainer" parent="TrainingPanel"]
 layout_mode = 2
+alignment = 2
 
 [node name="AttrName" type="Label" parent="TrainingPanel/AttrRow1"]
 layout_mode = 2
-text = "体魄"
+text = "💪 体魄"
+
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow1"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow1"]
 layout_mode = 2
 text = "LV:0"
 
-[node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow1"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
-[node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow1"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow1"]
 layout_mode = 2
-text = "选择"
+text = "训练"
 
 [node name="AttrRow2" type="HBoxContainer" parent="TrainingPanel"]
 layout_mode = 2
+alignment = 2
 
 [node name="AttrName" type="Label" parent="TrainingPanel/AttrRow2"]
 layout_mode = 2
-text = "力量"
+text = "⚔️ 力量"
+
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow2"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow2"]
 layout_mode = 2
 text = "LV:0"
 
-[node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow2"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
-[node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow2"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow2"]
 layout_mode = 2
-text = "选择"
+text = "训练"
 
 [node name="AttrRow3" type="HBoxContainer" parent="TrainingPanel"]
 layout_mode = 2
+alignment = 2
 
 [node name="AttrName" type="Label" parent="TrainingPanel/AttrRow3"]
 layout_mode = 2
-text = "敏捷"
+text = "🏃 敏捷"
+
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow3"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow3"]
 layout_mode = 2
 text = "LV:0"
 
-[node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow3"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
-[node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow3"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow3"]
 layout_mode = 2
-text = "选择"
+text = "训练"
 
 [node name="AttrRow4" type="HBoxContainer" parent="TrainingPanel"]
 layout_mode = 2
+alignment = 2
 
 [node name="AttrName" type="Label" parent="TrainingPanel/AttrRow4"]
 layout_mode = 2
-text = "技巧"
+text = "🎯 技巧"
+
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow4"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow4"]
 layout_mode = 2
 text = "LV:0"
 
-[node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow4"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
-[node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow4"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow4"]
 layout_mode = 2
-text = "选择"
+text = "训练"
 
 [node name="AttrRow5" type="HBoxContainer" parent="TrainingPanel"]
 layout_mode = 2
+alignment = 2
 
 [node name="AttrName" type="Label" parent="TrainingPanel/AttrRow5"]
 layout_mode = 2
-text = "精神"
+text = "🔮 精神"
+
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow5"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow5"]
 layout_mode = 2
 text = "LV:0"
 
-[node name="PartnerIcon1" type="ColorRect" parent="TrainingPanel/AttrRow5"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
-[node name="PartnerIcon2" type="ColorRect" parent="TrainingPanel/AttrRow5"]
-custom_minimum_size = Vector2(36.0, 36.0)
-layout_mode = 2
-color = Color(0.45, 0.35, 0.25, 1)
-
 [node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow5"]
 layout_mode = 2
-text = "选择"
+text = "训练"
 
 [node name="PlayerInfoPanel" type="VBoxContainer" parent="."]
 layout_mode = 0
@@ -261,9 +234,9 @@ text = "精神: 0"
 [node name="EnemyInfoPanel" type="VBoxContainer" parent="."]
 layout_mode = 0
 offset_left = 1020.0
-offset_top = 420.0
+offset_top = 240.0
 offset_right = 1320.0
-offset_bottom = 570.0
+offset_bottom = 390.0
 
 [node name="EnemyNameLabel" type="Label" parent="EnemyInfoPanel"]
 layout_mode = 2
@@ -282,6 +255,9 @@ layout_mode = 2
 text = "风险: ???"
 
 [node name="RescuePopup" parent="." instance=ExtResource("6_rp")]
+visible = false
+
+[node name="PartnerSelectPopup" parent="." instance=ExtResource("7_psp")]
 visible = false
 
 [node name="PauseMenu" parent="." instance=ExtResource("2_pause")]

@@ -1,7 +1,7 @@
 {
   "_meta": {
     "version": 2,
-    "last_modified": "2026-05-09",
+    "last_modified": "2026-05-23",
     "description": "伙伴配置表"
   },
   "entries": {
@@ -28,8 +28,9 @@
       "icon_path": "",
       "favored_attr": 3,
       "aid_trigger_type": 2,
-      "linked_hero_id": 2,
-      "is_default_unlock": true,
+      "linked_hero_id": 1,
+      "is_default_unlock": false,
+      "unlock_price_mocheng": 100,
       "unlock_condition_text": "",
       "sort_order": 2
     },
@@ -86,9 +87,8 @@
       "icon_path": "",
       "favored_attr": 4,
       "aid_trigger_type": 2,
-      "linked_hero_id": 1,
-      "is_default_unlock": false,
-      "unlock_price_mocheng": 100,
+      "linked_hero_id": 2,
+      "is_default_unlock": true,
       "unlock_condition_text": "",
       "sort_order": 6
     }

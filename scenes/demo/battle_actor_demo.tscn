@@ -2,6 +2,11 @@
 
 [ext_resource type="Script" path="res://scenes/demo/battle_actor_demo.gd" id="1_demo"]
 [ext_resource type="Texture2D" uid="uid://fir8htr5824b" path="res://assets/backgrounds/pve/stages1/dead forest.png" id="2_bg"]
+[ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="3_wofrr"]
+[ext_resource type="Script" uid="uid://bhexx6mj1xv3q" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="4_44rar"]
+[ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="5_kg615"]
+[ext_resource type="Script" uid="uid://bhd4nuiu23e7l" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_noise_emitter_2d.gd" id="6_oqkw1"]
+[ext_resource type="PackedScene" path="res://scenes/partner/partner_select_popup.tscn" id="7_psp"]
 
 [sub_resource type="Theme" id="Theme_demo"]
 
@@ -69,6 +74,15 @@ corner_radius_top_left = 24
 corner_radius_top_right = 24
 corner_radius_bottom_right = 24
 corner_radius_bottom_left = 24
+
+[sub_resource type="Resource" id="Resource_hlkr0"]
+script = ExtResource("5_kg615")
+
+[sub_resource type="Resource" id="Resource_8db2x"]
+script = ExtResource("5_kg615")
+
+[sub_resource type="Resource" id="Resource_2peqa"]
+script = ExtResource("5_kg615")
 
 [node name="BattleActorDemo" type="Control" unique_id=1431650184]
 layout_mode = 3
@@ -139,7 +153,13 @@ mouse_filter = 2
 [node name="SfxLayer" type="Node2D" parent="." unique_id=577412336]
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=992467757]
+top_level = true
 position = Vector2(960, 540)
+
+[node name="PhantomCameraHost" type="Node" parent="Camera2D" unique_id=1813290985]
+process_priority = 300
+process_physics_priority = 300
+script = ExtResource("3_wofrr")
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=1813745196]
 
@@ -301,6 +321,14 @@ theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 text = "猎人斩杀"
 
+[node name="BtnSwordsmanAssist" type="Button" parent="UI/ButtonContainer" unique_id=999246980]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.65, 0.9, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "剑士跳劈"
+
 [node name="BtnReset" type="Button" parent="UI/ButtonContainer" unique_id=565246976]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.96, 0.92, 0.86, 1)
@@ -308,6 +336,30 @@ theme_override_font_sizes/font_size = 16
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 text = "重置"
+
+[node name="BtnPartnerSelect" type="Button" parent="UI/ButtonContainer" unique_id=999246977]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.42, 0.21, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "测试伙伴选择"
+
+[node name="BtnSkillCombo" type="Button" parent="UI/ButtonContainer" unique_id=999246978]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.7, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "影舞者三连击"
+
+[node name="BtnUltCombo" type="Button" parent="UI/ButtonContainer" unique_id=999246979]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+text = "影舞者必杀6段"
 
 [node name="LogLabel" type="RichTextLabel" parent="UI" unique_id=2137937719]
 anchors_preset = 2
@@ -362,9 +414,44 @@ text = "主角成功击败敌人！"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Pcam_Default" type="Node2D" parent="." unique_id=1393542901]
+position = Vector2(960, 540)
+script = ExtResource("4_44rar")
+priority = 10
+frame_preview = false
+tween_resource = SubResource("Resource_hlkr0")
+tween_on_load = false
+
+[node name="Pcam_Hero" type="Node2D" parent="." unique_id=470376990]
+position = Vector2(400, 700)
+script = ExtResource("4_44rar")
+zoom = Vector2(1.5, 1.5)
+frame_preview = false
+tween_resource = SubResource("Resource_8db2x")
+tween_on_load = false
+
+[node name="Pcam_Enemy" type="Node2D" parent="." unique_id=1809398365]
+position = Vector2(1520, 700)
+script = ExtResource("4_44rar")
+zoom = Vector2(1.5, 1.5)
+frame_preview = false
+tween_resource = SubResource("Resource_2peqa")
+tween_on_load = false
+
+[node name="NoiseEmitter" type="Node2D" parent="." unique_id=686041900]
+script = ExtResource("6_oqkw1")
+duration = 0.35
+decay_time = 0.2
+
+[node name="PartnerSelectPopup" parent="." unique_id=1402655194 instance=ExtResource("7_psp")]
+
 [connection signal="pressed" from="UI/ButtonContainer/BtnHeroAttack" to="." method="_on_hero_attack_pressed"]
 [connection signal="pressed" from="UI/ButtonContainer/BtnEnemyAttack" to="." method="_on_enemy_attack_pressed"]
 [connection signal="pressed" from="UI/ButtonContainer/BtnHeroUltimate" to="." method="_on_hero_ultimate_pressed"]
 [connection signal="pressed" from="UI/ButtonContainer/BtnEnemyUltimate" to="." method="_on_enemy_ultimate_pressed"]
 [connection signal="pressed" from="UI/ButtonContainer/BtnSupport" to="." method="_on_hunter_assist_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnSwordsmanAssist" to="." method="_on_swordsman_assist_pressed"]
 [connection signal="pressed" from="UI/ButtonContainer/BtnReset" to="." method="_on_reset_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnPartnerSelect" to="." method="_on_partner_select_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnSkillCombo" to="." method="_on_hero_skill_combo_pressed"]
+[connection signal="pressed" from="UI/ButtonContainer/BtnUltCombo" to="." method="_on_hero_ult_combo_pressed"]

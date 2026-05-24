@@ -22,11 +22,13 @@ config/features=PackedStringArray("4.6", "GL Compatibility")
 
 [autoload]
 
+PhantomCameraManager="*res://addons/phantom_camera/scripts/managers/phantom_camera_manager.gd"
 EventBus="*res://autoload/event_bus.gd"
 ConfigManager="*res://autoload/config_manager.gd"
 GameManager="*res://autoload/game_manager.gd"
 SaveManager="*res://autoload/save_manager.gd"
 AudioManager="*res://autoload/audio_manager.gd"
+
 TweenFX="*uid://d2n10rw2dnx8o"
 VFX="*uid://ecyiymmaj3jv"
 EnvVFX="*uid://qomyut16hnoi"

@@ -68,7 +68,7 @@ signal damage_number_spawned(position: Dictionary, amount: int, damage_type: Str
 signal partner_assist_triggered(partner_id: String, partner_name: String, trigger_type: String, assist_result: Dictionary, assist_count_this_battle: int)
 signal partner_assist_skipped(reason: String, checked_count: int)
 
-signal chain_triggered(chain_count: int, partner_id: String, partner_name: String, damage: int, chain_multiplier: float, total_chains_this_battle: int)
+signal chain_triggered(chain_count: int, partner_id: String, partner_name: String, damage: int, chain_multiplier: float, total_chains_this_battle: int, partner_names: Array)
 signal chain_ended(total_chains_this_turn: int, total_chains_this_battle: int, interrupt_reason: String)
 signal chain_interrupted(reason: String, current_chain_count: int, partner_limit_status: Dictionary)
 

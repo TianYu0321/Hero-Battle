@@ -17,6 +17,7 @@ var _current_version: int = 1
 
 func _ready() -> void:
 	_ensure_save_dir()
+	_migrate_old_saves()
 
 func _ensure_save_dir() -> void:
 	var dir: DirAccess = DirAccess.open("user://")
@@ -28,93 +29,148 @@ func _ensure_save_dir() -> void:
 		if err != OK:
 			push_error("[SaveManager] Failed to create saves directory: %d" % err)
 
-func save_run_state(run_data: Dictionary, is_auto: bool = true, slot_id: int = 1, user_id: String = current_user_id) -> bool:
-	var file_path: String = ConfigManager.SAVE_DIR + "%s_save_%03d.json" % [user_id, slot_id]
-	
-	# RunSaveData 已在 run_controller.gd 中构造完成，直接保存
+# ==========================================
+# 新底层：加密 + 原子写入 + 备份 + 签名
+# ==========================================
+
+const ENCRYPTION_PASSWORD := "HeroBattle2025"
+const CURRENT_SCHEMA_VERSION: int = 2  ## v2 = 加密格式
+const TEMP_SUFFIX := ".tmp"
+const BACKUP_SUFFIX := ".backup"
+
+## 新文件路径（统一加密格式）
+const RUN_FILE := "run.save"
+const PLAYER_FILE := "player.save"
+const SETTINGS_FILE := "settings.save"
+const ARCHIVES_FILE := "archives.save"
+const MochengCoin_FILE := "mocheng_coin.save"
+const UNLOCK_STATE_FILE := "unlock_state.save"
+const DAILY_COUNTERS_FILE := "daily_counters.save"
+
+func _save_dict(file_name: String, data: Dictionary) -> bool:
+	## 通用加密保存入口：深拷贝后注入 schema_version，原子写入
+	var save_data: Dictionary = data.duplicate(true)
+	save_data["schema_version"] = CURRENT_SCHEMA_VERSION
+	return _write_encrypted(ConfigManager.SAVE_DIR + file_name, save_data)
+
+func _load_dict(file_name: String) -> Dictionary:
+	## 通用加密读取入口：自动校验签名 + Schema 迁移
+	var file_path: String = ConfigManager.SAVE_DIR + file_name
+	var data: Dictionary = _read_encrypted(file_path)
+	if data.is_empty():
+		return {}
+	var schema: int = data.get("schema_version", 0)
+	if schema < CURRENT_SCHEMA_VERSION:
+		data = _migrate_data(data, schema, file_name)
+	return data
+
+func _write_encrypted(file_path: String, data: Dictionary) -> bool:
+	## 1. JSON 序列化
+	var json: String = JSON.stringify(data, "\t")
+	## 2. 计算 MD5 签名
+	var signature: String = json.md5_text()
+	var payload: Dictionary = {"signature": signature, "data": data}
+	var final_json: String = JSON.stringify(payload)
+	## 3. 写入临时文件
+	var temp_path: String = file_path + TEMP_SUFFIX
+	var file: FileAccess = FileAccess.open_encrypted_with_pass(temp_path, FileAccess.WRITE, ENCRYPTION_PASSWORD)
+	if file == null:
+		push_error("[SaveManager] Failed to open temp file for writing: %s" % temp_path)
+		return false
+	file.store_string(final_json)
+	file.close()
+	## 4. 原子替换：旧文件 → 备份，临时文件 → 正式文件
+	if FileAccess.file_exists(file_path):
+		var backup_path: String = file_path + BACKUP_SUFFIX
+		if FileAccess.file_exists(backup_path):
+			DirAccess.remove_absolute(backup_path)
+		var err2: Error = DirAccess.rename_absolute(file_path, backup_path)
+		if err2 != OK:
+			push_warning("[SaveManager] Failed to create backup: %d" % err2)
+	## 5. 临时文件 → 正式文件
+	var err: Error = DirAccess.rename_absolute(temp_path, file_path)
+	if err != OK:
+		push_error("[SaveManager] Failed to rename temp file: %d" % err)
+		return false
+	return true
+
+func _read_encrypted(file_path: String) -> Dictionary:
+	if not FileAccess.file_exists(file_path):
+		return {}
+	var file: FileAccess = FileAccess.open_encrypted_with_pass(file_path, FileAccess.READ, ENCRYPTION_PASSWORD)
+	if file == null:
+		push_error("[SaveManager] Failed to open file for reading: %s" % file_path)
+		return {}
+	var content: String = file.get_as_text()
+	file.close()
+	var parsed = JSON.parse_string(content)
+	if parsed == null or not (parsed is Dictionary):
+		push_error("[SaveManager] Invalid save file format: %s" % file_path)
+		return _try_backup_recovery(file_path)
+	## 校验签名
+	var stored_sig: String = parsed.get("signature", "")
+	var data: Dictionary = parsed.get("data", {})
+	var expected_sig: String = JSON.stringify(data).md5_text()
+	if stored_sig != expected_sig:
+		push_warning("[SaveManager] Save file signature mismatch: %s" % file_path)
+		return _try_backup_recovery(file_path)
+	return data
+
+func _try_backup_recovery(file_path: String) -> Dictionary:
+	var backup_path: String = file_path + BACKUP_SUFFIX
+	if FileAccess.file_exists(backup_path):
+		push_warning("[SaveManager] Attempting backup recovery: %s" % backup_path)
+		return _read_encrypted(backup_path)
+	return {}
+
+func _migrate_data(data: Dictionary, old_schema: int, file_name: String) -> Dictionary:
+	match file_name:
+		RUN_FILE:
+			if old_schema < 2:
+				## v1→v2：旧明文JSON无额外字段需要迁移
+				pass
+		PLAYER_FILE:
+			if old_schema < 2:
+				pass
+		_:
+			pass
+	data["schema_version"] = CURRENT_SCHEMA_VERSION
+	return data
+
+func save_run_state(run_data: Dictionary, is_auto: bool = true, _slot_id: int = 1, _user_id: String = current_user_id) -> bool:
+	## 新实现：加密 + 原子写入
 	var data: Dictionary = run_data.duplicate(true)
 	data["timestamp"] = Time.get_unix_time_from_system()
 	data["is_auto_save"] = is_auto
-
-	var json_text: String = JSON.stringify(data, "\t")
-	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
-	if file == null:
-		push_error("[SaveManager] Failed to open file for writing: %s" % file_path)
-		EventBus.save_failed.emit(FileAccess.get_open_error(), "Failed to open save file", {"slot": slot_id})
-		return false
-
-	file.store_string(json_text)
-	file.close()
 	
-	print("[SaveManager] 存档已保存: %s" % file_path)
-	print("[SaveManager] 内容预览: %s" % json_text.substr(0, 200))
+	var success := _save_dict(RUN_FILE, data)
+	if success:
+		print("[SaveManager] RUN存档已保存: %s" % RUN_FILE)
+		EventBus.game_saved.emit(1, data["timestamp"], data.get("current_floor", 0), is_auto)
+	else:
+		EventBus.save_failed.emit(5001, "Failed to save run state", {"slot": 1})
+	return success
 
-	EventBus.game_saved.emit(slot_id, data["timestamp"], data.get("current_floor", 0), is_auto)
-	return true
-
-func has_active_run(user_id: String = current_user_id) -> bool:
-	print("[SaveManager] has_active_run 被调用, user_id=%s" % user_id)
-	var latest_path: String = ""
-	var latest_time: int = 0
-	var prefix: String = "%s_save_" % user_id
-	var dir: DirAccess = DirAccess.open(ConfigManager.SAVE_DIR)
-	if dir == null:
-		return false
-	dir.list_dir_begin()
-	var file_name: String = dir.get_next()
-	while not file_name.is_empty():
-		if file_name.begins_with(prefix) and file_name.ends_with(".json"):
-			var path: String = ConfigManager.SAVE_DIR + file_name
-			var modified: int = FileAccess.get_modified_time(path)
-			if modified > latest_time:
-				latest_time = modified
-				latest_path = path
-		file_name = dir.get_next()
-	dir.list_dir_end()
-	
-	if latest_path.is_empty():
-		# 尝试迁移旧版存档
-		var migrated: bool = _migrate_run_state_from_legacy(user_id)
+func has_active_run(_user_id: String = current_user_id) -> bool:
+	var data: Dictionary = _load_dict(RUN_FILE)
+	if data.is_empty():
+		## 尝试迁移旧版存档
+		var migrated: bool = _migrate_old_saves()
 		if migrated:
-			return has_active_run(user_id)
-		print("[SaveManager] 检查结果: false (无存档文件)")
-		return false
-	
-	var data = ModelsSerializer.load_json_file(latest_path)
+			data = _load_dict(RUN_FILE)
+		if data.is_empty():
+			return false
 	return is_valid_save(data) and data.get("run_status", 1) == 1
 
-func load_latest_run(user_id: String = current_user_id) -> Dictionary:
-	var latest_path: String = ""
-	var latest_time: int = 0
-	var prefix: String = "%s_save_" % user_id
-	var dir: DirAccess = DirAccess.open(ConfigManager.SAVE_DIR)
-	if dir == null:
-		push_warning("[SaveManager] Save directory not found")
-		return {}
-
-	dir.list_dir_begin()
-	var file_name: String = dir.get_next()
-	while not file_name.is_empty():
-		if file_name.begins_with(prefix) and file_name.ends_with(".json"):
-			var path: String = ConfigManager.SAVE_DIR + file_name
-			var modified: int = FileAccess.get_modified_time(path)
-			if modified > latest_time:
-				latest_time = modified
-				latest_path = path
-		file_name = dir.get_next()
-	dir.list_dir_end()
-
-	if latest_path.is_empty():
-		# 尝试迁移旧版存档
-		var migrated: bool = _migrate_run_state_from_legacy(user_id)
-		if migrated:
-			return load_latest_run(user_id)
-		return {}
-
-	var data: Dictionary = ModelsSerializer.load_json_file(latest_path)
+func load_latest_run(_user_id: String = current_user_id) -> Dictionary:
+	var data: Dictionary = _load_dict(RUN_FILE)
 	if data.is_empty():
-		EventBus.load_failed.emit(4001, "Corrupt or empty save file", 1)
-		return {}
+		var migrated: bool = _migrate_old_saves()
+		if migrated:
+			data = _load_dict(RUN_FILE)
+		if data.is_empty():
+			EventBus.load_failed.emit(4001, "No run save found", 1)
+			return {}
 
 	if not _validate_save_integrity(data):
 		EventBus.load_failed.emit(4001, "Save file missing required fields", 1)
@@ -125,34 +181,21 @@ func load_latest_run(user_id: String = current_user_id) -> Dictionary:
 		print("[SaveManager] 最新存档已完成(run_status=%d)，不可继续" % run_status)
 		return {}
 
-	var version: int = data.get("version", 0)
-	if version != _current_version:
-		push_warning("[SaveManager] Save version mismatch: expected %d, got %d" % [_current_version, version])
-		# 未来可在此添加版本升级/降级逻辑
-		if version > _current_version:
-			push_error("[SaveManager] Save version newer than game version, cannot load")
-			EventBus.load_failed.emit(4002, "Save version newer than game", 1)
-			return {}
-
 	EventBus.game_loaded.emit(data)
 	return data
 
 func _load_archive_data() -> Dictionary:
-	var file_path: String = ConfigManager.get_archive_file_path(current_user_id)
-	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
+	var data: Dictionary = _load_dict(ARCHIVES_FILE)
 	if data.is_empty():
-		# 尝试从旧版全局 archive.json 迁移
-		var legacy_path: String = "user://archive.json"
+		## 尝试从旧版迁移
+		var legacy_path: String = ConfigManager.get_archive_file_path(current_user_id)
 		if FileAccess.file_exists(legacy_path):
-			data = ModelsSerializer.load_json_file(legacy_path)
-			if not data.is_empty():
-				var migrate_file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
-				if migrate_file != null:
-					migrate_file.store_string(JSON.stringify(data, "\t"))
-					migrate_file.close()
-					print("[SaveManager] 档案已从旧版迁移: %s -> %s" % [legacy_path, file_path])
-	if data.is_empty():
-		data = {"version": _current_version, "archives": [], "last_updated": 0}
+			var legacy: Dictionary = ModelsSerializer.load_json_file(legacy_path)
+			if not legacy.is_empty():
+				_save_dict(ARCHIVES_FILE, legacy)
+				print("[SaveManager] 档案已从旧版迁移: %s -> %s" % [legacy_path, ARCHIVES_FILE])
+				return legacy
+		data = {"version": CURRENT_SCHEMA_VERSION, "archives": [], "last_updated": 0}
 	if not data.has("archives"):
 		data["archives"] = []
 	return data
@@ -182,7 +225,6 @@ func get_archives_for_overwrite() -> Array[Dictionary]:
 
 func overwrite_archive(index: int, new_archive: Dictionary) -> bool:
 	var data: Dictionary = _load_archive_data()
-	var file_path: String = ConfigManager.get_archive_file_path(current_user_id)
 	var archives: Array = data.get("archives", [])
 	if index < 0 or index >= archives.size():
 		push_error("[SaveManager] 覆盖索引越界: %d, 总数: %d" % [index, archives.size()])
@@ -194,10 +236,8 @@ func overwrite_archive(index: int, new_archive: Dictionary) -> bool:
 	archives[index] = new_archive
 	data["last_updated"] = Time.get_unix_time_from_system()
 
-	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify(data, "\t"))
-		file.close()
+	var success := _save_dict(ARCHIVES_FILE, data)
+	if success:
 		EventBus.archive_generated.emit(new_archive)
 		EventBus.archive_saved.emit(new_archive)
 		print("[SaveManager] 覆盖档案成功, index=%d" % index)
@@ -208,11 +248,8 @@ func overwrite_archive(index: int, new_archive: Dictionary) -> bool:
 
 
 func clear_all_archives() -> void:
-	var file_path: String = ConfigManager.get_archive_file_path(current_user_id)
-	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify({"version": _current_version, "archives": [], "last_updated": 0}, "\t"))
-		file.close()
+	var success := _save_dict(ARCHIVES_FILE, {"version": CURRENT_SCHEMA_VERSION, "archives": [], "last_updated": 0})
+	if success:
 		print("[SaveManager] 已清空所有档案")
 	else:
 		push_error("[SaveManager] 清空档案失败: 无法写入文件")
@@ -234,7 +271,6 @@ func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 		archive["total_losses"] = 0
 
 	var existing: Dictionary = _load_archive_data()
-	var file_path: String = ConfigManager.get_archive_file_path(current_user_id)
 
 	var archives: Array = existing["archives"]
 
@@ -248,13 +284,10 @@ func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 	if archives.size() < 5:
 		archives.append(archive)
 		existing["last_updated"] = Time.get_unix_time_from_system()
-		existing["version"] = _current_version
+		existing["version"] = CURRENT_SCHEMA_VERSION
 
-		var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
-		if file != null:
-			file.store_string(JSON.stringify(existing, "\t"))
-			file.close()
-		else:
+		var success := _save_dict(ARCHIVES_FILE, existing)
+		if not success:
 			push_error("[SaveManager] Failed to write archive file")
 
 		EventBus.archive_generated.emit(archive)
@@ -343,12 +376,17 @@ func spend_mocheng_coin(amount: int) -> bool:
 	save_mocheng_coin(new_amount)
 	return true
 
-func load_player_data(user_id: String = current_user_id) -> Dictionary:
-	var file_path: String = ConfigManager.SAVE_DIR + "%s_player_data.json" % user_id
-	var data: Dictionary = ModelsSerializer.load_json_file(file_path)
+func load_player_data(_user_id: String = current_user_id) -> Dictionary:
+	var data: Dictionary = _load_dict(PLAYER_FILE)
 	if data.is_empty():
-		# 尝试从旧版全局 player_data.json 迁移
-		data = _migrate_player_data_from_legacy(user_id)
+		## 尝试从旧版迁移
+		var legacy_path: String = ConfigManager.SAVE_DIR + "player_data.json"
+		if FileAccess.file_exists(legacy_path):
+			data = ModelsSerializer.load_json_file(legacy_path)
+			if not data.is_empty():
+				_save_dict(PLAYER_FILE, data)
+				DirAccess.remove_absolute(legacy_path)
+				print("[SaveManager] 玩家数据已从旧版迁移")
 		if data.is_empty():
 			data = _create_default_player_data()
 	if not data.has("unlocked_heroes"):
@@ -357,12 +395,8 @@ func load_player_data(user_id: String = current_user_id) -> Dictionary:
 		data["hero_best_scores"] = {}
 	return data
 
-func save_player_data(data: Dictionary, user_id: String = current_user_id) -> void:
-	var file_path: String = ConfigManager.SAVE_DIR + "%s_player_data.json" % user_id
-	var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify(data, "\t"))
-		file.close()
+func save_player_data(data: Dictionary, _user_id: String = current_user_id) -> void:
+	_save_dict(PLAYER_FILE, data)
 
 func _create_default_player_data() -> Dictionary:
 	return {
@@ -381,35 +415,9 @@ func _create_default_player_data() -> Dictionary:
 		"total_victories": 0,
 	}
 
-func _migrate_player_data_from_legacy(user_id: String) -> Dictionary:
-	var legacy_path: String = ConfigManager.SAVE_DIR + "player_data.json"
-	if not FileAccess.file_exists(legacy_path):
-		return {}
-	var legacy: Dictionary = ModelsSerializer.load_json_file(legacy_path)
-	if legacy.is_empty():
-		return {}
-	# 复制到新用户文件
-	save_player_data(legacy, user_id)
-	print("[SaveManager] 玩家数据已从旧版迁移: %s -> %s_player_data.json" % [legacy_path, user_id])
-	return legacy
-
-func _migrate_run_state_from_legacy(user_id: String) -> bool:
-	var legacy_path: String = ConfigManager.SAVE_DIR + "save_001.json"
-	if not FileAccess.file_exists(legacy_path):
-		return false
-	var new_path: String = ConfigManager.SAVE_DIR + "%s_save_001.json" % user_id
-	var file := FileAccess.open(legacy_path, FileAccess.READ)
-	if file == null:
-		return false
-	var content: String = file.get_as_text()
-	file.close()
-	var new_file := FileAccess.open(new_path, FileAccess.WRITE)
-	if new_file == null:
-		return false
-	new_file.store_string(content)
-	new_file.close()
-	print("[SaveManager] 爬塔存档已从旧版迁移: %s -> %s" % [legacy_path, new_path])
-	return true
+func _migrate_run_state_from_legacy(_user_id: String) -> bool:
+	## 旧版迁移已由 _migrate_old_saves() 统一处理
+	return false
 
 func unlock_hero(hero_id: String) -> bool:
 	var data = load_player_data()
@@ -424,12 +432,11 @@ func unlock_hero(hero_id: String) -> bool:
 
 func update_archive(archive_id: String, new_data: Dictionary) -> bool:
 	var data: Dictionary = _load_archive_data()
-	var file_path: String = ConfigManager.get_archive_file_path(current_user_id)
 	var archives: Array = data.get("archives", [])
 	for i in range(archives.size()):
 		var entry: Dictionary = archives[i]
 		if entry.get("archive_id", "") == archive_id:
-			# 合并更新，保留不可变字段
+			## 合并更新，保留不可变字段
 			var updated: Dictionary = entry.duplicate(true)
 			for key in new_data.keys():
 				if key in ["archive_id", "created_at"]:
@@ -437,10 +444,8 @@ func update_archive(archive_id: String, new_data: Dictionary) -> bool:
 				updated[key] = new_data[key]
 			archives[i] = updated
 			data["last_updated"] = Time.get_unix_time_from_system()
-			var file: FileAccess = FileAccess.open(file_path, FileAccess.WRITE)
-			if file != null:
-				file.store_string(JSON.stringify(data, "\t"))
-				file.close()
+			var success := _save_dict(ARCHIVES_FILE, data)
+			if success:
 				print("[SaveManager] 更新档案成功: %s" % archive_id)
 				return true
 			else:
@@ -470,40 +475,28 @@ func get_user_id() -> String:
 
 # --- 魔城币（账号隔离）---
 func save_mocheng_coin(amount: int, user_id: String = current_user_id) -> bool:
-	var file_path: String = "user://%s_mocheng_coin.json" % user_id
 	var data: Dictionary = {
 		"user_id": user_id,
 		"amount": amount,
 		"timestamp": Time.get_unix_time_from_system()
 	}
-	var file := FileAccess.open(file_path, FileAccess.WRITE)
-	if file == null:
-		push_error("[SaveManager] 保存魔城币失败: %s" % file_path)
+	var success := _save_dict(MochengCoin_FILE, data)
+	if not success:
+		push_error("[SaveManager] 保存魔城币失败")
 		return false
-	file.store_string(JSON.stringify(data, "\t"))
-	file.close()
 	EventBus.mocheng_coin_changed.emit(amount)
-	# 同时同步到旧版 player_data.json，保持向后兼容
+	## 同时同步到 player_data
 	var legacy_data := load_player_data()
 	legacy_data["mocheng_coin"] = amount
 	save_player_data(legacy_data)
 	return true
 
-func load_mocheng_coin(user_id: String = current_user_id) -> int:
-	var file_path: String = "user://%s_mocheng_coin.json" % user_id
-	if not FileAccess.file_exists(file_path):
-		# 新文件不存在时，回退到旧版 player_data.json
+func load_mocheng_coin(_user_id: String = current_user_id) -> int:
+	var data: Dictionary = _load_dict(MochengCoin_FILE)
+	if data.is_empty():
+		## 回退到 player_data
 		return get_mocheng_coin()
-	var file := FileAccess.open(file_path, FileAccess.READ)
-	var json := JSON.new()
-	var result := json.parse(file.get_as_text())
-	file.close()
-	if result == OK:
-		var data: Dictionary = json.get_data()
-		if data.get("user_id", "") == user_id:
-			return data.get("amount", 0)
-	# 解析失败也回退到旧版
-	return get_mocheng_coin()
+	return data.get("amount", 0)
 
 # --- 解锁状态（账号隔离）---
 func save_unlock_state(
@@ -512,7 +505,6 @@ func save_unlock_state(
 	unlocked_skins: Array[int],
 	user_id: String = current_user_id
 ) -> bool:
-	var file_path: String = "user://%s_meta_progression.json" % user_id
 	var data: Dictionary = {
 		"user_id": user_id,
 		"unlocked_heroes": unlocked_heroes,
@@ -520,40 +512,30 @@ func save_unlock_state(
 		"unlocked_skins": unlocked_skins,
 		"last_save": Time.get_unix_time_from_system()
 	}
-	var file := FileAccess.open(file_path, FileAccess.WRITE)
-	if file == null:
-		push_error("[SaveManager] 保存解锁状态失败: %s" % file_path)
+	var success := _save_dict(UNLOCK_STATE_FILE, data)
+	if not success:
+		push_error("[SaveManager] 保存解锁状态失败")
 		return false
-	file.store_string(JSON.stringify(data, "\t"))
-	file.close()
-	print("[SaveManager] 解锁状态已保存: %s" % file_path)
+	print("[SaveManager] 解锁状态已保存")
 
-	# 同时更新旧版 player_data.json 以保持向后兼容
+	## 同时更新 player_data 以保持向后兼容
 	_update_legacy_player_data(unlocked_heroes, unlocked_partners)
 	return true
 
-func load_unlock_state(user_id: String = current_user_id) -> Dictionary:
-	var file_path: String = "user://%s_meta_progression.json" % user_id
-	if not FileAccess.file_exists(file_path):
-		# 尝试从旧版 player_data.json 迁移
-		return _migrate_unlock_state_from_legacy(user_id)
-	var file := FileAccess.open(file_path, FileAccess.READ)
-	var json := JSON.new()
-	var result := json.parse(file.get_as_text())
-	file.close()
-	if result == OK:
-		var data: Dictionary = json.get_data()
-		if data.get("user_id", "") == user_id:
-			return data
-	return _migrate_unlock_state_from_legacy(user_id)
+func load_unlock_state(_user_id: String = current_user_id) -> Dictionary:
+	var data: Dictionary = _load_dict(UNLOCK_STATE_FILE)
+	if data.is_empty():
+		## 尝试从旧版迁移
+		return _migrate_unlock_state_from_legacy(_user_id)
+	return data
 
-func _migrate_unlock_state_from_legacy(user_id: String) -> Dictionary:
+func _migrate_unlock_state_from_legacy(_user_id: String) -> Dictionary:
 	var legacy: Dictionary = load_player_data()
 	var unlocked_heroes: Array[int] = []
 	var unlocked_partners: Array[int] = []
 	var unlocked_skins: Array[int] = []
 
-	# 迁移英雄解锁（字符串键 → 数字ID）
+	## 迁移英雄解锁（字符串键 → 数字ID）
 	for hero_key in legacy.get("unlocked_heroes", []):
 		if hero_key is String:
 			var cfg: Dictionary = ConfigManager.get_hero_config(hero_key)
@@ -561,31 +543,31 @@ func _migrate_unlock_state_from_legacy(user_id: String) -> Dictionary:
 			if hid > 0 and not hid in unlocked_heroes:
 				unlocked_heroes.append(hid)
 
-	# 迁移伙伴解锁（字符串数字 → 数字ID）
+	## 迁移伙伴解锁（字符串数字 → 数字ID）
 	for partner_str in legacy.get("unlocked_partners", []):
 		var pid: int = int(str(partner_str))
 		if pid > 0 and not pid in unlocked_partners:
 			unlocked_partners.append(pid)
 
-	# 如果 legacy 中没有任何解锁数据，设置默认
+	## 如果 legacy 中没有任何解锁数据，设置默认
 	if unlocked_heroes.is_empty():
-		unlocked_heroes.append(1)  # 默认解锁勇者
+		unlocked_heroes.append(1)  ## 默认解锁勇者
 
 	var result: Dictionary = {
-		"user_id": user_id,
+		"user_id": _user_id,
 		"unlocked_heroes": unlocked_heroes,
 		"unlocked_partners": unlocked_partners,
 		"unlocked_skins": unlocked_skins,
 		"last_save": 0
 	}
-	# 保存迁移后的数据
-	save_unlock_state(unlocked_heroes, unlocked_partners, unlocked_skins, user_id)
+	## 保存迁移后的数据
+	save_unlock_state(unlocked_heroes, unlocked_partners, unlocked_skins, _user_id)
 	return result
 
 func _update_legacy_player_data(unlocked_heroes: Array[int], unlocked_partners: Array[int]) -> void:
 	var data: Dictionary = load_player_data()
 
-	# 数字ID → 字符串键
+	## 数字ID → 字符串键
 	var hero_keys: Array = []
 	for hid in unlocked_heroes:
 		var key: String = ConfigManager.get_hero_id_by_config_id(hid)
@@ -593,7 +575,7 @@ func _update_legacy_player_data(unlocked_heroes: Array[int], unlocked_partners: 
 			hero_keys.append(key)
 	data["unlocked_heroes"] = hero_keys
 
-	# 数字ID → 字符串
+	## 数字ID → 字符串
 	var partner_strs: Array = []
 	for pid in unlocked_partners:
 		var s: String = str(pid)
@@ -605,16 +587,9 @@ func _update_legacy_player_data(unlocked_heroes: Array[int], unlocked_partners: 
 
 # --- 每日计数器 ---
 func get_daily_counter(key: String) -> int:
-	var file_path: String = "user://%s_daily_counters.json" % current_user_id
-	if not FileAccess.file_exists(file_path):
+	var data: Dictionary = _load_dict(DAILY_COUNTERS_FILE)
+	if data.is_empty():
 		return 0
-	var file := FileAccess.open(file_path, FileAccess.READ)
-	var json := JSON.new()
-	var result := json.parse(file.get_as_text())
-	file.close()
-	if result != OK:
-		return 0
-	var data: Dictionary = json.get_data()
 	var today: String = Time.get_date_string_from_system()
 	var entry: Dictionary = data.get(key, {})
 	if entry.get("date", "") != today:
@@ -622,26 +597,14 @@ func get_daily_counter(key: String) -> int:
 	return int(entry.get("count", 0))
 
 func increment_daily_counter(key: String) -> void:
-	var file_path: String = "user://%s_daily_counters.json" % current_user_id
-	var data: Dictionary = {}
-	if FileAccess.file_exists(file_path):
-		var file := FileAccess.open(file_path, FileAccess.READ)
-		var json := JSON.new()
-		if json.parse(file.get_as_text()) == OK:
-			data = json.get_data()
-		file.close()
-
+	var data: Dictionary = _load_dict(DAILY_COUNTERS_FILE)
 	var today: String = Time.get_date_string_from_system()
 	var entry: Dictionary = data.get(key, {})
 	if entry.get("date", "") != today:
 		entry = {"date": today, "count": 0}
 	entry["count"] = int(entry.get("count", 0)) + 1
 	data[key] = entry
-
-	var file := FileAccess.open(file_path, FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify(data, "\t"))
-		file.close()
+	_save_dict(DAILY_COUNTERS_FILE, data)
 
 # 预留：服务器同步接口
 func sync_mocheng_coin_to_server(user_id: String, amount: int) -> void:
@@ -653,20 +616,62 @@ func sync_unlock_state_to_server(user_id: String, state: Dictionary) -> void:
 
 # --- 设置持久化 ---
 func save_settings(settings: Dictionary) -> void:
-	var file_path: String = "user://%s_settings.json" % current_user_id
-	var file := FileAccess.open(file_path, FileAccess.WRITE)
-	if file != null:
-		file.store_string(JSON.stringify(settings, "\t"))
-		file.close()
+	_save_dict(SETTINGS_FILE, settings)
 
 func load_settings() -> Dictionary:
-	var file_path: String = "user://%s_settings.json" % current_user_id
-	if not FileAccess.file_exists(file_path):
-		return {}
-	var file := FileAccess.open(file_path, FileAccess.READ)
-	var json := JSON.new()
-	var result := json.parse(file.get_as_text())
-	file.close()
-	if result == OK:
-		return json.get_data()
-	return {}
+	var data: Dictionary = _load_dict(SETTINGS_FILE)
+	if data.is_empty():
+		## 尝试从旧版迁移
+		var legacy_path: String = "user://%s_settings.json" % current_user_id
+		if FileAccess.file_exists(legacy_path):
+			var file := FileAccess.open(legacy_path, FileAccess.READ)
+			var json := JSON.new()
+			if json.parse(file.get_as_text()) == OK:
+				data = json.get_data()
+				_save_dict(SETTINGS_FILE, data)
+				DirAccess.remove_absolute(legacy_path)
+				print("[SaveManager] 设置已从旧版迁移")
+			file.close()
+	return data
+
+
+func _migrate_old_saves() -> bool:
+	## 启动时检查并迁移旧版明文存档到新版加密格式
+	var migrated := false
+	var old_files: Array[Dictionary] = [
+		{"old": ConfigManager.SAVE_DIR + "%s_save_001.json" % current_user_id, "new": RUN_FILE},
+		{"old": ConfigManager.SAVE_DIR + "save_001.json", "new": RUN_FILE},
+		{"old": ConfigManager.SAVE_DIR + "player_data.json", "new": PLAYER_FILE},
+		{"old": ConfigManager.SAVE_DIR + "%s_player_data.json" % current_user_id, "new": PLAYER_FILE},
+		{"old": ConfigManager.SAVE_DIR + "archive.json", "new": ARCHIVES_FILE},
+		{"old": ConfigManager.SAVE_DIR + "%s_archive.json" % current_user_id, "new": ARCHIVES_FILE},
+		{"old": "user://%s_settings.json" % current_user_id, "new": SETTINGS_FILE},
+		{"old": "user://%s_mocheng_coin.json" % current_user_id, "new": MochengCoin_FILE},
+		{"old": "user://%s_meta_progression.json" % current_user_id, "new": UNLOCK_STATE_FILE},
+		{"old": "user://%s_daily_counters.json" % current_user_id, "new": DAILY_COUNTERS_FILE},
+		{"old": ConfigManager.get_archive_file_path(current_user_id), "new": ARCHIVES_FILE},
+	]
+	
+	for mapping in old_files:
+		var old_path: String = mapping["old"]
+		var new_name: String = mapping["new"]
+		if FileAccess.file_exists(old_path):
+			## 如果新文件已存在，跳过（避免覆盖）
+			if FileAccess.file_exists(ConfigManager.SAVE_DIR + new_name):
+				continue
+			## 某些旧文件在 user:// 根目录，需要确保 saves 目录存在
+			_ensure_save_dir()
+			var file := FileAccess.open(old_path, FileAccess.READ)
+			if file == null:
+				continue
+			var json := JSON.new()
+			if json.parse(file.get_as_text()) == OK:
+				var data: Dictionary = json.get_data()
+				if data is Dictionary:
+					_save_dict(new_name, data)
+					DirAccess.remove_absolute(old_path)
+					print("[SaveManager] 旧存档已迁移: %s -> %s" % [old_path.get_file(), new_name])
+					migrated = true
+			file.close()
+	
+	return migrated

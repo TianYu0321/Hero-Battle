@@ -2,7 +2,7 @@
 ## 模块: DamageCalculator
 ## 职责: 伤害计算管道，从属性系数到最终扣血的全流程
 ## 依赖: ConfigManager
-## 被依赖: BattleEngine, SkillManager, PartnerAssist, ChainTrigger, EnemyAI
+## 被依赖: BattleEngine, SkillManager, PartnerAssist, EnemyAI
 ## class_name: DamageCalculator
 
 class_name DamageCalculator

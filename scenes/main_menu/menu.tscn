@@ -3,25 +3,8 @@
 [ext_resource type="Script" uid="uid://imvrvpyuknvu" path="res://scenes/main_menu/menu.gd" id="1_menu"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
 [ext_resource type="PackedScene" path="res://scenes/leaderboard/leaderboard_panel.tscn" id="3_lbp"]
-[ext_resource type="Texture2D" uid="uid://5capyn311p6p" path="res://assets/backgrounds/pve/menu/开始冒险.png" id="3_w813m"]
-[ext_resource type="Texture2D" uid="uid://ufawm2h2bjau" path="res://assets/backgrounds/pve/menu/开始冒险2.png" id="4_7p0au"]
 [ext_resource type="PackedScene" path="res://scenes/shop/shop_popup.tscn" id="4_sp"]
-[ext_resource type="Script" uid="uid://cwptyjdpr73xj" path="res://scripts/ui/menu_button.gd" id="5_2qi6g"]
 [ext_resource type="Texture2D" uid="uid://drvi8bqsveu54" path="res://nanobanana-output/Gemini_Generated_Image_5s4acn5s4acn5s4a.png" id="5_bg"]
-[ext_resource type="Texture2D" uid="uid://dis1outfgbe7j" path="res://assets/backgrounds/pve/menu/继续冒险.png" id="6_x7peq"]
-[ext_resource type="Texture2D" uid="uid://cgw6crux5gj7" path="res://assets/backgrounds/pve/menu/继续冒险2.png" id="7_wq8mn"]
-[ext_resource type="Texture2D" uid="uid://bb6otgktyyu7m" path="res://assets/backgrounds/pve/menu/系统设置.png" id="8_7qupa"]
-[ext_resource type="Texture2D" uid="uid://ck163y7ol5gh0" path="res://assets/backgrounds/pve/menu/系统设置2.png" id="9_jsoai"]
-[ext_resource type="Texture2D" uid="uid://bqu0ex61xsott" path="res://assets/backgrounds/pve/menu/退出游戏.png" id="10_r2e6p"]
-[ext_resource type="Texture2D" uid="uid://cjc5y8wb7ywi2" path="res://assets/backgrounds/pve/menu/退出游戏2.png" id="11_w584y"]
-[ext_resource type="Texture2D" uid="uid://dj6vc5mptdha" path="res://assets/backgrounds/pve/menu/存档.png" id="14_w584y"]
-[ext_resource type="Texture2D" uid="uid://dkq4mdhglbxln" path="res://assets/backgrounds/pve/menu/存档2.png" id="15_a4ftc"]
-[ext_resource type="Texture2D" uid="uid://6t6f1c5iitr5" path="res://assets/backgrounds/pve/menu/PVP对战.png" id="16_vb2cq"]
-[ext_resource type="Texture2D" uid="uid://bdij6mb070q1p" path="res://assets/backgrounds/pve/menu/PVP对战2.png" id="17_4k2lj"]
-[ext_resource type="Texture2D" uid="uid://bu45bcsp2rly8" path="res://assets/backgrounds/pve/menu/商店.png" id="18_pxbmk"]
-[ext_resource type="Texture2D" uid="uid://uym8hv2fgdmj" path="res://assets/backgrounds/pve/menu/商店2.png" id="19_rour1"]
-[ext_resource type="Texture2D" uid="uid://bng0vyp28kqfc" path="res://assets/backgrounds/pve/menu/排行榜.png" id="20_31is5"]
-[ext_resource type="Texture2D" uid="uid://m8u3uat5cktu" path="res://assets/backgrounds/pve/menu/排行榜2.png" id="21_rjhw6"]
 
 [node name="MainMenu" type="Control" unique_id=1795506737]
 layout_mode = 3
@@ -33,7 +16,17 @@ grow_vertical = 2
 script = ExtResource("1_menu")
 
 [node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=89529031]
+
+[node name="ColorRect" type="ColorRect" parent="BackgroundLayer" unique_id=89529032]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.96, 0.97, 0.99, 1)
+
 [node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer" unique_id=696752317]
+modulate = Color(0.88, 0.92, 0.98, 0.4)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -42,7 +35,9 @@ grow_vertical = 2
 texture = ExtResource("5_bg")
 expand_mode = 1
 stretch_mode = 5
+
 [node name="AmbientParticles" type="Node2D" parent="BackgroundLayer" unique_id=696752318]
+
 [node name="CharacterLayer" type="CanvasLayer" parent="." unique_id=1760655318]
 
 [node name="UILayer" type="CanvasLayer" parent="." unique_id=277755031]
@@ -62,7 +57,7 @@ theme_override_colors/font_color = Color(0.101961, 0.101961, 0.101961, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.1)
 theme_override_constants/shadow_offset_x = 0
 theme_override_constants/shadow_offset_y = 3
-theme_override_font_sizes/font_size = 72
+theme_override_font_sizes/font_size = 56
 text = "英雄大战 Hero Battle"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -230,5 +225,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="TransitionOverlay" type="ColorRect" parent="." unique_id=999999001]
+visible = false
+z_index = 100
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.96, 0.95, 0.92, 0)
 
 [node name="PauseMenu" parent="." unique_id=128202323 instance=ExtResource("2_pause")]

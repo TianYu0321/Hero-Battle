@@ -20,8 +20,12 @@ var _settings_panel: Control = null
 @onready var _character_layer: CanvasLayer = $CharacterLayer
 @onready var _title_label: Label = $UILayer/TitleLabel
 @onready var _ambient_particles: Node2D = $BackgroundLayer/AmbientParticles
+@onready var _menu_buttons_container: VBoxContainer = $UILayer/MenuButtons
+@onready var _icon_bar: HBoxContainer = $UILayer/IconBar
+@onready var _transition_overlay: ColorRect = $TransitionOverlay
 
 var _menu_buttons: Array[BaseButton] = []
+var _sub_menu: Control = null
 
 @onready var menu_theme: Theme = preload("res://resources/themes/menu_theme.tres")
 
@@ -37,6 +41,14 @@ const BUTTON_TEXTS := {
 }
 
 func _ready() -> void:
+	# 加载可爱字体
+	var font_cn: FontFile = load("res://assets/fonts/cute/ZCOOLKuaiLe-Regular.ttf")
+	var font_en: FontFile = load("res://assets/fonts/cute/FredokaOne-Regular.ttf")
+	if font_cn == null:
+		push_error("[MainMenu] 中文字体加载失败")
+	if font_en == null:
+		push_error("[MainMenu] 英文字体加载失败")
+	
 	print("[MainMenu] _ready 开始, continue_button=", _btn_continue != null)
 	
 	# 动态创建设置面板（添加到 UILayer 避免被背景遮挡）
@@ -69,9 +81,6 @@ func _ready() -> void:
 		_menu_buttons.erase(_btn_continue)
 		_btn_continue = null
 	print("[MainMenu] 继续游戏按钮显隐: ", is_valid)
-
-	# 标题入场动画
-	_animate_title_entrance()
 
 	# 统一设置样式 + 信号
 	for btn in _menu_buttons:
@@ -133,22 +142,34 @@ func _ready() -> void:
 	_connect_with_bounce(_btn_continue, _on_continue_pressed)
 	_connect_with_bounce(_btn_quit, _on_quit_pressed)
 	
-	# 调试：确认所有按钮状态
-	for btn in _menu_buttons:
-		if is_instance_valid(btn):
-			var btn_label = btn.get("text") if btn.get("text") != null else btn.name
-			print("[MainMenu] 按钮 '%s': visible=%s global_pos=%s size=%s modulate=%s" % [btn_label, btn.visible, btn.global_position, btn.size, btn.modulate])
-		else:
-			push_warning("[MainMenu] 按钮为 null 或无效实例")
+	# 入场动画
+	_play_entrance_animation()
 	
 	# 氛围粒子
 	_start_ambient_particles()
+	
+	# 下雨效果 + 镜头呼吸
+	_start_rain()
+	_start_camera_breath()
+	
+	# 应用可爱字体
+	_apply_fonts_recursive(self, font_cn)
+	print("[MainMenu] 字体已应用: cn=", font_cn != null, " en=", font_en != null)
 	
 	EventBus.save_loaded.connect(_on_save_loaded)
 	EventBus.load_failed.connect(_on_load_failed)
 
 
-# ========== 按钮样式（明亮纸片剧场）==========
+func _apply_fonts_recursive(node: Node, font: FontFile) -> void:
+	if font == null:
+		return
+	for child in node.get_children():
+		if child is Label or child is BaseButton:
+			child.add_theme_font_override("font", font)
+		if child.get_child_count() > 0:
+			_apply_fonts_recursive(child, font)
+
+# ========== 按钮样式（明亮卡片风格）==========
 
 func _setup_button_style(button: BaseButton) -> void:
 	if button == null or not is_instance_valid(button):
@@ -217,34 +238,80 @@ func _connect_with_bounce(button: BaseButton, callback: Callable) -> void:
 func _on_button_pressed_with_bounce(button: BaseButton, callback: Callable) -> void:
 	AudioManager.play_ui("confirm")
 	
-	## 弹性点击动画：快速缩小 → 弹性回位
+	## 弹性点击动画：快速缩小 → 弹性回位（Fire and Forget，不阻塞交互）
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(button, "scale", Vector2(0.96, 0.96), 0.05)
+	tween.tween_property(button, "scale", Vector2(0.95, 0.95), 0.05)
 	tween.tween_property(button, "scale", Vector2.ONE, 0.15)
 	
-	await tween.finished
+	## 立即执行回调，不等动画完成
 	callback.call()
 
 
-# ========== 标题动画（入场效果）==========
+# ========== 入场动画（参考高分项目）==========
 
-func _animate_title_entrance() -> void:
-	## 初始状态：标题在上方 30px 外，透明度 0
-	_title_label.modulate.a = 0.0
-	var target_y := _title_label.position.y
-	_title_label.position.y = target_y - 30
+func _play_entrance_animation() -> void:
+	## 参与入场的UI元素
+	var elements: Array[Control] = [_title_label, _menu_buttons_container, _icon_bar]
+	for el in elements:
+		if el == null:
+			continue
+		el.modulate.a = 0.0
+		el.position.y += 30
 	
-	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_title_label, "modulate:a", 1.0, 0.6)
-	tween.parallel().tween_property(_title_label, "position:y", target_y, 0.6)
+	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	for i in range(elements.size()):
+		if elements[i] == null:
+			continue
+		var delay := i * 0.12
+		tween.tween_property(elements[i], "modulate:a", 1.0, 0.4).set_delay(delay)
+		tween.parallel().tween_property(elements[i], "position:y", elements[i].position.y - 30, 0.45).set_delay(delay)
 
 
-# ========== 氛围粒子 — 樱花/彩纸飘落 ==========
+# ========== 面板样式（参考高分项目）==========
+
+func _create_panel_style() -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(1, 1, 1, 0.95)
+	s.border_color = Color(0.9, 0.9, 0.9, 1)
+	s.border_width_left = 1
+	s.border_width_top = 1
+	s.border_width_right = 1
+	s.border_width_bottom = 1
+	s.corner_radius_top_left = 12
+	s.corner_radius_top_right = 12
+	s.corner_radius_bottom_left = 12
+	s.corner_radius_bottom_right = 12
+	s.shadow_color = Color(0, 0, 0, 0.12)
+	s.shadow_size = 15
+	s.shadow_offset = Vector2(0, 8)
+	return s
+
+
+# ========== 子菜单系统（参考 Maaack 封装）==========
+
+func open_sub_menu(scene: PackedScene) -> void:
+	if _sub_menu != null:
+		_sub_menu.queue_free()
+	_sub_menu = scene.instantiate()
+	add_child(_sub_menu)
+	$UILayer.hide()
+	_sub_menu.tree_exiting.connect(close_sub_menu, CONNECT_ONE_SHOT)
+
+
+func close_sub_menu() -> void:
+	if _sub_menu == null:
+		return
+	_sub_menu.queue_free()
+	_sub_menu = null
+	$UILayer.show()
+
+
+# ========== 氛围粒子 — 樱花/尘埃 ==========
 
 func _start_ambient_particles() -> void:
 	var particles := GPUParticles2D.new()
 	particles.name = "SakuraParticles"
-	particles.position = Vector2(960, -50)  ## 1920x1080 顶部中央
+	particles.position = Vector2(960, -50)
 	particles.amount = 80
 	particles.lifetime = 8.0
 	particles.preprocess = 5.0
@@ -257,16 +324,15 @@ func _start_ambient_particles() -> void:
 	mat.spread = 20.0
 	mat.initial_velocity_min = 30.0
 	mat.initial_velocity_max = 80.0
-	mat.gravity = Vector3(0, 20, 0)  ## 缓慢下落
+	mat.gravity = Vector3(0, 20, 0)
 	mat.scale_min = 0.5
 	mat.scale_max = 1.5
 	mat.angle_min = -180.0
-	mat.angle_max = 180.0  ## 旋转飘落
+	mat.angle_max = 180.0
 	mat.angular_velocity_min = -30.0
 	mat.angular_velocity_max = 30.0
-	mat.color = Color(1.0, 0.72, 0.77, 0.6)  ## 樱花粉
+	mat.color = Color(1.0, 0.72, 0.77, 0.4)  ## 樱花粉，降低透明度适配明亮背景
 	
-	## 花瓣纹理：用程序生成的小椭圆
 	var petal_texture := GradientTexture2D.new()
 	petal_texture.gradient = Gradient.new()
 	petal_texture.gradient.colors = [Color(1, 0.8, 0.85, 0.7), Color(1, 0.7, 0.75, 0)]
@@ -279,7 +345,7 @@ func _start_ambient_particles() -> void:
 	particles.process_material = mat
 	_ambient_particles.add_child(particles)
 	
-	## 可选：第二层白色光点（更稀疏，营造竞技场灯光尘埃感）
+	## 第二层白色光点（更稀疏，营造竞技场灯光尘埃感）
 	var dust := GPUParticles2D.new()
 	dust.name = "DustParticles"
 	dust.position = Vector2(960, 0)
@@ -298,7 +364,7 @@ func _start_ambient_particles() -> void:
 	dust_mat.gravity = Vector3(0, 10, 0)
 	dust_mat.scale_min = 0.3
 	dust_mat.scale_max = 0.8
-	dust_mat.color = Color(1.0, 0.95, 0.85, 0.3)  ## 暖白尘埃
+	dust_mat.color = Color(1.0, 0.95, 0.85, 0.25)  ## 暖白尘埃
 	
 	var dust_texture := GradientTexture2D.new()
 	dust_texture.gradient = Gradient.new()
@@ -315,6 +381,14 @@ func _start_ambient_particles() -> void:
 
 func _on_new_game_pressed() -> void:
 	print("[MainMenu] 【点击】开始新局")
+	
+	# 淡米白遮罩过渡（Fire and Forget，不阻塞信号发射）
+	_transition_overlay.visible = true
+	_transition_overlay.modulate.a = 0.0
+	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.tween_property(_transition_overlay, "modulate:a", 1.0, 0.4)
+	
+	# 立即发射信号，由 GameManager 统一处理场景切换
 	EventBus.new_game_requested.emit("")
 
 func _on_continue_pressed() -> void:
@@ -437,3 +511,86 @@ func _show_panel(panel: Control) -> void:
 	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "scale", Vector2.ONE, 0.2)
 	tween.parallel().tween_property(panel, "modulate:a", 1.0, 0.2)
+
+
+func _start_rain() -> void:
+	## 动态创建雨滴父节点
+	var rain_parent := Node2D.new()
+	rain_parent.name = "RainParent"
+	$BackgroundLayer.add_child(rain_parent)
+	
+	## 第一层：近景大雨滴
+	var rain_near := GPUParticles2D.new()
+	rain_near.name = "RainNear"
+	rain_near.position = Vector2(960, -100)
+	rain_near.amount = 300
+	rain_near.lifetime = 1.2
+	rain_near.preprocess = 2.0
+	rain_near.visibility_rect = Rect2(-200, -200, 2240, 1480)
+	
+	var mat_near := ParticleProcessMaterial.new()
+	mat_near.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	mat_near.emission_box_extents = Vector3(1200, 10, 1)
+	mat_near.direction = Vector3(0.15, 1, 0)
+	mat_near.spread = 2.0
+	mat_near.initial_velocity_min = 500.0
+	mat_near.initial_velocity_max = 700.0
+	mat_near.gravity = Vector3(0, 800, 0)
+	mat_near.scale_min = 1.0
+	mat_near.scale_max = 2.0
+	mat_near.color = Color(0.55, 0.65, 0.75, 0.35)
+	rain_near.process_material = mat_near
+	
+	var drop_texture_near := GradientTexture2D.new()
+	drop_texture_near.gradient = Gradient.new()
+	drop_texture_near.gradient.colors = [Color(1,1,1,0.6), Color(1,1,1,0)]
+	drop_texture_near.width = 2
+	drop_texture_near.height = 24
+	drop_texture_near.fill_from = Vector2(0.5, 0)
+	drop_texture_near.fill_to = Vector2(0.5, 1)
+	rain_near.texture = drop_texture_near
+	
+	rain_parent.add_child(rain_near)
+	
+	## 第二层：远景小雨滴（更淡更细）
+	var rain_far := GPUParticles2D.new()
+	rain_far.name = "RainFar"
+	rain_far.position = Vector2(960, -50)
+	rain_far.amount = 400
+	rain_far.lifetime = 2.0
+	rain_far.preprocess = 3.0
+	rain_far.visibility_rect = Rect2(-200, -200, 2240, 1480)
+	
+	var mat_far := ParticleProcessMaterial.new()
+	mat_far.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	mat_far.emission_box_extents = Vector3(1400, 10, 1)
+	mat_far.direction = Vector3(0.1, 1, 0)
+	mat_far.spread = 5.0
+	mat_far.initial_velocity_min = 300.0
+	mat_far.initial_velocity_max = 450.0
+	mat_far.gravity = Vector3(0, 500, 0)
+	mat_far.scale_min = 0.5
+	mat_far.scale_max = 1.0
+	mat_far.color = Color(0.45, 0.50, 0.60, 0.15)
+	rain_far.process_material = mat_far
+	
+	var drop_texture_far := GradientTexture2D.new()
+	drop_texture_far.gradient = Gradient.new()
+	drop_texture_far.gradient.colors = [Color(1,1,1,0.3), Color(1,1,1,0)]
+	drop_texture_far.width = 1
+	drop_texture_far.height = 16
+	drop_texture_far.fill_from = Vector2(0.5, 0)
+	drop_texture_far.fill_to = Vector2(0.5, 1)
+	rain_far.texture = drop_texture_far
+	
+	rain_parent.add_child(rain_far)
+
+
+func _start_camera_breath() -> void:
+	## 背景轻微缩放呼吸（6秒周期）
+	if _bg_texture == null:
+		return
+	_bg_texture.pivot_offset = Vector2(960, 540)
+	var tween := create_tween().set_loops()
+	tween.tween_property(_bg_texture, "scale", Vector2(1.02, 1.02), 6.0)
+	tween.tween_property(_bg_texture, "scale", Vector2(1.0, 1.0), 6.0)

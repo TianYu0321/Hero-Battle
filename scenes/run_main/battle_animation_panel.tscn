@@ -1,8 +1,21 @@
 [gd_scene format=3 uid="uid://c5c25kbikw2a"]
 
 [ext_resource type="Script" uid="uid://biocnv2v3sp7t" path="res://scenes/run_main/battle_animation_panel.gd" id="1_bap"]
+[ext_resource type="Script" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="2_usl5v"]
+[ext_resource type="Script" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="3_8m336"]
+[ext_resource type="Script" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="4_gem3g"]
+[ext_resource type="Script" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_noise_emitter_2d.gd" id="5_4b1pp"]
 
 [sub_resource type="Theme" id="Theme_x4ly3"]
+
+[sub_resource type="Resource" id="Resource_cnwus"]
+script = ExtResource("4_gem3g")
+
+[sub_resource type="Resource" id="Resource_u1iox"]
+script = ExtResource("4_gem3g")
+
+[sub_resource type="Resource" id="Resource_xy1f0"]
+script = ExtResource("4_gem3g")
 
 [node name="BattleAnimationPanel" type="Control" unique_id=921046957]
 layout_mode = 3
@@ -30,34 +43,34 @@ anchor_right = 1.0
 offset_bottom = 240.0
 grow_horizontal = 2
 
-[node name="HeroCard" type="Control" parent="HudContainer" unique_id=1587200478]
+[node name="HeroInfoPanel" type="Control" parent="HudContainer" unique_id=1587200478]
 anchors_preset = 0
 offset_left = 45.0
 offset_top = 22.5
 offset_right = 525.0
 offset_bottom = 217.5
 
-[node name="NameLabel" type="Label" parent="HudContainer/HeroCard" unique_id=1272777026]
+[node name="NameLabel" type="Label" parent="HudContainer/HeroInfoPanel" unique_id=1272777026]
 layout_mode = 0
-offset_left = 172.5
+offset_left = 15.0
 offset_top = 12.0
-offset_right = 465.0
+offset_right = 307.5
 offset_bottom = 54.0
 text = "英雄"
 
-[node name="HpBar" type="ProgressBar" parent="HudContainer/HeroCard" unique_id=2035740620]
+[node name="HpBar" type="ProgressBar" parent="HudContainer/HeroInfoPanel" unique_id=2035740620]
 layout_mode = 0
-offset_left = 172.5
+offset_left = 15.0
 offset_top = 67.5
-offset_right = 465.0
+offset_right = 307.5
 offset_bottom = 102.0
 value = 100.0
 
-[node name="HpMeta" type="Label" parent="HudContainer/HeroCard" unique_id=2142487398]
+[node name="HpMeta" type="Label" parent="HudContainer/HeroInfoPanel" unique_id=2142487398]
 layout_mode = 0
-offset_left = 172.5
+offset_left = 15.0
 offset_top = 108.0
-offset_right = 465.0
+offset_right = 307.5
 offset_bottom = 144.0
 text = "100 / 100"
 
@@ -86,30 +99,33 @@ horizontal_alignment = 1
 
 [node name="EnemyCard" type="Control" parent="HudContainer" unique_id=717432503]
 anchors_preset = 0
-offset_left = 1290.0
+offset_left = 1395.0
 offset_top = 22.5
-offset_right = 1770.0
+offset_right = 1875.0
 offset_bottom = 217.5
 
 [node name="NameLabel" type="Label" parent="HudContainer/EnemyCard" unique_id=1470198696]
 layout_mode = 0
+offset_left = 172.5
 offset_top = 12.0
-offset_right = 307.5
+offset_right = 465.0
 offset_bottom = 54.0
 text = "敌人"
 horizontal_alignment = 2
 
 [node name="HpBar" type="ProgressBar" parent="HudContainer/EnemyCard" unique_id=2078358758]
 layout_mode = 0
+offset_left = 172.5
 offset_top = 67.5
-offset_right = 307.5
+offset_right = 465.0
 offset_bottom = 102.0
 value = 100.0
 
 [node name="HpMeta" type="Label" parent="HudContainer/EnemyCard" unique_id=1671927945]
 layout_mode = 0
+offset_left = 172.5
 offset_top = 108.0
-offset_right = 307.5
+offset_right = 465.0
 offset_bottom = 144.0
 text = "100 / 100"
 horizontal_alignment = 2
@@ -125,63 +141,53 @@ offset_bottom = 240.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HeroCard" type="Control" parent="StageArea"]
-layout_mode = 0
-offset_left = 120.0
+[node name="HeroCard" type="Control" parent="StageArea" unique_id=428813629]
+anchors_preset = 0
+offset_left = 270.0
 offset_top = 60.0
-offset_right = 420.0
+offset_right = 570.0
 offset_bottom = 360.0
 
-[node name="CardBorder" type="ColorRect" parent="StageArea/HeroCard"]
-layout_mode = 0
-offset_right = 300.0
-offset_bottom = 300.0
-color = Color(0.1, 0.1, 0.12, 1.0)
-
-[node name="Shadow" type="Polygon2D" parent="StageArea/HeroCard"]
+[node name="Shadow" type="Polygon2D" parent="StageArea/HeroCard" unique_id=2072630101]
 position = Vector2(150, 240)
 color = Color(0, 0, 0, 0.25)
 polygon = PackedVector2Array(-50, 0, -35, 8, 0, 10, 35, 8, 50, 0, 35, -3, 0, -5, -35, -3)
 
-[node name="Portrait" type="Sprite2D" parent="StageArea/HeroCard"]
+[node name="Portrait" type="Sprite2D" parent="StageArea/HeroCard" unique_id=272356001]
 position = Vector2(150, 150)
-centered = true
 
-[node name="GlowOverlay" type="ColorRect" parent="StageArea/HeroCard/Portrait"]
-layout_mode = 0
+[node name="GlowOverlay" type="ColorRect" parent="StageArea/HeroCard/Portrait" unique_id=1176109522]
 offset_right = 280.0
 offset_bottom = 280.0
 color = Color(1, 1, 1, 0)
 
-[node name="EnemyCard" type="Control" parent="StageArea"]
-layout_mode = 0
-offset_left = 1500.0
+[node name="EffectSprite" type="AnimatedSprite2D" parent="StageArea/HeroCard/Portrait" unique_id=1346407832]
+visible = false
+
+[node name="EnemyCard" type="Control" parent="StageArea" unique_id=1336726428]
+anchors_preset = 0
+offset_left = 1350.0
 offset_top = 60.0
-offset_right = 1800.0
+offset_right = 1650.0
 offset_bottom = 360.0
 
-[node name="CardBorder" type="ColorRect" parent="StageArea/EnemyCard"]
-layout_mode = 0
-offset_right = 300.0
-offset_bottom = 300.0
-color = Color(0.1, 0.1, 0.12, 1.0)
-
-[node name="Shadow" type="Polygon2D" parent="StageArea/EnemyCard"]
+[node name="Shadow" type="Polygon2D" parent="StageArea/EnemyCard" unique_id=3717145]
 position = Vector2(150, 240)
 color = Color(0, 0, 0, 0.25)
 polygon = PackedVector2Array(-50, 0, -35, 8, 0, 10, 35, 8, 50, 0, 35, -3, 0, -5, -35, -3)
 
-[node name="Portrait" type="Sprite2D" parent="StageArea/EnemyCard"]
+[node name="Portrait" type="Sprite2D" parent="StageArea/EnemyCard" unique_id=454507402]
 position = Vector2(150, 150)
-centered = true
 
-[node name="GlowOverlay" type="ColorRect" parent="StageArea/EnemyCard/Portrait"]
-layout_mode = 0
+[node name="GlowOverlay" type="ColorRect" parent="StageArea/EnemyCard/Portrait" unique_id=1422086360]
 offset_right = 280.0
 offset_bottom = 280.0
 color = Color(1, 1, 1, 0)
 
-[node name="PartnerAnimContainer" type="Node2D" parent="StageArea"]
+[node name="EffectSprite" type="AnimatedSprite2D" parent="StageArea/EnemyCard/Portrait" unique_id=657816028]
+visible = false
+
+[node name="PartnerAnimContainer" type="Node2D" parent="StageArea" unique_id=981822896]
 
 [node name="StageName" type="Label" parent="StageArea" unique_id=53564804]
 layout_mode = 0
@@ -234,129 +240,126 @@ one_shot = true
 process_callback = 0
 one_shot = true
 
-[node name="PartnerChainLayer" type="CanvasLayer" parent="."]
+[node name="PartnerChainLayer" type="CanvasLayer" parent="." unique_id=1476643865]
 layer = 4
 
-[node name="PartnerChainList" type="VBoxContainer" parent="PartnerChainLayer"]
+[node name="PartnerChainList" type="VBoxContainer" parent="PartnerChainLayer" unique_id=333446346]
 offset_left = 30.0
 offset_top = 300.0
 offset_right = 230.0
 offset_bottom = 500.0
 theme_override_constants/separation = 8
 
-[node name="ChainSlot_0" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList"]
-layout_mode = 2
-offset_right = 200.0
+[node name="ChainSlot_0" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList" unique_id=157569627]
 visible = false
-
-[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0"]
 layout_mode = 2
-offset_right = 48.0
-offset_bottom = 48.0
+
+[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0" unique_id=219645180]
 custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
 expand_mode = 3
 stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0"]
+[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0" unique_id=1611036200]
 layout_mode = 2
-offset_left = 52.0
-offset_right = 120.0
-offset_bottom = 26.0
 text = "???"
 
-[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0"]
+[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_0" unique_id=1120307252]
 layout_mode = 2
-offset_left = 124.0
-offset_right = 200.0
-offset_bottom = 26.0
 text = "x chain 0"
 
-[node name="ChainSlot_1" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList"]
-layout_mode = 2
-offset_top = 52.0
-offset_right = 200.0
+[node name="ChainSlot_1" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList" unique_id=281631901]
 visible = false
-
-[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1"]
 layout_mode = 2
-offset_right = 48.0
-offset_bottom = 48.0
+
+[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1" unique_id=1735030271]
 custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
 expand_mode = 3
 stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1"]
+[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1" unique_id=1675770286]
 layout_mode = 2
-offset_left = 52.0
-offset_right = 120.0
-offset_bottom = 26.0
 text = "???"
 
-[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1"]
+[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_1" unique_id=1973078260]
 layout_mode = 2
-offset_left = 124.0
-offset_right = 200.0
-offset_bottom = 26.0
 text = "x chain 0"
 
-[node name="ChainSlot_2" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList"]
-layout_mode = 2
-offset_top = 104.0
-offset_right = 200.0
+[node name="ChainSlot_2" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList" unique_id=1471405962]
 visible = false
-
-[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2"]
 layout_mode = 2
-offset_right = 48.0
-offset_bottom = 48.0
+
+[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2" unique_id=1061025353]
 custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
 expand_mode = 3
 stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2"]
+[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2" unique_id=1249046367]
 layout_mode = 2
-offset_left = 52.0
-offset_right = 120.0
-offset_bottom = 26.0
 text = "???"
 
-[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2"]
+[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_2" unique_id=1088589249]
 layout_mode = 2
-offset_left = 124.0
-offset_right = 200.0
-offset_bottom = 26.0
 text = "x chain 0"
 
-[node name="ChainSlot_3" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList"]
-layout_mode = 2
-offset_top = 156.0
-offset_right = 200.0
+[node name="ChainSlot_3" type="HBoxContainer" parent="PartnerChainLayer/PartnerChainList" unique_id=921215807]
 visible = false
-
-[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3"]
 layout_mode = 2
-offset_right = 48.0
-offset_bottom = 48.0
+
+[node name="Avatar" type="TextureRect" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3" unique_id=1893656831]
 custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
 expand_mode = 3
 stretch_mode = 5
 
-[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3"]
+[node name="NameLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3" unique_id=1330088807]
 layout_mode = 2
-offset_left = 52.0
-offset_right = 120.0
-offset_bottom = 26.0
 text = "???"
 
-[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3"]
+[node name="ChainLabel" type="Label" parent="PartnerChainLayer/PartnerChainList/ChainSlot_3" unique_id=865054523]
 layout_mode = 2
-offset_left = 124.0
-offset_right = 200.0
-offset_bottom = 26.0
 text = "x chain 0"
 
-[node name="SfxLayer" type="CanvasLayer" parent="."]
+[node name="SfxLayer" type="CanvasLayer" parent="." unique_id=1955197505]
 layer = 6
 
-[node name="VFXLayer" type="CanvasLayer" parent="."]
+[node name="VFXLayer" type="CanvasLayer" parent="." unique_id=170250163]
 layer = 5
+
+[node name="BattleCamera" type="Camera2D" parent="." unique_id=794752789]
+
+[node name="PhantomCameraHost" type="Node" parent="BattleCamera" unique_id=670997505]
+script = ExtResource("2_usl5v")
+
+[node name="Pcam_Default" type="Node2D" parent="." unique_id=1376618849]
+position = Vector2(960, 540)
+script = ExtResource("3_8m336")
+priority = 10
+frame_preview = false
+tween_resource = SubResource("Resource_cnwus")
+tween_on_load = false
+
+[node name="Pcam_Hero" type="Node2D" parent="." unique_id=1559281503]
+position = Vector2(270, 510)
+script = ExtResource("3_8m336")
+zoom = Vector2(1.5, 1.5)
+frame_preview = false
+tween_resource = SubResource("Resource_u1iox")
+tween_on_load = false
+
+[node name="Pcam_Enemy" type="Node2D" parent="." unique_id=1439860955]
+position = Vector2(1650, 510)
+script = ExtResource("3_8m336")
+zoom = Vector2(1.5, 1.5)
+frame_preview = false
+tween_resource = SubResource("Resource_xy1f0")
+tween_on_load = false
+
+[node name="NoiseEmitter" type="Node2D" parent="." unique_id=1409084177]
+script = ExtResource("5_4b1pp")
+duration = 0.35
+decay_time = 0.2
+
+[node name="SfxLayer" type="Node2D" parent="."]

@@ -272,6 +272,7 @@ func select_rescue_partner(partner_config_id: int) -> void:
 	if _special_floor_phase == SpecialFloorPhase.RESCUE_SELECT:
 		_special_floor_phase = SpecialFloorPhase.SHOP_BROWSE
 		print("[RunController] 特殊层阶段: SHOP_BROWSE")
+		_save_at_floor_entrance()  ## 救援→商店阶段切换后立即保存，防止SL漏洞
 		var shop_system = get_node_or_null("ShopSystem")
 		var shop_items = []
 		if shop_system != null:
@@ -469,6 +470,10 @@ func _process_node_result(result: Dictionary) -> void:
 		if result.has("enemy_config"):
 			enemy_name = result["enemy_config"].get("name", "敌人")
 			enemy_max_hp = result["enemy_config"].get("max_hp", 100)
+		elif battle_result.has("enemies") and battle_result["enemies"].size() > 0:
+			var battle_enemy: Dictionary = battle_result["enemies"][0]
+			enemy_name = battle_enemy.get("name", "敌人")
+			enemy_max_hp = battle_enemy.get("max_hp", 100)
 		
 		# 补充 battle_result 供 UI 层统一使用
 		# battle_hero.name 已在 spawn_hero 中设为中文名，直接保留
@@ -710,6 +715,9 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 
 
 func _end_run() -> void:
+	# 立即保存结束状态（run_status = 3），确保 has_active_run() 正确识别
+	_save_at_floor_entrance()
+	
 	# 检查是否解锁新英雄
 	_check_hero_unlocks()
 	

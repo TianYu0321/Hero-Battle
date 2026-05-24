@@ -1,7 +1,7 @@
 ## res://scripts/core/battle_engine.gd
 ## 模块: BattleEngine
 ## 职责: 战斗主控，状态机驱动完整20回合自动战斗
-## 依赖: ActionOrder, DamageCalculator, SkillManager, UltimateManager, PartnerAssist, ChainTrigger, EnemyAI, BattleResult
+## 依赖: ActionOrder, DamageCalculator, SkillManager, UltimateManager, PartnerAssist, EnemyAI, BattleResult
 ## 被依赖: NodeResolver, BattleUI
 ## class_name: BattleEngine
 
@@ -16,8 +16,6 @@ enum BattleState {
 	ENEMY_ACTION,
 	HERO_COUNTER,
 	PARTNER_ASSIST,
-	CHAIN_CHECK,
-	CHAIN_RESOLVE,
 	STATUS_TICK,
 	ULTIMATE_CHECK,
 	ROUND_END,
@@ -36,7 +34,6 @@ var _attr_provider: IAttributeProvider = DefaultAttributeProvider.new()
 var _skill_mgr: SkillManager
 var _ultimate_mgr: UltimateManager
 var _partner_assist: PartnerAssist
-var _chain_trigger: ChainTrigger
 var _enemy_ai: EnemyAI
 var _result: BattleResult
 
@@ -63,7 +60,6 @@ func execute_battle(battle_config: Dictionary) -> Dictionary:
 	_skill_mgr = SkillManager.new(_dc, _rng)
 	_ultimate_mgr = UltimateManager.new(_dc, _rng)
 	_partner_assist = PartnerAssist.new(_dc, _rng)
-	_chain_trigger = ChainTrigger.new(_dc, _rng)
 	_enemy_ai = EnemyAI.new(_dc, _rng)
 	_result = BattleResult.new()
 
@@ -189,8 +185,6 @@ func _process_state() -> void:
 			}
 			_state = BattleState.PARTNER_ASSIST
 			_process_partner_assist(assist_ctx)
-			_state = BattleState.CHAIN_CHECK
-			_process_chain_check()
 			_current_action_index += 1
 			_state = _next_action_state()
 
@@ -229,20 +223,11 @@ func _process_state() -> void:
 						"hero_attacked": false,
 					}
 					_process_partner_assist(assist_ctx2)
-					_process_chain_check()
 			_current_action_index += 1
 			_state = _next_action_state()
 
 		BattleState.PARTNER_ASSIST:
 			# 此状态在 HERO_ACTION/HERO_COUNTER 内联处理
-			_state = BattleState.CHAIN_CHECK
-
-		BattleState.CHAIN_CHECK:
-			# 此状态在 HERO_ACTION/HERO_COUNTER 内联处理
-			_state = BattleState.STATUS_TICK
-
-		BattleState.CHAIN_RESOLVE:
-			# 此状态在内联处理
 			_state = BattleState.STATUS_TICK
 
 		BattleState.STATUS_TICK:
@@ -310,31 +295,56 @@ func _next_action_state() -> BattleState:
 func _process_partner_assist(ctx: Dictionary) -> void:
 	var assists: Array = _partner_assist.execute_assist(ctx)
 	var recorder = _battle_config.get("playback_recorder", null)
-	for a in assists:
-		_result.record_partner_assist(a.partner_id)
-		EventBus.partner_assist_triggered.emit(a.partner_id, a.partner_name, "AFTER_HERO_ATTACK", a, 0)
-		_result.add_log(a.log)
+	var assist_count: int = assists.size()
+	_turn_chain_count = assist_count
+	
+	if assist_count > 0:
+		## 更新连锁统计
+		_result.chain_stats.total_chains += assist_count
+		if assist_count > _result.chain_stats.max_chain:
+			_result.chain_stats.max_chain = assist_count
+		
+		var first_assist: Dictionary = assists[0]
+		var total_damage: int = 0
+		for a in assists:
+			if a.get("type", "damage") == "damage":
+				total_damage += a.get("value", 0)
+		
+		## 收集所有触发伙伴的名字
+		var partner_names: Array[String] = []
+		for a in assists:
+			partner_names.append(a.get("partner_name", "???"))
+		
+		## 发射 CHAIN 事件（屏幕显示 CHAIN xN）
+		EventBus.chain_triggered.emit(
+			assist_count,
+			first_assist.get("partner_id", ""),
+			first_assist.get("partner_name", ""),
+			total_damage,
+			1.0,
+			_result.chain_stats.total_chains,
+			partner_names
+		)
+		_result.add_log("CHAIN x%d! 伙伴援助连携" % assist_count)
 		if recorder != null:
-			recorder.record_event("partner_assist", {"partner_name": a.partner_name})
-
-func _process_chain_check() -> void:
-	while true:
-		var chain_result: Dictionary = _chain_trigger.try_trigger_chain(_hero, _enemies, _partners, _turn_chain_count)
-		if not chain_result.triggered:
-			break
-		_turn_chain_count = chain_result.chain_count
-		_result.record_chain(_turn_chain_count)
-		var pkt: Dictionary = chain_result.packet
-		var target = _get_front_enemy()
-		if target:
-			_emit_damage_signals(_get_partner_unit(chain_result.partner_id), target, pkt, "CHAIN")
-		EventBus.chain_triggered.emit(_turn_chain_count, chain_result.partner_id, chain_result.partner_name, pkt.value, 1.0, _result.chain_stats.total_chains)
-		_result.add_log("CHAIN x%d! %s 造成 %d 伤害" % [_turn_chain_count, chain_result.partner_name, pkt.value])
-		var recorder = _battle_config.get("playback_recorder", null)
-		if recorder != null:
-			recorder.record_event("chain_triggered", {"chain_count": _turn_chain_count, "partner_name": chain_result.partner_name, "damage": pkt.value})
-	if _turn_chain_count > 0:
-		EventBus.chain_ended.emit(_turn_chain_count, _result.chain_stats.total_chains, "resolved")
+			recorder.record_event("chain_triggered", {
+				"chain_count": assist_count,
+				"partner_name": first_assist.get("partner_name", ""),
+				"damage": total_damage,
+				"partner_names": partner_names,
+			})
+		
+		## 逐个触发伙伴援助动画
+		for a in assists:
+			_result.record_partner_assist(a.partner_id)
+			EventBus.partner_assist_triggered.emit(a.partner_id, a.partner_name, "AFTER_HERO_ATTACK", a, 0)
+			_result.add_log(a.log)
+			if recorder != null:
+				recorder.record_event("partner_assist", {"partner_name": a.partner_name})
+		
+		EventBus.chain_ended.emit(assist_count, _result.chain_stats.total_chains, "resolved")
+	else:
+		_turn_chain_count = 0
 
 func _get_front_enemy() -> Dictionary:
 	for e in _enemies:
@@ -411,8 +421,6 @@ func _state_name(s: BattleState) -> String:
 		BattleState.ENEMY_ACTION: return "ENEMY_ACTION"
 		BattleState.HERO_COUNTER: return "HERO_COUNTER"
 		BattleState.PARTNER_ASSIST: return "PARTNER_ASSIST"
-		BattleState.CHAIN_CHECK: return "CHAIN_CHECK"
-		BattleState.CHAIN_RESOLVE: return "CHAIN_RESOLVE"
 		BattleState.STATUS_TICK: return "STATUS_TICK"
 		BattleState.ULTIMATE_CHECK: return "ULTIMATE_CHECK"
 		BattleState.ROUND_END: return "ROUND_END"

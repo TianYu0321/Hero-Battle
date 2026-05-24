@@ -13,10 +13,73 @@ signal confirmed(choice_index: int)
 
 var _event_data: Dictionary = {}
 var _selected_choice: int = -1
+var _font_cn: Font = preload(RunMainSettings.FONT_CN_PATH)
 
 func _ready() -> void:
 	confirm_button.pressed.connect(_on_confirm_pressed)
 	result_panel.visible = false
+	_init_styles()
+	_apply_font_recursive(self)
+
+
+func _init_styles() -> void:
+	## 自身羊皮纸弹窗样式
+	var parchment := RunMainSettings.create_parchment_flat_style(RunMainSettings.CORNER_PARCHMENT)
+	add_theme_stylebox_override("panel", parchment)
+	
+	## 确认按钮
+	_apply_primary_button_style(confirm_button)
+	
+	## 标题（木牌样式背景）
+	title_label.add_theme_font_override("font", _font_cn)
+	title_label.add_theme_font_size_override("font_size", 26)
+	title_label.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
+	
+	## 描述文字
+	description_label.add_theme_font_override("normal_font", _font_cn)
+	description_label.add_theme_color_override("default_color", RunMainSettings.COLOR_INK)
+	
+	## 结果标签
+	result_label.add_theme_font_override("font", _font_cn)
+	result_label.add_theme_color_override("font_color", RunMainSettings.COLOR_HERO_RED_DARK)
+	effect_label.add_theme_font_override("font", _font_cn)
+	effect_label.add_theme_color_override("font_color", RunMainSettings.COLOR_WOOD_MEDIUM)
+
+
+func _apply_primary_button_style(btn: Button) -> void:
+	var normal := RunMainSettings.create_wood_flat_style(
+		RunMainSettings.COLOR_WOOD_PANEL,
+		RunMainSettings.COLOR_WOOD_MEDIUM, 2,
+		RunMainSettings.CORNER_WOOD
+	)
+	var hover := RunMainSettings.create_wood_flat_style(
+		RunMainSettings.COLOR_WOOD_LIGHT,
+		RunMainSettings.COLOR_GOLD, 2,
+		RunMainSettings.CORNER_WOOD
+	)
+	var pressed := RunMainSettings.create_wood_flat_style(
+		RunMainSettings.COLOR_WOOD_MEDIUM,
+		RunMainSettings.COLOR_WOOD_DARK, 3,
+		RunMainSettings.CORNER_WOOD
+	)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("focus", normal)
+	btn.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
+	btn.add_theme_color_override("font_hover_color", RunMainSettings.COLOR_INK)
+	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+	btn.add_theme_font_override("font", _font_cn)
+	btn.add_theme_font_size_override("font_size", 16)
+	btn.custom_minimum_size.y = RunMainSettings.BUTTON_HEIGHT
+
+
+func _apply_font_recursive(node: Node) -> void:
+	if node is Label or node is Button:
+		node.add_theme_font_override("font", _font_cn)
+	for child in node.get_children():
+		_apply_font_recursive(child)
+
 
 func setup(event_data: Dictionary, current_gold: int = 99999, current_hp: int = 99999) -> void:
 	_event_data = event_data
@@ -51,9 +114,39 @@ func setup(event_data: Dictionary, current_gold: int = 99999, current_hp: int = 
 		
 		btn.text = btn_text
 		btn.pressed.connect(_on_choice_selected.bind(i))
+		_apply_primary_button_style(btn)
 		choices_container.add_child(btn)
 	
 	visible = true
+	_play_entrance_animation()
+
+
+func _kill_popup_tween() -> void:
+	if has_meta("popup_tween"):
+		var old: Tween = get_meta("popup_tween")
+		if old != null and old.is_valid():
+			old.kill()
+		remove_meta("popup_tween")
+
+func _play_entrance_animation() -> void:
+	_kill_popup_tween()
+	scale = Vector2(0.9, 0.9)
+	modulate.a = 0.0
+	pivot_offset = size / 2
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector2.ONE, 0.35)
+	tween.parallel().tween_property(self, "modulate:a", 1.0, 0.3)
+	set_meta("popup_tween", tween)
+
+
+func _play_exit_animation(on_finished: Callable) -> void:
+	_kill_popup_tween()
+	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.tween_property(self, "scale", Vector2(0.95, 0.95), 0.2)
+	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.2)
+	tween.tween_callback(on_finished)
+	set_meta("popup_tween", tween)
+
 
 func _on_choice_selected(index: int) -> void:
 	_selected_choice = index
@@ -95,8 +188,13 @@ func _on_choice_selected(index: int) -> void:
 	result_panel.visible = true
 
 func _on_confirm_pressed() -> void:
-	if _selected_choice >= 0:
-		confirmed.emit(_selected_choice)
-	visible = false
-	choices_container.visible = true
-	result_panel.visible = false
+	_play_exit_animation(func():
+		if _selected_choice >= 0:
+			confirmed.emit(_selected_choice)
+		visible = false
+		choices_container.visible = true
+		result_panel.visible = false
+		## 重置缩放和透明度，为下次显示做准备
+		scale = Vector2.ONE
+		modulate = Color.WHITE
+	)

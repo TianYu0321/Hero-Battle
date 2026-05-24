@@ -97,6 +97,16 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	recorder.stop_recording()
 	battle_engine.queue_free()
 
+	# 诊断日志：确认 recorder 是否正确记录了事件
+	var event_count: int = recorder.get_events().size()
+	var events_by_turn: Dictionary = recorder.get_events_by_turn()
+	print("[PvpDirector] execute_pvp 完成: turn=%d, recorder事件数=%d, 回合键=%s" % [
+		turn_number, event_count, str(events_by_turn.keys())
+	])
+	if event_count > 0:
+		var first_event: Dictionary = recorder.get_events()[0]
+		print("[PvpDirector] 首个事件: type=%s" % first_event.get("type", "???"))
+
 	# 3. 判断胜负（"player"=玩家获胜，"enemy"=敌人获胜）
 	var player_won: bool = (battle_result.winner == "player")
 

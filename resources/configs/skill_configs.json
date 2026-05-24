@@ -228,15 +228,15 @@
     },
     "8102": {
       "id": 8102,
-      "name": "背刺",
-      "description": "斥候的援助技，主角暴击后触发，造成敏捷×0.6的伤害。",
+      "name": "致命射击",
+      "description": "斥候的援助技，敌方HP低于40%时触发，造成技巧×0.7的斩杀伤害。",
       "skill_type": 4,
       "owner_hero_id": 0,
       "owner_partner_id": "partner_scout",
       "target_type": 2,
       "element_type": 0,
-      "power_attr": 3,
-      "power_scale": 0.6,
+      "power_attr": 4,
+      "power_scale": 0.7,
       "base_trigger_prob": 1.0,
       "prob_attr_bonus": 0,
       "prob_attr_step": 0,
@@ -244,10 +244,10 @@
       "prob_max": 1.0,
       "cooldown": 0,
       "once_per_battle": false,
-      "condition_desc": "主角暴击后触发",
-      "special_effect": "",
+      "condition_desc": "敌方HP<40%",
+      "special_effect": "斩杀伤害",
       "chain_tags": [
-        "追击"
+        "斩杀"
       ],
       "icon_path": "",
       "sort_order": 8
@@ -332,15 +332,15 @@
     },
     "8106": {
       "id": 8106,
-      "name": "致命射击",
-      "description": "猎人的援助技，敌方HP低于40%时触发，造成技巧×0.7的斩杀伤害。",
+      "name": "背刺",
+      "description": "猎人的援助技，主角暴击后触发，造成敏捷×0.6的伤害。",
       "skill_type": 4,
       "owner_hero_id": 0,
       "owner_partner_id": "partner_hunter",
       "target_type": 2,
       "element_type": 0,
-      "power_attr": 4,
-      "power_scale": 0.7,
+      "power_attr": 3,
+      "power_scale": 0.6,
       "base_trigger_prob": 1.0,
       "prob_attr_bonus": 0,
       "prob_attr_step": 0,
@@ -348,10 +348,10 @@
       "prob_max": 1.0,
       "cooldown": 0,
       "once_per_battle": false,
-      "condition_desc": "敌方HP<40%",
-      "special_effect": "斩杀伤害",
+      "condition_desc": "主角暴击后触发",
+      "special_effect": "",
       "chain_tags": [
-        "斩杀"
+        "追击"
       ],
       "icon_path": "",
       "sort_order": 12

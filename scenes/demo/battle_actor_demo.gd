@@ -18,6 +18,13 @@ extends Control
 @onready var log_label: RichTextLabel = $UI/LogLabel
 @onready var victory_panel: Panel = $UI/VictoryPanel
 @onready var sfx_layer: Node2D = $SfxLayer
+@onready var partner_select_popup: PartnerSelectPopup = $PartnerSelectPopup
+
+## Phantom Camera 节点
+@onready var pcam_default: PhantomCamera2D = $Pcam_Default
+@onready var pcam_hero: PhantomCamera2D = $Pcam_Hero
+@onready var pcam_enemy: PhantomCamera2D = $Pcam_Enemy
+@onready var noise_emitter: PhantomCameraNoiseEmitter2D = $NoiseEmitter
 
 var _hero_hp: int = 1000
 var _hero_max_hp: int = 1000
@@ -40,29 +47,46 @@ var _hero_poses: Dictionary[String, Texture2D] = {}
 var _enemy_poses: Dictionary[String, Texture2D] = {}
 var _partner_poses: Dictionary[String, Texture2D] = {}
 var _hunter_poses: Dictionary[String, Texture2D] = {}
+var _swordsman_poses: Dictionary[String, Texture2D] = {}
+var _scout_poses: Dictionary[String, Texture2D] = {}
 
 func _ready() -> void:
 	# 加载单帧 Pose 图（hero/enemy 共用 shinobi 素材）
 	var _shinobi_idle := _load_tex("assets/characters/hero/shinobi/idle/shinobi_idle_01.png")
 	var _shinobi_attack := _load_tex("assets/characters/hero/shinobi/attack/shinobi_attack_01.png")
 	var _shinobi_hit := _load_tex("assets/characters/hero/shinobi/hit/shinobi_hit_01.png")
-	var _shinobi_skill1 := _load_tex("assets/characters/hero/shinobi/skill1/shinobi_skill1_01.png")
-	var _shinobi_skill2 := _load_tex("assets/characters/hero/shinobi/skill2/shinobi_skill2_01.png")
+	## skill1 = 疾风连击（多段），有 01-1 / 01-2 / 01-3
+	var _shinobi_skill1_1 := _load_tex("assets/characters/hero/shinobi/skill1/shinobi_skill1_01-1.png")
+	var _shinobi_skill1_2 := _load_tex("assets/characters/hero/shinobi/skill1/shinobi_skill1_01-2.png")
+	var _shinobi_skill1_3 := _load_tex("assets/characters/hero/shinobi/skill1/shinobi_skill1_01-3.png")
+	## skill2 = 必杀技，01=起手蓄力，02=突进释放
+	var _shinobi_skill2_01 := _load_tex("assets/characters/hero/shinobi/skill2/shinobi_skill2_01.png")
+	var _shinobi_skill2_02 := _load_tex("assets/characters/hero/shinobi/skill2/shinobi_skill2_02.png")
 	var _shinobi_victory := _load_tex("assets/characters/hero/shinobi/victory/shinobi_victory_01.png")
 	
-	for key in ["idle", "attack", "hit", "skill", "skill1", "skill2", "victory"]:
+	for key in ["idle", "attack", "hit", "skill", "skill1", "skill1-1", "skill1-2", "skill1-3", "skill2", "skill2-01", "skill2-02", "victory"]:
 		_hero_poses[key] = _shinobi_idle
 		_enemy_poses[key] = _shinobi_idle
 	_hero_poses["attack"] = _shinobi_attack
 	_hero_poses["hit"] = _shinobi_hit
-	_hero_poses["skill"] = _shinobi_skill1
-	_hero_poses["skill1"] = _shinobi_skill1
-	_hero_poses["skill2"] = _shinobi_skill2
+	_hero_poses["skill"] = _shinobi_skill1_1
+	_hero_poses["skill1"] = _shinobi_skill1_1
+	_hero_poses["skill1-1"] = _shinobi_skill1_1
+	_hero_poses["skill1-2"] = _shinobi_skill1_2
+	_hero_poses["skill1-3"] = _shinobi_skill1_3
+	_hero_poses["skill2"] = _shinobi_skill2_02
+	_hero_poses["skill2-01"] = _shinobi_skill2_01
+	_hero_poses["skill2-02"] = _shinobi_skill2_02
 	_hero_poses["victory"] = _shinobi_victory
 	_enemy_poses["attack"] = _shinobi_attack
 	_enemy_poses["hit"] = _shinobi_hit
-	_enemy_poses["skill1"] = _shinobi_skill1
-	_enemy_poses["skill2"] = _shinobi_skill2
+	_enemy_poses["skill1"] = _shinobi_skill1_1
+	_enemy_poses["skill1-1"] = _shinobi_skill1_1
+	_enemy_poses["skill1-2"] = _shinobi_skill1_2
+	_enemy_poses["skill1-3"] = _shinobi_skill1_3
+	_enemy_poses["skill2"] = _shinobi_skill2_02
+	_enemy_poses["skill2-01"] = _shinobi_skill2_01
+	_enemy_poses["skill2-02"] = _shinobi_skill2_02
 	_enemy_poses["victory"] = _shinobi_victory
 
 	_partner_poses["idle"] = _shinobi_idle
@@ -85,12 +109,27 @@ func _ready() -> void:
 	partner_actor.position = _partner_hide_pos
 	partner_actor.visible = false
 
+	# PartnerSelectPopup 信号
+	partner_select_popup.partner_selected.connect(_on_demo_partner_selected)
+	partner_select_popup.popup_cancelled.connect(_on_demo_partner_cancelled)
+
 	# 启动 idle 呼吸动画
 	_idle_breath(hero_actor, 1.0)
 	_idle_breath(enemy_actor, 1.2)
+	
+
 
 	victory_panel.visible = false
 	victory_panel.modulate = Color(1, 1, 1, 0)
+
+	## 初始化 Phantom Camera 默认状态
+	_switch_camera_to("default")
+	
+	## 初始化 Noise Emitter 资源（场景节点可能因 MCP 限制未正确引用 .tres）
+	if noise_emitter != null and noise_emitter.noise == null:
+		var fallback_noise: PhantomCameraNoise2D = load("res://resources/phantom_camera_noise_medium.tres") as PhantomCameraNoise2D
+		if fallback_noise != null:
+			noise_emitter.noise = fallback_noise
 
 	_update_hp_display()
 	_log("[color=#F2B93D]🎭 纸片小剧场战斗 Demo 🎭[/color]")
@@ -106,6 +145,37 @@ func _ready() -> void:
 		_hunter_poses["ready"] = _hunter_ready
 	if _hunter_action != null:
 		_hunter_poses["action"] = _hunter_action
+	
+	## 加载剑士 Pose
+	var _swordsman_idle := _load_tex("assets/characters/partner/swordsman/idle/idle.png")
+	var _swordsman_ready := _load_tex("assets/characters/partner/swordsman/ready/ready.png")
+	var _swordsman_action := _load_tex("assets/characters/partner/swordsman/action/action.png")
+	if _swordsman_idle != null:
+		_swordsman_poses["idle"] = _swordsman_idle
+	if _swordsman_ready != null:
+		_swordsman_poses["ready"] = _swordsman_ready
+	if _swordsman_action != null:
+		_swordsman_poses["action"] = _swordsman_action
+	
+	## 加载斥候 Pose
+	var _scout_idle := _load_tex("assets/characters/partner/scout/idle/idle.png")
+	var _scout_ready := _load_tex("assets/characters/partner/scout/ready/ready.png")
+	var _scout_action := _load_tex("assets/characters/partner/scout/action/action.png")
+	if _scout_idle != null:
+		_scout_poses["idle"] = _scout_idle
+	if _scout_ready != null:
+		_scout_poses["ready"] = _scout_ready
+	if _scout_action != null:
+		_scout_poses["action"] = _scout_action
+	
+	## 动态添加斥候测试按钮
+	var btn_container: HBoxContainer = $UI/ButtonContainer
+	var btn_scout := Button.new()
+	btn_scout.text = "斥候狙击"
+	btn_scout.add_theme_color_override("font_color", Color("#2ECC71"))
+	btn_scout.add_theme_font_size_override("font_size", 16)
+	btn_scout.pressed.connect(_on_scout_assist_pressed)
+	btn_container.add_child(btn_scout)
 
 
 func _load_tex(path: String) -> Texture2D:
@@ -255,27 +325,310 @@ func _spawn_damage_number(pos: Vector2, damage: int, is_crit: bool) -> void:
 
 
 # ==========================================
-# 屏幕震动 / 闪白
+# 舞台特效（P2 验证用）
 # ==========================================
 
-func _screen_shake(strength: float, duration: float) -> void:
-	var camera: Camera2D = get_viewport().get_camera_2d()
-	if camera == null:
-		return
-	var orig_offset: Vector2 = camera.offset
+func _stage_dim(duration: float = 0.5) -> void:
+	## 舞台暗化：背景变暗，聚焦角色
+	var bg: TextureRect = $Bg
 	var tween: Tween = create_tween()
-	var steps: int = int(duration * 60)
-	for i in range(steps):
-		var offset: Vector2 = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * strength
-		tween.tween_property(camera, "offset", orig_offset + offset, 0.016)
-		strength *= 0.9
-	tween.tween_property(camera, "offset", orig_offset, 0.05)
+	tween.tween_property(bg, "modulate", Color(0.4, 0.4, 0.5, 1.0), duration)
+	tween.tween_interval(duration)
+	tween.tween_property(bg, "modulate", Color.WHITE, duration * 1.5)
+
+func _stage_flash(flash_color: Color = Color.WHITE, duration: float = 0.15) -> void:
+	## 全屏闪光
+	var flash: ColorRect = ColorRect.new()
+	flash.name = "StageFlash"
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.color = flash_color
+	flash.modulate.a = 0.8
+	add_child(flash)
+	var tween: Tween = create_tween()
+	tween.tween_property(flash, "modulate:a", 0.0, duration)
+	tween.tween_callback(func(): if is_instance_valid(flash): flash.queue_free())
+
+func _spawn_burst(pos: Vector2, burst_color: Color = Color("#F2B93D")) -> void:
+	## 能量爆发粒子（简化版用 CPUParticles2D）
+	var burst: CPUParticles2D = CPUParticles2D.new()
+	burst.global_position = pos
+	burst.emitting = true
+	burst.one_shot = true
+	burst.explosiveness = 1.0
+	burst.amount = 24
+	burst.lifetime = 0.4
+	burst.direction = Vector2.UP
+	burst.spread = 180.0
+	burst.initial_velocity_min = 200.0
+	burst.initial_velocity_max = 400.0
+	burst.scale_amount_min = 3.0
+	burst.scale_amount_max = 6.0
+	burst.color = burst_color
+	add_child(burst)
+	await get_tree().create_timer(0.5).timeout
+	if is_instance_valid(burst):
+		burst.queue_free()
+
+# ==========================================
+# Phantom Camera 镜头控制 / 屏幕震动
+# ==========================================
+
+func _switch_camera_to(target: String) -> void:
+	## target: "default" | "hero" | "enemy"
+	if pcam_default == null or pcam_hero == null or pcam_enemy == null:
+		return
+	match target:
+		"hero":
+			pcam_hero.set_priority(20)
+			pcam_enemy.set_priority(0)
+			pcam_default.set_priority(0)
+		"enemy":
+			pcam_hero.set_priority(0)
+			pcam_enemy.set_priority(20)
+			pcam_default.set_priority(0)
+		_:
+			pcam_hero.set_priority(0)
+			pcam_enemy.set_priority(0)
+			pcam_default.set_priority(10)
+
+func _screen_shake(strength: float, duration: float) -> void:
+	## 使用 Phantom Camera Noise Emitter 替代手写 offset 震动
+	if noise_emitter == null:
+		return
+	var noise_res: PhantomCameraNoise2D
+	if strength >= 15.0:
+		noise_res = load("res://resources/phantom_camera_noise_heavy.tres") as PhantomCameraNoise2D
+	else:
+		noise_res = load("res://resources/phantom_camera_noise_medium.tres") as PhantomCameraNoise2D
+	if noise_res != null:
+		noise_emitter.noise = noise_res
+	noise_emitter.duration = duration
+	noise_emitter.emit()
 
 
 func _flash_sprite(sprite: Sprite2D) -> void:
 	sprite.modulate = Color(2.5, 2.5, 2.5, 1.0)
 	var tween: Tween = create_tween()
 	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
+
+
+# ==========================================
+# 剑士跳跃重劈
+# ==========================================
+
+func _on_swordsman_assist_pressed() -> void:
+	if _is_animating or _hero_hp <= 0 or _enemy_hp <= 0:
+		return
+	if not _swordsman_poses.has("ready") or not _swordsman_poses.has("action"):
+		_log("[color=red]剑士素材未加载[/color]")
+		return
+	_is_animating = true
+
+	_log("▸ [color=#4A90D9]剑士 跳跃重劈！[/color]")
+
+	var enemy_center: Vector2 = enemy_actor.global_position
+	## slash_pos 需要补偿 _switch_partner_pose 的 +200 右跳 + 剑尖偏移 127.5，合计约 330
+	## 最终让剑尖落在敌人身前
+	var spawn_pos: Vector2 = enemy_center + Vector2(-500, -350)
+	var slash_pos: Vector2 = enemy_center + Vector2(-250, 0)
+
+	var sprite := Sprite2D.new()
+	sprite.texture = _swordsman_poses["ready"]
+	sprite.scale = Vector2(0.3, 0.3)
+	sprite.modulate.a = 0.0
+	sprite.global_position = spawn_pos
+	sfx_layer.add_child(sprite)
+
+	## 一条连续的右下弧线直接劈到敌人身上
+	## x 减速接近 + y 加速下落 = 右下弧线
+	var arc_tween := create_tween().set_parallel()
+	arc_tween.tween_property(sprite, "modulate:a", 1.0, 0.15)
+	arc_tween.tween_property(sprite, "global_position:x", slash_pos.x, 0.55).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	arc_tween.tween_property(sprite, "global_position:y", slash_pos.y, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	arc_tween.tween_property(sprite, "scale", Vector2(0.5, 0.5), 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	## ready 前半段稍慢，约 64% 处切换 action，后半段劈砍更快
+	arc_tween.tween_callback(func(): _switch_partner_pose(sprite, _swordsman_poses["action"])).set_delay(0.35)
+	await arc_tween.finished
+
+	## 命中：震屏+冲击波+爆发+尘土+碎石+受击同步触发，无冻结帧
+	_screen_shake(12.0, 0.25)
+	## 剑士 action.png（1000x480）中剑尖相对纹理中心的偏移（剑尖约 755,465）
+	const SWORDSMAN_ACTION_TIP_OFFSET_TEX := Vector2(255, 225)
+	## 按当前 sprite.scale 换算为全局坐标，确保特效始终挂在剑尖而非角色中心
+	var sword_tip_pos: Vector2 = sprite.global_position + SWORDSMAN_ACTION_TIP_OFFSET_TEX * sprite.scale
+	VFX.spawn_shockwave(sword_tip_pos)
+	## 底部尘土（放大版）
+	var dust = preload("res://addons/vfx_library/effects/jump_dust.tscn").instantiate()
+	sfx_layer.add_child(dust)
+	dust.global_position = sword_tip_pos
+	dust.scale_amount_min = 8.0
+	dust.scale_amount_max = 16.0
+	dust.amount = 20
+	dust.emitting = true
+	get_tree().create_timer(0.5).timeout.connect(func(): if is_instance_valid(dust): dust.queue_free())
+	
+	## 碎石飞溅（放大版）
+	var debris = preload("res://addons/vfx_library/effects/wood_debris.tscn").instantiate()
+	sfx_layer.add_child(debris)
+	debris.global_position = sword_tip_pos
+	debris.scale_amount_min = 6.0
+	debris.scale_amount_max = 12.0
+	debris.amount = 25
+	debris.emitting = true
+	get_tree().create_timer(2.0).timeout.connect(func(): if is_instance_valid(debris): debris.queue_free())
+	_flash_sprite(enemy_sprite)
+
+	## 能量爆发粒子
+	var _burst = preload("res://addons/vfx_library/effects/energy_burst.tscn").instantiate()
+	sfx_layer.add_child(_burst)
+	_burst.global_position = slash_pos
+	_burst.z_index = 100
+	_burst.scale = Vector2.ONE * 4.0
+	_burst.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_burst): _burst.queue_free())
+	var _ring = preload("res://addons/vfx_library/effects/combo_ring.tscn").instantiate()
+	sfx_layer.add_child(_ring)
+	_ring.global_position = slash_pos
+	_ring.z_index = 100
+	_ring.scale = Vector2.ONE * 4.0
+	_ring.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_ring): _ring.queue_free())
+
+	## 伤害
+	var dmg: int = randi_range(150, 300)
+	_enemy_hp = maxi(0, _enemy_hp - dmg)
+	_update_hp_display()
+	_spawn_damage_number(slash_pos + Vector2(0, -140), dmg, true)
+	_spawn_sfx_text(slash_pos + Vector2(0, -220), "斩！", Color("#4A90D9"))
+
+	## 敌人受击
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["hit"], 0.1)
+	var hurt := create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	hurt.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x + 40, 0.06)
+	hurt.parallel().tween_property(enemy_actor, "rotation", 0.1, 0.06)
+	hurt.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x, 0.15)
+	hurt.parallel().tween_property(enemy_actor, "rotation", 0.0, 0.15)
+
+	## 原地消失
+	var fade_tween := create_tween()
+	fade_tween.tween_property(sprite, "modulate:a", 0.0, 0.2)
+	fade_tween.parallel().tween_property(sprite, "scale", Vector2(0.4, 0.4), 0.2)
+	await fade_tween.finished
+	if is_instance_valid(sprite):
+		sprite.queue_free()
+
+	await get_tree().create_timer(0.2).timeout
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["idle"], 0.1)
+
+	_is_animating = false
+	_check_death()
+
+
+# ==========================================
+# 斥候狙击
+# ==========================================
+
+func _on_scout_assist_pressed() -> void:
+	if _is_animating or _hero_hp <= 0 or _enemy_hp <= 0:
+		return
+	if not _scout_poses.has("ready") or not _scout_poses.has("action"):
+		_log("[color=red]斥候素材未加载[/color]")
+		return
+	_is_animating = true
+
+	_log("▸ [color=#2ECC71]斥候 狙击！[/color]")
+
+	var hero_center: Vector2 = hero_actor.global_position
+	var enemy_center: Vector2 = enemy_actor.global_position
+	## 站到主角后边的身位（与主角同高，略偏上），正面朝右射击
+	var spawn_pos: Vector2 = hero_center + Vector2(-400, -10)
+	var aim_pos: Vector2 = hero_center + Vector2(-150, -10)
+	var hit_pos: Vector2 = enemy_center + Vector2(-40, 0)
+
+	var sprite := Sprite2D.new()
+	sprite.texture = _scout_poses["idle"] if _scout_poses.has("idle") else _scout_poses["ready"]
+	sprite.scale = Vector2(0.3, 0.3)
+	sprite.modulate.a = 0.0
+	sprite.global_position = spawn_pos
+	## 素材本身朝右，正好面向敌人射击，不需要 flip_h
+	sfx_layer.add_child(sprite)
+
+	## 阶段1: 淡入登场并移动到主角后方的瞄准位
+	var enter_tween := create_tween().set_parallel()
+	enter_tween.tween_property(sprite, "modulate:a", 1.0, 0.2)
+	enter_tween.tween_property(sprite, "scale", Vector2(0.5, 0.5), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	enter_tween.tween_property(sprite, "global_position", aim_pos, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await enter_tween.finished
+
+	## 阶段2: 切换 ready（拉弓瞄准），蓄力停顿
+	_switch_partner_pose(sprite, _scout_poses["ready"])
+	await get_tree().create_timer(0.25).timeout
+
+	## 阶段3: 射箭 —— 箭矢从弓弦位置直线射向敌人
+	## ready.png(600x480) 中弓弦约在 (360,250)，相对中心 (300,240) 偏移 (60,10)
+	## 素材朝右，弓弦在中心右侧，x 取正
+	const SCOUT_BOW_STRING_OFFSET_TEX := Vector2(60, 10)
+	var arrow_start: Vector2 = sprite.global_position + SCOUT_BOW_STRING_OFFSET_TEX * sprite.scale
+	var arrow := ColorRect.new()
+	arrow.size = Vector2(140, 5)
+	arrow.color = Color(0.95, 0.98, 1.0)
+	arrow.rotation = (hit_pos - arrow_start).angle()
+	## 以箭头尖端为锚点：先偏移 size/2，再微调让尖端对齐
+	var arrow_pivot_offset := Vector2(arrow.size.x * 0.5, arrow.size.y * 0.5)
+	sfx_layer.add_child(arrow)
+	arrow.global_position = arrow_start - arrow_pivot_offset
+
+	## 同时切换 action（射箭后坐力姿势）
+	_switch_partner_pose(sprite, _scout_poses["action"])
+
+	var arrow_tween := create_tween()
+	arrow_tween.tween_property(arrow, "global_position", hit_pos - arrow_pivot_offset, 0.18).set_trans(Tween.TRANS_QUAD)
+	await arrow_tween.finished
+
+	## 命中：震屏 + 闪白 + 火花 + 受击
+	_screen_shake(5.0, 0.15)
+	_flash_sprite(enemy_sprite)
+	var _sparks = preload("res://addons/vfx_library/effects/sparks.tscn").instantiate()
+	sfx_layer.add_child(_sparks)
+	_sparks.global_position = hit_pos
+	_sparks.scale_amount_min = 3.0
+	_sparks.scale_amount_max = 6.0
+	_sparks.amount = 16
+	_sparks.emitting = true
+	get_tree().create_timer(0.5).timeout.connect(func(): if is_instance_valid(_sparks): _sparks.queue_free())
+	arrow.queue_free()
+
+	## 伤害
+	var dmg: int = randi_range(150, 300)
+	_enemy_hp = maxi(0, _enemy_hp - dmg)
+	_update_hp_display()
+	_spawn_damage_number(hit_pos + Vector2(0, -140), dmg, true)
+	_spawn_sfx_text(hit_pos + Vector2(0, -220), "嗖！", Color("#2ECC71"))
+
+	## 敌人受击（弓箭冲击力较小，位移也小）
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["hit"], 0.1)
+	var hurt := create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	hurt.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x + 15, 0.06)
+	hurt.parallel().tween_property(enemy_actor, "rotation", 0.05, 0.06)
+	hurt.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x, 0.15)
+	hurt.parallel().tween_property(enemy_actor, "rotation", 0.0, 0.15)
+
+	## 停留让用户看清 action pose
+	await get_tree().create_timer(0.25).timeout
+
+	## 阶段4: 退场淡出
+	var fade_tween := create_tween()
+	fade_tween.tween_property(sprite, "modulate:a", 0.0, 0.2)
+	fade_tween.parallel().tween_property(sprite, "scale", Vector2(0.4, 0.4), 0.2)
+	await fade_tween.finished
+	if is_instance_valid(sprite):
+		sprite.queue_free()
+
+	await get_tree().create_timer(0.2).timeout
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["idle"], 0.1)
+
+	_is_animating = false
+	_check_death()
 
 
 # ==========================================
@@ -292,14 +645,16 @@ func _on_hunter_assist_pressed() -> void:
 
 	_log("▸ [color=#BF4DE6]猎人 冲刺斩杀！[/color]")
 
-	## 斩击点：敌人左侧 150px
-	var slash_pos: Vector2 = enemy_actor.global_position + Vector2(-150, 0)
+	## 斩击点：敌人身前（已预补偿 _switch_partner_pose 的 +200 右跳）
+	## dash_tween 目标设为 slash_pos - 200，经 _switch_partner_pose 后 sprite 正好停在 slash_pos
+	var slash_pos: Vector2 = enemy_actor.global_position + Vector2(-60, 0)
+	var dash_target: Vector2 = slash_pos + Vector2(-200, 0)
 
 	var sprite := Sprite2D.new()
 	sprite.texture = _hunter_poses["idle"]
 	sprite.scale = Vector2(0.3, 0.3)
 	sprite.modulate.a = 0.0
-	sprite.global_position = slash_pos + Vector2(-700, 0)
+	sprite.global_position = dash_target + Vector2(-500, 0)
 	sfx_layer.add_child(sprite)
 
 	## 阶段1: 登场蓄力（淡入 + scale 放大）
@@ -315,29 +670,44 @@ func _on_hunter_assist_pressed() -> void:
 	## 开启拖尾粒子
 	var dash_trail: CPUParticles2D = VFX.create_dash_trail(sprite, Vector2.ZERO)
 
-	## 阶段2: 冲刺到斩击点
+	## 阶段2: 冲刺到预补偿位置（经 _switch_partner_pose 后会右跳 200px 到真正的 slash_pos）
 	var dash_tween := create_tween()
-	dash_tween.tween_property(sprite, "global_position", slash_pos, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	dash_tween.tween_property(sprite, "global_position", dash_target, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await dash_tween.finished
 
 	## 阶段3: 斩击命中
 	_switch_partner_pose(sprite, _hunter_poses["action"])
+	## _switch_partner_pose 会让 sprite 右跳 200px，此时 sprite.global_position 才是真正的攻击点
+	var actual_slash_pos: Vector2 = sprite.global_position
 
 	## 打击停顿（时间冻结）
-	VFX.freeze_frame(0.1, 0.05)
+	VFX.freeze_frame(0.12, 0.05)
 
 	## 震屏 + 闪白 + 能量爆发 + 连击环
 	_screen_shake(12.0, 0.25)
 	_flash_sprite(enemy_sprite)
-	VFX.spawn_energy_burst(slash_pos, Color(0.8, 0.3, 0.9))
-	VFX.spawn_combo_ring(slash_pos)
+	## 能量爆发粒子（挂在 sprite 实际位置，避免与 _switch_partner_pose 脱节）
+	var _burst = preload("res://addons/vfx_library/effects/energy_burst.tscn").instantiate()
+	sfx_layer.add_child(_burst)
+	_burst.global_position = actual_slash_pos
+	_burst.z_index = 100
+	_burst.scale = Vector2.ONE * 4.0
+	_burst.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_burst): _burst.queue_free())
+	var _ring = preload("res://addons/vfx_library/effects/combo_ring.tscn").instantiate()
+	sfx_layer.add_child(_ring)
+	_ring.global_position = actual_slash_pos
+	_ring.z_index = 100
+	_ring.scale = Vector2.ONE * 4.0
+	_ring.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_ring): _ring.queue_free())
 
 	## 伤害
 	var dmg: int = randi_range(150, 300)
 	_enemy_hp = maxi(0, _enemy_hp - dmg)
 	_update_hp_display()
-	_spawn_damage_number(slash_pos + Vector2(0, -140), dmg, true)
-	_spawn_sfx_text(slash_pos + Vector2(0, -220), "斩！", Color("#BF4DE6"))
+	_spawn_damage_number(actual_slash_pos + Vector2(0, -140), dmg, true)
+	_spawn_sfx_text(actual_slash_pos + Vector2(0, -220), "斩！", Color("#BF4DE6"))
 
 	## 敌人受击
 	_flip_pose(enemy_actor, enemy_sprite, _enemy_poses["hit"], 0.1)
@@ -355,9 +725,9 @@ func _on_hunter_assist_pressed() -> void:
 		dash_trail.emitting = false
 		dash_trail.queue_free()
 
-	## 阶段4: 穿出画面
+	## 阶段4: 穿出画面 — 镜头切回全景
 	var exit := create_tween()
-	exit.tween_property(sprite, "global_position", slash_pos + Vector2(600, 0), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	exit.tween_property(sprite, "global_position", slash_pos + Vector2(400, 0), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	exit.parallel().tween_property(sprite, "modulate:a", 0.0, 0.25)
 	await exit.finished
 	if is_instance_valid(sprite):
@@ -489,19 +859,31 @@ func _on_hero_ultimate_pressed() -> void:
 
 	_log("[color=#F2B93D]★★★ 主角释放 [大招] ★★★[/color]")
 
-	# 起手：翻面切 skill1（大招待机）
-	await _flip_pose(hero_actor, hero_sprite, _hero_poses["skill1"], 0.15)
+	# 舞台暗化 —— 聚焦大招
+	_stage_dim(0.4)
 
-	# 蓄力放大
+	# 起手：翻面切 skill2-01（大招蓄力）— 同步启动镜头推近
+	var _ult_tween: PhantomCameraTween = load("res://resources/phantom_camera_tween_ultimate.tres") as PhantomCameraTween
+	if _ult_tween != null:
+		pcam_hero.tween_resource = _ult_tween
+	_switch_camera_to("hero")
+	await _flip_pose(hero_actor, hero_sprite, _hero_poses["skill2-01"], 0.15)
+
+	# 蓄力放大（镜头推近与蓄力同步：0.2 + 0.3 = 0.5s，加上翻面 0.15s，总计 0.65s）
 	var charge: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	charge.tween_property(hero_actor, "scale", Vector2.ONE * 1.0, 0.2)
 	charge.tween_property(hero_actor, "scale", Vector2.ONE * 0.7, 0.3)
 	await charge.finished
 
+	# skill2-01 蓄力完成 — 同步返回全景（速度一致：0.65s）
+	if _ult_tween != null:
+		pcam_default.tween_resource = _ult_tween
+	_switch_camera_to("default")
+
 	await get_tree().create_timer(0.15).timeout
 
-	# 释放：翻面切 skill2（大招攻击）
-	await _flip_pose(hero_actor, hero_sprite, _hero_poses["skill2"], 0.12)
+	# 释放：翻面切 skill2-02（大招突进）
+	await _flip_pose(hero_actor, hero_sprite, _hero_poses["skill2-02"], 0.12)
 
 	# 突进
 	var dash: Tween = create_tween()
@@ -511,6 +893,22 @@ func _on_hero_ultimate_pressed() -> void:
 	dash.parallel().tween_property(hero_actor, "rotation", 0.0, 0.2)
 
 	_screen_shake(18.0, 0.35)
+	## 能量爆发粒子（挂到 Node2D 层，放大 + restart 确保可见）
+	var _burst = preload("res://addons/vfx_library/effects/energy_burst.tscn").instantiate()
+	sfx_layer.add_child(_burst)
+	_burst.global_position = enemy_actor.global_position
+	_burst.z_index = 100
+	_burst.scale = Vector2.ONE * 4.0
+	_burst.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_burst): _burst.queue_free())
+	var _ring = preload("res://addons/vfx_library/effects/combo_ring.tscn").instantiate()
+	sfx_layer.add_child(_ring)
+	_ring.global_position = enemy_actor.global_position
+	_ring.z_index = 100
+	_ring.scale = Vector2.ONE * 4.0
+	_ring.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_ring): _ring.queue_free())
+	VFX.freeze_frame(0.08, 0.05)
 
 	await get_tree().create_timer(0.15).timeout
 
@@ -537,6 +935,160 @@ func _on_hero_ultimate_pressed() -> void:
 	_check_death()
 
 
+func _on_hero_skill_combo_pressed() -> void:
+	if _is_animating or _hero_hp <= 0 or _enemy_hp <= 0:
+		return
+	_is_animating = true
+	
+	_log("▸ 主角 [影舞者·三连击]")
+	
+	# 疾风连击 pose key：第1段=skill1-1，第2段=skill1-2，第3段=skill1-3
+	var _skill_pose_keys: Array[String] = ["skill1-1", "skill1-2", "skill1-3"]
+	
+	# 3段快速连击
+	var combo_hits: Array = [
+		{"dmg": randi_range(40, 70), "is_crit": randf() < 0.15},
+		{"dmg": randi_range(40, 70), "is_crit": randf() < 0.15},
+		{"dmg": randi_range(40, 70), "is_crit": randf() < 0.15},
+	]
+	
+	for i in range(3):
+		var hit = combo_hits[i]
+		if hit.is_crit:
+			hit.dmg = int(hit.dmg * 1.8)
+		
+		# 翻面切对应段 pose
+		var _pose_key: String = _skill_pose_keys[i]
+		await _flip_pose(hero_actor, hero_sprite, _hero_poses[_pose_key], 0.08)
+		
+		# 小段突进
+		var slash: Tween = create_tween()
+		slash.tween_property(hero_actor, "position:x", _hero_orig_pos.x + 80, 0.05)
+		slash.parallel().tween_property(hero_actor, "rotation", 0.08, 0.05)
+		slash.tween_property(hero_actor, "position:x", _hero_orig_pos.x, 0.05)
+		slash.parallel().tween_property(hero_actor, "rotation", 0.0, 0.05)
+		await slash.finished
+		
+		# 显示伤害
+		_enemy_hp = maxi(0, _enemy_hp - hit.dmg)
+		_update_hp_display()
+		_spawn_damage_number(enemy_actor.global_position + Vector2(0, -140), hit.dmg, hit.is_crit)
+		
+		if i < 2:
+			await get_tree().create_timer(0.04).timeout
+	
+	# 最后一段的受击动画
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["hit"], 0.1)
+	var hurt: Tween = create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	hurt.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x + 30, 0.06)
+	hurt.parallel().tween_property(enemy_actor, "rotation", 0.1, 0.06)
+	hurt.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x, 0.15)
+	hurt.parallel().tween_property(enemy_actor, "rotation", 0.0, 0.15)
+	
+	_screen_shake(8.0, 0.15)
+	_flash_sprite(enemy_sprite)
+	
+	var last_hit = combo_hits[2]
+	var sfx: String = _sfx_crit.pick_random() if last_hit.is_crit else _sfx_attack.pick_random()
+	var sfx_color: Color = Color("#DB5247") if last_hit.is_crit else Color.WHITE
+	_spawn_sfx_text(enemy_actor.global_position + Vector2(0, -220), sfx, sfx_color)
+	
+	await get_tree().create_timer(0.3).timeout
+	await _flip_pose(hero_actor, hero_sprite, _hero_poses["idle"], 0.12)
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["idle"], 0.1)
+	
+	_is_animating = false
+	_check_death()
+
+
+func _on_hero_ult_combo_pressed() -> void:
+	if _is_animating or _hero_hp <= 0 or _enemy_hp <= 0:
+		return
+	_is_animating = true
+	
+	_log("[color=#F2B93D]★★★ 主角释放 [影舞者·必杀] ★★★[/color]")
+	
+	# 舞台暗化
+	_stage_dim(0.4)
+	
+	# 起手：翻面切 skill1 + 镜头推近
+	var _ult_tween: PhantomCameraTween = load("res://resources/phantom_camera_tween_ultimate.tres") as PhantomCameraTween
+	if _ult_tween != null:
+		pcam_hero.tween_resource = _ult_tween
+	_switch_camera_to("hero")
+	await _flip_pose(hero_actor, hero_sprite, _hero_poses["skill1"], 0.15)
+	
+	# 蓄力放大
+	var charge: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	charge.tween_property(hero_actor, "scale", Vector2.ONE * 1.0, 0.2)
+	charge.tween_property(hero_actor, "scale", Vector2.ONE * 0.7, 0.3)
+	await charge.finished
+	
+	# 返回全景
+	if _ult_tween != null:
+		pcam_default.tween_resource = _ult_tween
+	_switch_camera_to("default")
+	
+	await get_tree().create_timer(0.15).timeout
+	
+	# 释放：翻面切 skill2
+	await _flip_pose(hero_actor, hero_sprite, _hero_poses["skill2"], 0.12)
+	
+	# 突进
+	var dash: Tween = create_tween()
+	dash.tween_property(hero_actor, "position:x", _hero_orig_pos.x + 250, 0.12)
+	dash.parallel().tween_property(hero_actor, "rotation", 0.2, 0.12)
+	dash.tween_property(hero_actor, "position:x", _hero_orig_pos.x, 0.2)
+	dash.parallel().tween_property(hero_actor, "rotation", 0.0, 0.2)
+	
+	# 突进命中：震屏 + 粒子
+	_screen_shake(18.0, 0.35)
+	var _burst = preload("res://addons/vfx_library/effects/energy_burst.tscn").instantiate()
+	sfx_layer.add_child(_burst)
+	_burst.global_position = enemy_actor.global_position
+	_burst.z_index = 100
+	_burst.scale = Vector2.ONE * 4.0
+	_burst.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_burst): _burst.queue_free())
+	VFX.freeze_frame(0.08, 0.05)
+	
+	# 依次显示6段伤害
+	var total_dmg: int = 0
+	for i in range(6):
+		var dmg: int = randi_range(50, 90)
+		var is_crit: bool = randf() < 0.1
+		if is_crit:
+			dmg = int(dmg * 1.8)
+		total_dmg += dmg
+		
+		_enemy_hp = maxi(0, _enemy_hp - dmg)
+		_update_hp_display()
+		_spawn_damage_number(enemy_actor.global_position + Vector2(0, -160), dmg, is_crit)
+		
+		if i < 5:
+			await get_tree().create_timer(0.06).timeout
+	
+	await get_tree().create_timer(0.15).timeout
+	
+	# 敌人被击飞
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["hit"], 0.1)
+	var fly: Tween = create_tween().set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+	fly.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x + 100, 0.1)
+	fly.parallel().tween_property(enemy_actor, "rotation", 0.35, 0.1)
+	fly.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x, 0.4)
+	fly.parallel().tween_property(enemy_actor, "rotation", 0.0, 0.4)
+	
+	_flash_sprite(enemy_sprite)
+	_spawn_sfx_text(enemy_actor.global_position + Vector2(0, -260), "哐！！", Color("#F2B93D"))
+	
+	await get_tree().create_timer(0.8).timeout
+	await _flip_pose(hero_actor, hero_sprite, _hero_poses["idle"], 0.12)
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["idle"], 0.1)
+	
+	_is_animating = false
+	_check_death()
+
+
 func _on_enemy_ultimate_pressed() -> void:
 	if _is_animating or _hero_hp <= 0 or _enemy_hp <= 0:
 		return
@@ -544,20 +1096,32 @@ func _on_enemy_ultimate_pressed() -> void:
 
 	_log("[color=#BF7AE6]★★★ 敌人释放 [大招] ★★★[/color]")
 
-	# 起手：翻面切 skill1
-	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["skill1"], 0.15)
+	# 舞台暗化 —— 聚焦大招
+	_stage_dim(0.4)
 
-	# 蓄力放大（0.5s）
+	# 起手：翻面切 skill2-01 — 同步启动镜头推近
+	var _ult_tween: PhantomCameraTween = load("res://resources/phantom_camera_tween_ultimate.tres") as PhantomCameraTween
+	if _ult_tween != null:
+		pcam_enemy.tween_resource = _ult_tween
+	_switch_camera_to("enemy")
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["skill2-01"], 0.15)
+
+	# 蓄力放大（镜头推近与蓄力同步：0.2 + 0.3 = 0.5s，加上翻面 0.15s，总计 0.65s）
 	var charge: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	charge.tween_property(enemy_actor, "scale", Vector2.ONE * 1.0, 0.2)
 	charge.tween_property(enemy_actor, "scale", Vector2.ONE * 0.7, 0.3)
 	await charge.finished
 
-	# 蓄力完成后停顿 0.15s，再翻面切 skill2
+	# skill2-01 蓄力完成 — 同步返回全景（速度一致：0.65s）
+	if _ult_tween != null:
+		pcam_default.tween_resource = _ult_tween
+	_switch_camera_to("default")
+
+	# 蓄力完成后停顿 0.15s，再翻面切 skill2-02
 	await get_tree().create_timer(0.15).timeout
 
-	# 释放：翻面切 skill2
-	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["skill2"], 0.12)
+	# 释放：翻面切 skill2-02
+	await _flip_pose(enemy_actor, enemy_sprite, _enemy_poses["skill2-02"], 0.12)
 
 	var dash: Tween = create_tween()
 	dash.tween_property(enemy_actor, "position:x", _enemy_orig_pos.x - 250, 0.12)
@@ -566,6 +1130,22 @@ func _on_enemy_ultimate_pressed() -> void:
 	dash.parallel().tween_property(enemy_actor, "rotation", 0.0, 0.2)
 
 	_screen_shake(18.0, 0.35)
+	## 能量爆发粒子（挂到 Node2D 层，放大 + restart 确保可见）
+	var _burst = preload("res://addons/vfx_library/effects/energy_burst.tscn").instantiate()
+	sfx_layer.add_child(_burst)
+	_burst.global_position = hero_actor.global_position
+	_burst.z_index = 100
+	_burst.scale = Vector2.ONE * 4.0
+	_burst.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_burst): _burst.queue_free())
+	var _ring = preload("res://addons/vfx_library/effects/combo_ring.tscn").instantiate()
+	sfx_layer.add_child(_ring)
+	_ring.global_position = hero_actor.global_position
+	_ring.z_index = 100
+	_ring.scale = Vector2.ONE * 4.0
+	_ring.restart()
+	get_tree().create_timer(1.0).timeout.connect(func(): if is_instance_valid(_ring): _ring.queue_free())
+	VFX.freeze_frame(0.08, 0.05)
 
 	await get_tree().create_timer(0.15).timeout
 
@@ -674,6 +1254,14 @@ func _on_reset_pressed() -> void:
 	_set_pose(enemy_sprite, _enemy_poses["idle"])
 	_set_pose(partner_sprite, _partner_poses["idle"])
 
+	# 恢复镜头默认 tween（防止大招修改后残留）
+	var _fast_tween: PhantomCameraTween = load("res://resources/phantom_camera_tween_fast.tres") as PhantomCameraTween
+	if _fast_tween != null:
+		pcam_default.tween_resource = _fast_tween
+		pcam_hero.tween_resource = _fast_tween
+		pcam_enemy.tween_resource = _fast_tween
+	_switch_camera_to("default")
+
 	victory_panel.visible = false
 	_is_animating = false
 
@@ -699,3 +1287,45 @@ func _update_hp_display() -> void:
 
 func _log(text: String) -> void:
 	log_label.append_text(text + "\n")
+
+
+func _on_partner_select_pressed() -> void:
+	_log("━━ 打开伙伴选择弹窗 ━━")
+	var test_partners: Array[Dictionary] = [
+		{
+			"partner_id": 1,
+			"name": "暗影刺客",
+			"level": 3,
+			"role": "刺客",
+			"rarity_str": "S",
+			"skill_desc": "对敌方单体造成高额物理伤害，并有概率触发连击。",
+			"portrait_path": ""
+		},
+		{
+			"partner_id": 2,
+			"name": "圣光祭司",
+			"level": 2,
+			"role": "治疗",
+			"rarity_str": "A",
+			"skill_desc": "恢复主角 15% 最大生命值，并清除一个负面状态。",
+			"portrait_path": ""
+		},
+		{
+			"partner_id": 3,
+			"name": "铁壁卫士",
+			"level": 4,
+			"role": "坦克",
+			"rarity_str": "B",
+			"skill_desc": "为主角提供护盾，吸收相当于自身生命 20% 的伤害。",
+			"portrait_path": ""
+		}
+	]
+	partner_select_popup.show_popup(test_partners)
+
+
+func _on_demo_partner_selected(partner_id: String, partner_data: Dictionary) -> void:
+	_log("✅ 招募伙伴: %s (ID=%s)" % [partner_data.get("name", "???"), partner_id])
+
+
+func _on_demo_partner_cancelled() -> void:
+	_log("❌ 取消招募伙伴")

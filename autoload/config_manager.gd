@@ -149,6 +149,12 @@ const HERO_PORTRAIT_PATHS: Dictionary = {
 	"hero_iron_guard": "res://assets/characters/hero/paladin.png",
 }
 
+const HERO_AVATAR_PATHS: Dictionary = {
+	"hero_warrior": "res://assets/characters/hero/warrior.png",
+	"hero_shadow_dancer": "res://assets/characters/hero/shinobi/idle/shinobi_idle_01.png",
+	"hero_iron_guard": "res://assets/characters/hero/paladin.png",
+}
+
 ## 获取英雄精灵图路径
 static func get_hero_sprite_path(hero_config_id: int) -> String:
 	return HERO_SPRITE_PATHS.get(hero_config_id, DEFAULT_HERO_SPRITE)
@@ -160,6 +166,10 @@ static func get_enemy_sprite_path(enemy_config_id: int) -> String:
 ## 获取英雄选人界面立绘路径
 static func get_hero_portrait_path(hero_id: String) -> String:
 	return HERO_PORTRAIT_PATHS.get(hero_id, "")
+
+## 获取英雄选人界面头像路径
+static func get_hero_avatar_path(hero_id: String) -> String:
+	return HERO_AVATAR_PATHS.get(hero_id, "")
 
 ## 获取伙伴头像路径
 func get_partner_avatar_path(partner_id: String) -> String:
