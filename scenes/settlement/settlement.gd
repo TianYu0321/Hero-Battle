@@ -18,6 +18,23 @@ extends Control
 var _archive_data: Dictionary = {}
 var _archive_saved: bool = false
 
+var _run_stats_container: VBoxContainer = null
+var _career_stats_container: VBoxContainer = null
+var _achievements_container: VBoxContainer = null
+
+const _ACHIEVEMENT_NAMES: Dictionary = {
+	"first_run": "初出茅庐",
+	"first_victory": "初战告捷",
+	"veteran_runner": "资深冒险家",
+	"master_runner": "传说冒险家",
+	"speed_runner_25": "速通者",
+	"speed_runner_20": "极速者",
+	"s_grade": "完美评价",
+	"elite_killer": "精英猎手",
+	"gold_hoarder": "守财奴",
+	"max_hp_300": "钢铁之躯",
+}
+
 func _ready() -> void:
 	archive_button.pressed.connect(_on_archive_button_pressed)
 	menu_button.pressed.connect(_on_menu_button_pressed)
@@ -46,6 +63,9 @@ func _ready() -> void:
 			attr_labels[i].text = "属性%d: 数据缺失" % (i + 1)
 		archive_button.disabled = true
 		archive_button.text = "无档案数据"
+	
+	# 创建统计面板（无论数据是否缺失都创建，空数据时显示为0）
+	_setup_stats_panels()
 
 func populate(archive: Dictionary) -> void:
 	_archive_data = archive.duplicate()
@@ -108,6 +128,129 @@ func _populate_from_data(data: Dictionary) -> void:
 	]
 	for i in range(min(attr_labels.size(), attrs.size())):
 		attr_labels[i].text = "%s: %d" % [attr_names[i], attrs[i]]
+	
+	_populate_run_stats(data)
+	_populate_career_stats()
+	_populate_achievements(data)
+
+func _setup_stats_panels() -> void:
+	## 本次统计面板 — 左侧
+	_run_stats_container = VBoxContainer.new()
+	_run_stats_container.position = Vector2(120, 300)
+	_run_stats_container.size = Vector2(420, 280)
+	add_child(_run_stats_container)
+	
+	var run_title := Label.new()
+	run_title.text = "本次冒险"
+	run_title.add_theme_font_size_override("font_size", 22)
+	_run_stats_container.add_child(run_title)
+	
+	for i in range(6):
+		var lbl := Label.new()
+		lbl.add_theme_font_size_override("font_size", 16)
+		_run_stats_container.add_child(lbl)
+	
+	## 生涯统计面板 — 左侧下方
+	_career_stats_container = VBoxContainer.new()
+	_career_stats_container.position = Vector2(120, 600)
+	_career_stats_container.size = Vector2(420, 200)
+	add_child(_career_stats_container)
+	
+	var career_title := Label.new()
+	career_title.text = "生涯统计"
+	career_title.add_theme_font_size_override("font_size", 22)
+	_career_stats_container.add_child(career_title)
+	
+	for i in range(4):
+		var lbl := Label.new()
+		lbl.add_theme_font_size_override("font_size", 16)
+		_career_stats_container.add_child(lbl)
+	
+	## 新解锁成就面板 — 底部按钮上方
+	_achievements_container = VBoxContainer.new()
+	_achievements_container.position = Vector2(660, 660)
+	_achievements_container.size = Vector2(300, 50)
+	add_child(_achievements_container)
+
+
+func _populate_run_stats(data: Dictionary) -> void:
+	if _run_stats_container == null:
+		return
+	var labels: Array = _run_stats_container.get_children()
+	var final_turn: int = data.get("final_turn", 0)
+	var battle_wins: int = data.get("battle_win_count", 0)
+	var elite_wins: int = data.get("elite_win_count", 0)
+	var gold_total: int = data.get("gold_earned_total", 0)
+	var gold_spent: int = data.get("gold_spent", 0)
+	var training: int = data.get("training_count", 0)
+	var max_hp: int = data.get("max_hp_reached", 0)
+	var score: int = data.get("final_score", 0)
+	var grade: String = data.get("final_grade", "")
+	
+	var texts: Array[String] = [
+		"回合数: %d" % final_turn,
+		"战斗胜利: %d" % battle_wins,
+		"精英击败: %d" % elite_wins,
+		"金币: %d (花费 %d)" % [gold_total, gold_spent],
+		"训练次数: %d" % training,
+		"最大HP: %d | 评分: %d%s" % [max_hp, score, " (" + grade + ")" if not grade.is_empty() else ""],
+	]
+	for i in range(min(labels.size() - 1, texts.size())):
+		if labels[i + 1] is Label:
+			labels[i + 1].text = texts[i]
+
+
+func _populate_career_stats() -> void:
+	if _career_stats_container == null:
+		return
+	var player_data: Dictionary = SaveManager.load_player_data()
+	var labels: Array = _career_stats_container.get_children()
+	var total_runs: int = player_data.get("total_runs", 0)
+	var total_victories: int = player_data.get("total_victories", 0)
+	var best_scores: Dictionary = player_data.get("hero_best_scores", {})
+	var highest: int = 0
+	for score in best_scores.values():
+		if score is int and score > highest:
+			highest = score
+	
+	var texts: Array[String] = [
+		"总冒险次数: %d" % total_runs,
+		"总通关次数: %d" % total_victories,
+		"最高评分: %d" % highest,
+		"通关率: %.1f%%" % (float(total_victories) / maxf(1.0, float(total_runs)) * 100.0),
+	]
+	for i in range(min(labels.size() - 1, texts.size())):
+		if labels[i + 1] is Label:
+			labels[i + 1].text = texts[i]
+
+
+func _populate_achievements(data: Dictionary) -> void:
+	if _achievements_container == null:
+		return
+	## 清空旧内容
+	for child in _achievements_container.get_children():
+		child.queue_free()
+	
+	var new_achievements: Array = data.get("new_achievements_unlocked", [])
+	if new_achievements.is_empty():
+		_achievements_container.visible = false
+		return
+	
+	_achievements_container.visible = true
+	var title := Label.new()
+	title.text = "新解锁成就"
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color(1, 0.84, 0.0))
+	_achievements_container.add_child(title)
+	
+	for ach_id in new_achievements:
+		var ach_name: String = _ACHIEVEMENT_NAMES.get(ach_id, ach_id)
+		var lbl := Label.new()
+		lbl.text = "  ★ %s" % ach_name
+		lbl.add_theme_font_size_override("font_size", 16)
+		lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.7))
+		_achievements_container.add_child(lbl)
+
 
 func _on_archive_button_pressed() -> void:
 	if _archive_data.is_empty():

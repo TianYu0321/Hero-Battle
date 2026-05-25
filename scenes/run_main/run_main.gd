@@ -195,7 +195,7 @@ func _ready() -> void:
 		else:
 			print("[RunMain] 存档恢复失败，返回主菜单")
 			GameManager.pending_save_data = {}
-			get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")
+			GameManager.change_scene("MENU", "")
 			return
 
 	# 正常新开局，确保清空残留存档数据
@@ -905,7 +905,7 @@ func _on_return_main_menu() -> void:
 		print("[RunMain] 存档完成")
 	else:
 		print("[RunMain] ⚠️ _run_controller 为 null，无法存档！")
-	get_tree().change_scene_to_file("res://scenes/main_menu/menu.tscn")
+	GameManager.change_scene("MENU", "")
 
 
 func _on_enemy_encountered(enemy_data: Dictionary) -> void:

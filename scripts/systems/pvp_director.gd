@@ -63,7 +63,11 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	EventBus.unit_died.connect(_on_unit_died)
 
 	var _on_partner_assist = func(_pid, pname, _trigger_type, _assist_data, _assist_count):
-		recorder.record_event("partner_assist", {"partner_name": pname})
+		recorder.record_event("partner_assist", {
+			"partner_name": pname,
+			"assist_value": _assist_data.get("value", 0),
+			"assist_type": _assist_data.get("type", ""),
+		})
 	EventBus.partner_assist_triggered.connect(_on_partner_assist)
 
 	var _on_chain_triggered = func(chain_count, _partner_id, partner_name, damage, _multiplier, _total_chains):

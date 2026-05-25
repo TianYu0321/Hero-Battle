@@ -139,19 +139,21 @@ func show_popup(partner_options: Array[Dictionary]) -> void:
 	panel_tween.tween_property(main_panel, "scale", Vector2.ONE, 0.35)
 	panel_tween.parallel().tween_property(main_panel, "modulate:a", 1.0, 0.3)
 
-	## 卡片依次入场
+	## 卡片依次入场（stagger 并行）
 	await panel_tween.finished
 	var cards := cards_container.get_children()
+	var card_tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	for i in range(cards.size()):
 		var card: Control = cards[i]
 		card.scale = Vector2(0.8, 0.8)
 		card.modulate.a = 0.0
 
-		if i > 0:
-			await get_tree().create_timer(0.08).timeout
-		var card_tween: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		card_tween.tween_property(card, "scale", Vector2.ONE, 0.25)
-		card_tween.parallel().tween_property(card, "modulate:a", 1.0, 0.2)
+		var delay := i * 0.06
+		if i == 0:
+			card_tween.tween_property(card, "scale", Vector2.ONE, 0.25).set_delay(delay)
+		else:
+			card_tween.parallel().tween_property(card, "scale", Vector2.ONE, 0.25).set_delay(delay)
+		card_tween.parallel().tween_property(card, "modulate:a", 1.0, 0.2).set_delay(delay)
 
 
 func hide_popup() -> void:

@@ -739,6 +739,9 @@ func _play_entrance_animation() -> void:
 	for i in range(elements.size()):
 		if elements[i] == null:
 			continue
-		var delay := i * 0.1
-		tween.tween_property(elements[i], "modulate:a", 1.0, 0.35).set_delay(delay)
-		tween.parallel().tween_property(elements[i], "position:y", elements[i].position.y - 25, 0.4).set_delay(delay)
+		var delay := i * 0.05
+		if i == 0:
+			tween.tween_property(elements[i], "modulate:a", 1.0, 0.28).set_delay(delay)
+		else:
+			tween.parallel().tween_property(elements[i], "modulate:a", 1.0, 0.28).set_delay(delay)
+		tween.parallel().tween_property(elements[i], "position:y", elements[i].position.y - 25, 0.32).set_delay(delay)

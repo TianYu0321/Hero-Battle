@@ -28,10 +28,10 @@ ConfigManager="*res://autoload/config_manager.gd"
 GameManager="*res://autoload/game_manager.gd"
 SaveManager="*res://autoload/save_manager.gd"
 AudioManager="*res://autoload/audio_manager.gd"
-
 TweenFX="*uid://d2n10rw2dnx8o"
 VFX="*uid://ecyiymmaj3jv"
 EnvVFX="*uid://qomyut16hnoi"
+TransitionManager="*res://autoload/transition_manager.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [debug]

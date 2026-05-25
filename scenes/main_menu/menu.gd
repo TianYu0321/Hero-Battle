@@ -262,9 +262,12 @@ func _play_entrance_animation() -> void:
 	for i in range(elements.size()):
 		if elements[i] == null:
 			continue
-		var delay := i * 0.12
-		tween.tween_property(elements[i], "modulate:a", 1.0, 0.4).set_delay(delay)
-		tween.parallel().tween_property(elements[i], "position:y", elements[i].position.y - 30, 0.45).set_delay(delay)
+		var delay := i * 0.06
+		if i == 0:
+			tween.tween_property(elements[i], "modulate:a", 1.0, 0.3).set_delay(delay)
+		else:
+			tween.parallel().tween_property(elements[i], "modulate:a", 1.0, 0.3).set_delay(delay)
+		tween.parallel().tween_property(elements[i], "position:y", elements[i].position.y - 30, 0.35).set_delay(delay)
 
 
 # ========== 面板样式（参考高分项目）==========

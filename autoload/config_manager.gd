@@ -366,8 +366,20 @@ func _load_all_configs() -> void:
 				cfg["role"] = "斩杀"
 			else:
 				cfg["role"] = "伙伴"
-		if not cfg.has("avatar_path"):
-			cfg["avatar_path"] = ""  ## 占位，后续有资源后填充
+		if not cfg.has("avatar_path") or cfg.get("avatar_path", "").is_empty():
+			## 自动探测标准路径下的伙伴头像
+			var auto_avatar: String = "res://assets/characters/card/partners/%s_lv1.png" % partner_id
+			if FileAccess.file_exists(auto_avatar):
+				cfg["avatar_path"] = auto_avatar
+			else:
+				cfg["avatar_path"] = ""
+		if not cfg.has("icon_path") or cfg.get("icon_path", "").is_empty():
+			## icon_path 与 avatar_path 共用同一张图（酒馆集结小头像）
+			var auto_icon: String = "res://assets/characters/card/partners/%s_lv1.png" % partner_id
+			if FileAccess.file_exists(auto_icon):
+				cfg["icon_path"] = auto_icon
+			else:
+				cfg["icon_path"] = ""
 		if not cfg.has("skill_charge_max"):
 			cfg["skill_charge_max"] = 3
 		if not cfg.has("rarity_str"):

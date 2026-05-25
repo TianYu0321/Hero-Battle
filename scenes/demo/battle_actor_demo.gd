@@ -49,6 +49,9 @@ var _partner_poses: Dictionary[String, Texture2D] = {}
 var _hunter_poses: Dictionary[String, Texture2D] = {}
 var _swordsman_poses: Dictionary[String, Texture2D] = {}
 var _scout_poses: Dictionary[String, Texture2D] = {}
+var _sorcerer_poses: Dictionary[String, Texture2D] = {}
+var _pharmacist_poses: Dictionary[String, Texture2D] = {}
+var _shieldguard_poses: Dictionary[String, Texture2D] = {}
 
 func _ready() -> void:
 	# 加载单帧 Pose 图（hero/enemy 共用 shinobi 素材）
@@ -168,6 +171,17 @@ func _ready() -> void:
 	if _scout_action != null:
 		_scout_poses["action"] = _scout_action
 	
+	## 加载术士 Pose（无 idle，用 ready → action → pose 三阶段）
+	var _sorcerer_ready := _load_tex("assets/characters/partner/sorcerer/ready/ready.png")
+	var _sorcerer_action := _load_tex("assets/characters/partner/sorcerer/action/action.png")
+	var _sorcerer_pose := _load_tex("assets/characters/partner/sorcerer/pose/pose.png")
+	if _sorcerer_ready != null:
+		_sorcerer_poses["ready"] = _sorcerer_ready
+	if _sorcerer_action != null:
+		_sorcerer_poses["action"] = _sorcerer_action
+	if _sorcerer_pose != null:
+		_sorcerer_poses["pose"] = _sorcerer_pose
+	
 	## 动态添加斥候测试按钮
 	var btn_container: HBoxContainer = $UI/ButtonContainer
 	var btn_scout := Button.new()
@@ -176,6 +190,52 @@ func _ready() -> void:
 	btn_scout.add_theme_font_size_override("font_size", 16)
 	btn_scout.pressed.connect(_on_scout_assist_pressed)
 	btn_container.add_child(btn_scout)
+	
+	## 动态添加术士测试按钮
+	var btn_sorcerer := Button.new()
+	btn_sorcerer.text = "术士诅咒"
+	btn_sorcerer.add_theme_color_override("font_color", Color("#9B59B6"))
+	btn_sorcerer.add_theme_font_size_override("font_size", 16)
+	btn_sorcerer.pressed.connect(_on_sorcerer_assist_pressed)
+	btn_container.add_child(btn_sorcerer)
+	
+	## 加载药师 Pose（ready → action → pose）
+	var _pharmacist_ready := _load_tex("assets/characters/partner/pharmacist/ready/ready.png")
+	var _pharmacist_action := _load_tex("assets/characters/partner/pharmacist/action/action.png")
+	var _pharmacist_pose := _load_tex("assets/characters/partner/pharmacist/pose/pose.png")
+	if _pharmacist_ready != null:
+		_pharmacist_poses["ready"] = _pharmacist_ready
+	if _pharmacist_action != null:
+		_pharmacist_poses["action"] = _pharmacist_action
+	if _pharmacist_pose != null:
+		_pharmacist_poses["pose"] = _pharmacist_pose
+	
+	## 加载盾卫 Pose（idle → action，idle/ready 1000px，action 600px）
+	var _shieldguard_idle := _load_tex("assets/characters/partner/shieldguard/idle/idle.png")
+	var _shieldguard_ready := _load_tex("assets/characters/partner/shieldguard/ready/ready.png")
+	var _shieldguard_action := _load_tex("assets/characters/partner/shieldguard/action/action.png")
+	if _shieldguard_idle != null:
+		_shieldguard_poses["idle"] = _shieldguard_idle
+	if _shieldguard_ready != null:
+		_shieldguard_poses["ready"] = _shieldguard_ready
+	if _shieldguard_action != null:
+		_shieldguard_poses["action"] = _shieldguard_action
+	
+	## 动态添加药师测试按钮
+	var btn_pharmacist := Button.new()
+	btn_pharmacist.text = "药师治疗"
+	btn_pharmacist.add_theme_color_override("font_color", Color("#2ECC71"))
+	btn_pharmacist.add_theme_font_size_override("font_size", 16)
+	btn_pharmacist.pressed.connect(_on_pharmacist_assist_pressed)
+	btn_container.add_child(btn_pharmacist)
+	
+	## 动态添加盾卫测试按钮
+	var btn_shieldguard := Button.new()
+	btn_shieldguard.text = "盾卫援护"
+	btn_shieldguard.add_theme_color_override("font_color", Color("#3498DB"))
+	btn_shieldguard.add_theme_font_size_override("font_size", 16)
+	btn_shieldguard.pressed.connect(_on_shieldguard_assist_pressed)
+	btn_container.add_child(btn_shieldguard)
 
 
 func _load_tex(path: String) -> Texture2D:
@@ -738,6 +798,173 @@ func _on_hunter_assist_pressed() -> void:
 
 	_is_animating = false
 	_check_death()
+
+
+# ==========================================
+# 术士黑暗诅咒
+# ==========================================
+
+func _on_sorcerer_assist_pressed() -> void:
+	if _is_animating or _hero_hp <= 0 or _enemy_hp <= 0:
+		return
+	if not _sorcerer_poses.has("ready") or not _sorcerer_poses.has("action") or not _sorcerer_poses.has("pose"):
+		_log("[color=red]术士素材未加载[/color]")
+		return
+	_is_animating = true
+
+	_log("▸ [color=#9B59B6]术士 黑暗诅咒！[/color]")
+
+	var enemy_center: Vector2 = enemy_actor.global_position
+	var hero_center: Vector2 = hero_actor.global_position
+	## 术士从主角身后飘到主角前方 200px 处施法（面朝左）
+	var spawn_pos: Vector2 = hero_center + Vector2(-300, -20)
+	var cast_pos: Vector2 = hero_center + Vector2(200, -20)
+
+	var sprite := Sprite2D.new()
+	sprite.texture = _sorcerer_poses["ready"]
+	sprite.scale = Vector2(0.3, 0.3)
+	sprite.modulate.a = 0.0
+	sprite.global_position = spawn_pos
+	sfx_layer.add_child(sprite)
+
+	## 阶段1: 淡入登场
+	var enter_tween := create_tween().set_parallel()
+	enter_tween.tween_property(sprite, "modulate:a", 1.0, 0.3)
+	enter_tween.tween_property(sprite, "scale", Vector2(0.5, 0.5), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	enter_tween.tween_property(sprite, "global_position", cast_pos, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await enter_tween.finished
+
+	## 阶段2: 召唤魔法阵（敌人脚下）
+	var circle_pos: Vector2 = enemy_center + Vector2(0, 80)
+	var magic_circle := _spawn_magic_circle(circle_pos)
+
+	## 切换到 action pose（施法动作）
+	_switch_partner_pose(sprite, _sorcerer_poses["action"])
+	await get_tree().create_timer(0.2).timeout
+
+	## 阶段3: 诅咒释放 + debuff 表现
+	_screen_shake(6.0, 0.2)
+	_apply_debuff_tint(enemy_sprite)
+
+	## 紫色能量漩涡（portal_vortex 本身即为紫色调）
+	var vortex = preload("res://addons/vfx_library/effects/portal_vortex.tscn").instantiate()
+	sfx_layer.add_child(vortex)
+	vortex.global_position = enemy_center
+	vortex.scale_amount_min = 4.0
+	vortex.scale_amount_max = 10.0
+	vortex.amount = 120
+	vortex.emitting = true
+	get_tree().create_timer(1.5).timeout.connect(func(): if is_instance_valid(vortex): vortex.queue_free())
+
+	## debuff 标签
+	_spawn_debuff_label(enemy_center + Vector2(0, -180), "↓攻")
+
+	## 伤害
+	var dmg: int = randi_range(80, 150)
+	_enemy_hp = maxi(0, _enemy_hp - dmg)
+	_update_hp_display()
+	_spawn_damage_number(enemy_center + Vector2(0, -140), dmg, false)
+	_spawn_sfx_text(enemy_center + Vector2(0, -240), "咒！", Color("#9B59B6"))
+
+	await get_tree().create_timer(0.3).timeout
+
+	## 阶段4: 收势（纸片翻转切到 pose pose）
+	var _orig_scale_y: float = sprite.scale.y
+	var _sign_x: float = sign(sprite.scale.x)
+	if _sign_x == 0: _sign_x = 1
+	var _flip_t1: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_flip_t1.tween_property(sprite, "scale:x", 0.06 * _sign_x, 0.06)
+	await _flip_t1.finished
+	_switch_partner_pose(sprite, _sorcerer_poses["pose"])
+	var _flip_t2: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_flip_t2.tween_property(sprite, "scale:x", _orig_scale_y * _sign_x, 0.12)
+	await _flip_t2.finished
+	await get_tree().create_timer(0.4).timeout
+
+	## 阶段5: 退场 + 魔法阵消失
+	var fade_tween := create_tween().set_parallel()
+	fade_tween.tween_property(sprite, "modulate:a", 0.0, 0.3)
+	if is_instance_valid(magic_circle):
+		fade_tween.tween_property(magic_circle, "modulate:a", 0.0, 0.5)
+	await fade_tween.finished
+	if is_instance_valid(sprite):
+		sprite.queue_free()
+	if is_instance_valid(magic_circle):
+		magic_circle.queue_free()
+
+	_is_animating = false
+	_check_death()
+
+
+## 魔法阵（六角星 + 外圈环，旋转 + 放大入场）
+func _spawn_magic_circle(pos: Vector2) -> Node2D:
+	var container := Node2D.new()
+	container.global_position = pos
+	container.modulate = Color(1, 1, 1, 0)
+	sfx_layer.add_child(container)
+
+	## 外圈六边形
+	var hex := Polygon2D.new()
+	var hex_pts: PackedVector2Array = PackedVector2Array()
+	for i in range(6):
+		var angle := deg_to_rad(i * 60 - 30)
+		hex_pts.push_back(Vector2(cos(angle), sin(angle)) * 55)
+	hex.polygon = hex_pts
+	hex.color = Color(0.5, 0.1, 0.8, 0.25)
+	container.add_child(hex)
+
+	## 内圈六角星
+	var star := Polygon2D.new()
+	var star_pts: PackedVector2Array = PackedVector2Array()
+	for i in range(6):
+		var outer_angle := deg_to_rad(i * 60 - 90)
+		var inner_angle := deg_to_rad(i * 60 - 60)
+		star_pts.push_back(Vector2(cos(outer_angle), sin(outer_angle)) * 40)
+		star_pts.push_back(Vector2(cos(inner_angle), sin(inner_angle)) * 18)
+	star.polygon = star_pts
+	star.color = Color(0.75, 0.3, 1.0, 0.45)
+	container.add_child(star)
+
+	## 放大 + 淡入
+	container.scale = Vector2.ZERO
+	var tween := create_tween().set_parallel()
+	tween.tween_property(container, "scale", Vector2(1.2, 1.2), 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(container, "modulate:a", 1.0, 0.3)
+
+	## 持续旋转
+	var rot_tween := create_tween()
+	rot_tween.tween_property(container, "rotation", PI * 4, 3.0)
+
+	return container
+
+
+## debuff 紫色 tint（敌人 portrait 闪烁暗紫后恢复）
+func _apply_debuff_tint(sprite: Sprite2D) -> void:
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", Color(0.55, 0.25, 0.75), 0.1)
+	tween.tween_interval(0.5)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.6)
+
+
+## debuff 标签（头顶 ↓攻 图标，弹跳入场后上浮消失）
+func _spawn_debuff_label(pos: Vector2, text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 36)
+	label.add_theme_color_override("font_color", Color(0.75, 0.35, 1.0))
+	label.add_theme_constant_override("outline_size", 3)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	sfx_layer.add_child(label)
+	label.global_position = pos
+	label.scale = Vector2.ZERO
+	label.z_index = 100
+
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.15)
+	tween.tween_property(label, "position:y", pos.y - 60, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.6).set_delay(0.25)
+	tween.tween_callback(func(): if is_instance_valid(label): label.queue_free())
 
 
 # ==========================================
@@ -1329,3 +1556,271 @@ func _on_demo_partner_selected(partner_id: String, partner_data: Dictionary) -> 
 
 func _on_demo_partner_cancelled() -> void:
 	_log("❌ 取消招募伙伴")
+
+
+# ==========================================
+# 纸片翻转（单个 Sprite2D 版，无外层 Actor）
+# ==========================================
+func _flip_pose_sprite(sprite: Sprite2D, tex: Texture2D, duration: float = 0.18) -> void:
+	if tex == null:
+		return
+	var orig_scale_y: float = sprite.scale.y
+	var sign: float = sign(sprite.scale.x)
+	if sign == 0:
+		sign = 1
+	var t1: Tween = create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	t1.tween_property(sprite, "scale:x", 0.06 * sign, duration * 0.35)
+	await t1.finished
+	_set_pose(sprite, tex)
+	var t2: Tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t2.tween_property(sprite, "scale:x", orig_scale_y * sign, duration * 0.65)
+	await t2.finished
+
+
+# ==========================================
+# 药师治疗
+# ==========================================
+func _on_pharmacist_assist_pressed() -> void:
+	if _is_animating or _hero_hp <= 0 or _enemy_hp <= 0:
+		return
+	if not _pharmacist_poses.has("ready") or not _pharmacist_poses.has("action") or not _pharmacist_poses.has("pose"):
+		_log("[color=red]药师素材未加载[/color]")
+		return
+	_is_animating = true
+
+	_log("▸ [color=#2ECC71]药师 治愈之光！[/color]")
+
+	var hero_center: Vector2 = hero_actor.global_position
+	var spawn_pos: Vector2 = hero_center + Vector2(-400, -20)
+	var cast_pos: Vector2 = hero_center + Vector2(-150, -20)
+
+	var sprite := Sprite2D.new()
+	sprite.texture = _pharmacist_poses["ready"]
+	sprite.scale = Vector2(0.3, 0.3)
+	sprite.modulate.a = 0.0
+	sprite.global_position = spawn_pos
+	sfx_layer.add_child(sprite)
+
+	## 阶段1: 淡入登场
+	var enter_tween := create_tween().set_parallel()
+	enter_tween.tween_property(sprite, "modulate:a", 1.0, 0.3)
+	enter_tween.tween_property(sprite, "scale", Vector2(0.5, 0.5), 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	enter_tween.tween_property(sprite, "global_position", cast_pos, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	await enter_tween.finished
+
+	## 阶段2: 纸片翻转 action（洒药）
+	await _flip_pose_sprite(sprite, _pharmacist_poses["action"])
+	await get_tree().create_timer(0.15).timeout
+
+	## 阶段3: 治疗特效
+	## 绿色粒子飘向主角
+	var heal = preload("res://addons/vfx_library/effects/heal_particles.tscn").instantiate()
+	sfx_layer.add_child(heal)
+	heal.global_position = cast_pos + Vector2(80, -20)
+	heal.emitting = true
+	get_tree().create_timer(2.0).timeout.connect(func(): if is_instance_valid(heal): heal.queue_free())
+
+	## 主角闪绿色
+	_apply_heal_tint(hero_sprite)
+
+	## 绿色 +HP 标签
+	_spawn_heal_label(hero_center + Vector2(0, -200))
+
+	## 回血
+	var heal_amount: int = randi_range(100, 200)
+	_hero_hp = mini(_hero_max_hp, _hero_hp + heal_amount)
+	_update_hp_display()
+	_spawn_heal_number(hero_center + Vector2(0, -140), heal_amount)
+	_spawn_sfx_text(hero_center + Vector2(0, -260), "治愈！", Color("#2ECC71"))
+
+	await get_tree().create_timer(0.3).timeout
+
+	## 阶段4: 纸片翻转 pose 收势
+	await _flip_pose_sprite(sprite, _pharmacist_poses["pose"])
+	await get_tree().create_timer(0.4).timeout
+
+	## 阶段5: 退场
+	var fade_tween := create_tween()
+	fade_tween.tween_property(sprite, "modulate:a", 0.0, 0.3)
+	await fade_tween.finished
+	if is_instance_valid(sprite):
+		sprite.queue_free()
+
+	_is_animating = false
+
+
+## 治疗绿色 tint
+func _apply_heal_tint(sprite: Sprite2D) -> void:
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", Color(0.5, 0.9, 0.5), 0.15)
+	tween.tween_interval(0.4)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.5)
+
+
+## 治疗标签（绿色十字弹跳入场）
+func _spawn_heal_label(pos: Vector2) -> void:
+	var label := Label.new()
+	label.text = "✚"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 42)
+	label.add_theme_color_override("font_color", Color(0.3, 0.85, 0.4))
+	label.add_theme_constant_override("outline_size", 3)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	sfx_layer.add_child(label)
+	label.global_position = pos
+	label.scale = Vector2.ZERO
+	label.z_index = 100
+
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "scale", Vector2.ONE * 1.2, 0.15)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.1)
+	tween.tween_property(label, "position:y", pos.y - 50, 0.5).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.5).set_delay(0.2)
+	tween.tween_callback(func(): if is_instance_valid(label): label.queue_free())
+
+
+## 治疗数字（绿色 +XXX）
+func _spawn_heal_number(pos: Vector2, amount: int) -> void:
+	var label := Label.new()
+	label.text = "+%d" % amount
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 36)
+	label.add_theme_color_override("font_color", Color("#2ECC71"))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 2)
+	label.add_theme_constant_override("outline_size", 2)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	sfx_layer.add_child(label)
+	label.global_position = pos
+	label.scale = Vector2(0.5, 0.5)
+
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "scale", Vector2.ONE * 1.3, 0.15)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.1)
+	tween.tween_property(label, "position:y", pos.y - 70, 0.6).set_trans(Tween.TRANS_QUAD)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.6).set_delay(0.3)
+	tween.tween_callback(func(): if is_instance_valid(label): label.queue_free())
+
+
+# ==========================================
+# 盾卫天降援护
+# ==========================================
+func _on_shieldguard_assist_pressed() -> void:
+	if _is_animating or _hero_hp <= 0 or _enemy_hp <= 0:
+		return
+	if not _shieldguard_poses.has("idle") or not _shieldguard_poses.has("ready") or not _shieldguard_poses.has("action"):
+		_log("[color=red]盾卫素材未加载[/color]")
+		return
+	_is_animating = true
+
+	_log("▸ [color=#3498DB]盾卫 天降援护！[/color]")
+
+	var hero_center: Vector2 = hero_actor.global_position
+	## 天降：从主角上方落下，落地在主角前方
+	var spawn_pos: Vector2 = hero_center + Vector2(200, -450)
+	var land_pos: Vector2 = hero_center + Vector2(200, 0)
+
+	var sprite := Sprite2D.new()
+	sprite.texture = _shieldguard_poses["idle"]
+	sprite.scale = Vector2(0.3, 0.3)
+	sprite.modulate.a = 0.0
+	sprite.global_position = spawn_pos
+	sfx_layer.add_child(sprite)
+
+	## 阶段1: 天降（加速下落，idle = 空中下落姿势）
+	var fall_tween := create_tween().set_parallel()
+	fall_tween.tween_property(sprite, "modulate:a", 1.0, 0.2)
+	fall_tween.tween_property(sprite, "scale", Vector2(0.5, 0.5), 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	fall_tween.tween_property(sprite, "global_position", land_pos, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	await fall_tween.finished
+
+	## 落地震屏 + 尘土
+	_screen_shake(10.0, 0.2)
+	var dust = preload("res://addons/vfx_library/effects/jump_dust.tscn").instantiate()
+	sfx_layer.add_child(dust)
+	dust.global_position = land_pos
+	dust.scale_amount_min = 6.0
+	dust.scale_amount_max = 12.0
+	dust.amount = 20
+	dust.emitting = true
+	get_tree().create_timer(0.5).timeout.connect(func(): if is_instance_valid(dust): dust.queue_free())
+
+	## 阶段2: 直接切 ready（落地姿势，idle/ready 同尺寸 1000px，无纸片翻转）
+	_switch_partner_pose(sprite, _shieldguard_poses["ready"])
+	await get_tree().create_timer(0.1).timeout
+
+	## 阶段3: 纸片翻转 action（举盾格挡，1000→600 左移 200px 正好贴身）
+	await _flip_pose_sprite(sprite, _shieldguard_poses["action"])
+	await get_tree().create_timer(0.15).timeout
+
+	## 阶段4: 护盾展开特效
+	_spawn_shield_aura(hero_center)
+	_apply_shield_tint(hero_sprite)
+
+	## 反弹伤害（模拟）
+	var reflect_dmg: int = randi_range(50, 100)
+	_enemy_hp = maxi(0, _enemy_hp - reflect_dmg)
+	_update_hp_display()
+	_spawn_damage_number(enemy_actor.global_position + Vector2(0, -140), reflect_dmg, false)
+	_spawn_sfx_text(land_pos + Vector2(0, -180), "盾反！", Color("#3498DB"))
+
+	await get_tree().create_timer(0.4).timeout
+
+	## 阶段5: 退场（直接从 action 淡出，无需翻回 ready）
+	var fade_tween := create_tween()
+	fade_tween.tween_property(sprite, "modulate:a", 0.0, 0.3)
+	await fade_tween.finished
+	if is_instance_valid(sprite):
+		sprite.queue_free()
+
+	_is_animating = false
+	_check_death()
+
+
+## 蓝色护盾光环（罩住主角）
+func _spawn_shield_aura(pos: Vector2) -> void:
+	## 外圈护盾环
+	var shield_ring := Polygon2D.new()
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i in range(24):
+		var angle := deg_to_rad(i * 15)
+		pts.push_back(Vector2(cos(angle), sin(angle)) * 70)
+	shield_ring.polygon = pts
+	shield_ring.color = Color(0.25, 0.55, 0.95, 0.15)
+	shield_ring.position = pos
+	sfx_layer.add_child(shield_ring)
+
+	## 内圈光点
+	var inner := Polygon2D.new()
+	var inner_pts: PackedVector2Array = PackedVector2Array()
+	for i in range(12):
+		var angle := deg_to_rad(i * 30)
+		inner_pts.push_back(Vector2(cos(angle), sin(angle)) * 45)
+	inner.polygon = inner_pts
+	inner.color = Color(0.4, 0.7, 1.0, 0.3)
+	inner.position = pos
+	sfx_layer.add_child(inner)
+
+	## 放大 + 闪烁
+	shield_ring.scale = Vector2.ZERO
+	inner.scale = Vector2.ZERO
+	var tween := create_tween().set_parallel()
+	tween.tween_property(shield_ring, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(inner, "scale", Vector2(1.0, 1.0), 0.3).set_trans(Tween.TRANS_BACK)
+
+	await get_tree().create_timer(0.6).timeout
+	var fade := create_tween().set_parallel()
+	fade.tween_property(shield_ring, "modulate:a", 0.0, 0.4)
+	fade.tween_property(inner, "modulate:a", 0.0, 0.4)
+	await fade.finished
+	if is_instance_valid(shield_ring): shield_ring.queue_free()
+	if is_instance_valid(inner): inner.queue_free()
+
+
+## 护盾蓝色 tint
+func _apply_shield_tint(sprite: Sprite2D) -> void:
+	var tween := create_tween()
+	tween.tween_property(sprite, "modulate", Color(0.6, 0.75, 0.95), 0.1)
+	tween.tween_interval(0.5)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.5)

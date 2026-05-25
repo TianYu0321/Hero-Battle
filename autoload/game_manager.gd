@@ -78,7 +78,6 @@ func get_pvp_archive() -> Dictionary:
 	return current_pvp_archive
 
 var _current_state: String = "MENU"
-var _is_transitioning: bool = false
 
 func _ready() -> void:
 	# 初始化用户ID（本地阶段固定，后续从登录回调获取）
@@ -99,6 +98,7 @@ func _ready() -> void:
 	EventBus.pvp_lobby_requested.connect(_on_pvp_lobby_requested)
 	EventBus.shop_requested.connect(_on_shop_requested)
 
+
 func _call_deferred_apply_video_settings() -> void:
 	# 等待一帧确保窗口已初始化
 	await get_tree().process_frame
@@ -117,64 +117,48 @@ func _call_deferred_apply_video_settings() -> void:
 		get_window().mode = Window.MODE_WINDOWED
 		DisplayServer.window_set_size(resolutions[res_index])
 
-func change_scene(to_state: String, transition_type: String = "fade") -> void:
-	if _is_transitioning:
+func change_scene(to_state: String, transition_key: String = "") -> void:
+	if TransitionManager.is_transitioning():
 		push_warning("[GameManager] Scene transition already in progress, ignoring request to %s" % to_state)
 		return
 
-	var from_state: String = _current_state
-	_is_transitioning = true
-	var success: bool = false
-
-	if transition_type == "fade":
-		success = await _do_fade_transition(to_state)
-	else:
-		success = _do_instant_transition(to_state)
-
-	if success:
-		_current_state = to_state
-	_is_transitioning = false
-	EventBus.scene_state_changed.emit(from_state, _current_state, {})
-
-func _do_fade_transition(to_state: String) -> bool:
-	var fade_color: ColorRect = _create_fade_overlay()
-	get_tree().root.call_deferred("add_child", fade_color)
-
-	# Fade in
-	var tween_in: Tween = get_tree().create_tween()
-	tween_in.tween_property(fade_color, "modulate:a", 1.0, 0.2).from(0.0)
-	await tween_in.finished
-
-	# Change scene
-	var success: bool = _do_instant_transition(to_state)
-
-	# Fade out
-	var tween_out: Tween = get_tree().create_tween()
-	tween_out.tween_property(fade_color, "modulate:a", 0.0, 0.2).from(1.0)
-	await tween_out.finished
-
-	fade_color.queue_free()
-	return success
-
-func _do_instant_transition(to_state: String) -> bool:
 	var path: String = _SCENE_PATHS.get(to_state, "")
 	if path.is_empty():
 		push_error("[GameManager] No scene path defined for state: %s" % to_state)
-		return false
+		return
 
-	var err: Error = get_tree().change_scene_to_file(path)
-	if err != OK:
-		push_error("[GameManager] Failed to change scene to %s (error: %d)" % [path, err])
-		return false
-	return true
+	var from_state: String = _current_state
+	var actual_key: String = transition_key
+	if actual_key.is_empty() or not TransitionManager.TRANSITION_CONFIG.has(actual_key):
+		actual_key = _infer_transition_key(from_state, to_state)
 
-func _create_fade_overlay() -> ColorRect:
-	var rect: ColorRect = ColorRect.new()
-	rect.color = Color.BLACK
-	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	rect.modulate.a = 0.0
-	rect.z_index = 999
-	return rect
+	var success: bool = await TransitionManager.switch_scene(path, actual_key)
+	if success:
+		_current_state = to_state
+	EventBus.scene_state_changed.emit(from_state, _current_state, {})
+
+
+func _infer_transition_key(from_state: String, to_state: String) -> String:
+	var combo: String = "%s_to_%s" % [from_state, to_state]
+	match combo:
+		"MENU_to_HERO_SELECT":
+			return "menu_to_hero_select"
+		"HERO_SELECT_to_TAVERN":
+			return "hero_select_to_tavern"
+		"TAVERN_to_RUNNING":
+			return "tavern_to_run_main"
+		"RUNNING_to_BATTLE", "RUNNING_to_FINAL_BATTLE":
+			return "run_to_battle"
+		"BATTLE_to_RUNNING", "FINAL_BATTLE_to_RUNNING":
+			return "battle_to_run"
+		"BATTLE_to_SETTLEMENT", "FINAL_BATTLE_to_SETTLEMENT":
+			return "battle_to_settlement"
+		"RUNNING_to_MENU", "SETTLEMENT_to_MENU", "HERO_SELECT_to_MENU", \
+		"TAVERN_to_MENU", "ARCHIVE_VIEW_to_MENU", "PVP_LOBBY_to_MENU", \
+		"SHOP_to_MENU":
+			return "any_to_menu"
+		_:
+			return "fade"
 
 func get_current_state() -> String:
 	return _current_state

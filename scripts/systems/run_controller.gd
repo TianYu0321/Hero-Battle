@@ -709,6 +709,14 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 	# 检查是否解锁新英雄
 	_check_hero_unlocks()
 	
+	# 保存最终通关状态，确保 has_active_run() 正确返回 false
+	_save_at_floor_entrance()
+	
+	# 更新生涯统计与成就
+	_update_career_stats(true)
+	var new_achievements: Array[String] = _check_achievements()
+	archive_dict["new_achievements_unlocked"] = new_achievements
+	
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
 	EventBus.emit_signal("archive_generated", archive_dict)
 	_change_state(RunState.SETTLEMENT)
@@ -720,6 +728,10 @@ func _end_run() -> void:
 	
 	# 检查是否解锁新英雄
 	_check_hero_unlocks()
+	
+	# 更新生涯统计与成就
+	_update_career_stats(false)
+	var new_achievements: Array[String] = _check_achievements()
 	
 	# 生成基础档案数据（死亡/放弃时也能显示结算信息）
 	var archive_dict: Dictionary = {}
@@ -743,6 +755,7 @@ func _end_run() -> void:
 		archive_dict["gold_spent"] = _run.gold_spent
 		archive_dict["run_status"] = _run.run_status
 		archive_dict["training_count"] = _hero.total_training_count if _hero != null else 0
+	archive_dict["new_achievements_unlocked"] = new_achievements
 	
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
 
@@ -770,6 +783,93 @@ func _check_hero_unlocks() -> void:
 			"clear_with_hero_shadow_dancer":
 				if current_hero_id == "hero_shadow_dancer":
 					SaveManager.unlock_hero(hero_id)
+
+
+func _update_career_stats(is_victory: bool) -> void:
+	var player_data: Dictionary = SaveManager.load_player_data()
+	player_data["total_runs"] = player_data.get("total_runs", 0) + 1
+	if is_victory:
+		player_data["total_victories"] = player_data.get("total_victories", 0) + 1
+		if _hero != null:
+			var hero_id: String = ConfigManager.get_hero_id_by_config_id(_hero.hero_config_id)
+			if not hero_id.is_empty():
+				var best_scores: Dictionary = player_data.get("hero_best_scores", {})
+				var current_score: int = _run.total_score if _run != null else 0
+				var prev_best: int = best_scores.get(hero_id, 0)
+				if current_score > prev_best:
+					best_scores[hero_id] = current_score
+					player_data["hero_best_scores"] = best_scores
+					print("[RunController] 英雄 %s 最高分更新: %d -> %d" % [hero_id, prev_best, current_score])
+	SaveManager.save_player_data(player_data)
+
+
+func _check_achievements() -> Array[String]:
+	if _run == null or _hero == null:
+		return []
+	
+	var is_victory: bool = _run.run_status == 2
+	var new_unlocked: Array[String] = []
+	
+	var player_data: Dictionary = SaveManager.load_player_data()
+	var achievements: Dictionary = player_data.get("achievements", {})
+	
+	## first_run: 完成第一次冒险
+	if not achievements.get("first_run", false):
+		achievements["first_run"] = true
+		new_unlocked.append("first_run")
+	
+	## first_victory: 首次通关
+	if is_victory and not achievements.get("first_victory", false):
+		achievements["first_victory"] = true
+		new_unlocked.append("first_victory")
+	
+	## veteran_runner: 累计10次冒险
+	var total_runs: int = player_data.get("total_runs", 0)
+	if total_runs >= 10 and not achievements.get("veteran_runner", false):
+		achievements["veteran_runner"] = true
+		new_unlocked.append("veteran_runner")
+	
+	## master_runner: 累计50次冒险
+	if total_runs >= 50 and not achievements.get("master_runner", false):
+		achievements["master_runner"] = true
+		new_unlocked.append("master_runner")
+	
+	## speed_runner_25: 25回合前通关
+	if is_victory and _run.current_turn <= 25 and not achievements.get("speed_runner_25", false):
+		achievements["speed_runner_25"] = true
+		new_unlocked.append("speed_runner_25")
+	
+	## speed_runner_20: 20回合前通关
+	if is_victory and _run.current_turn <= 20 and not achievements.get("speed_runner_20", false):
+		achievements["speed_runner_20"] = true
+		new_unlocked.append("speed_runner_20")
+	
+	## s_grade: 获得S评价
+	if is_victory and _run.total_score >= 90 and not achievements.get("s_grade", false):
+		achievements["s_grade"] = true
+		new_unlocked.append("s_grade")
+	
+	## elite_killer: 累计击败10个精英
+	if _run.elite_win_count >= 10 and not achievements.get("elite_killer", false):
+		achievements["elite_killer"] = true
+		new_unlocked.append("elite_killer")
+	
+	## gold_hoarder: 单局持有500金币
+	if _run.gold_owned >= 500 and not achievements.get("gold_hoarder", false):
+		achievements["gold_hoarder"] = true
+		new_unlocked.append("gold_hoarder")
+	
+	## max_hp_300: 单局最大HP达到300
+	if _hero.max_hp >= 300 and not achievements.get("max_hp_300", false):
+		achievements["max_hp_300"] = true
+		new_unlocked.append("max_hp_300")
+	
+	if new_unlocked.size() > 0:
+		player_data["achievements"] = achievements
+		SaveManager.save_player_data(player_data)
+		print("[RunController] 新解锁成就: %s" % str(new_unlocked))
+	
+	return new_unlocked
 
 
 func _save_at_floor_entrance() -> void:

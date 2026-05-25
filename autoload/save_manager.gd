@@ -393,6 +393,8 @@ func load_player_data(_user_id: String = current_user_id) -> Dictionary:
 		data["unlocked_heroes"] = ["hero_warrior"]
 	if not data.has("hero_best_scores"):
 		data["hero_best_scores"] = {}
+	if not data.has("achievements"):
+		data["achievements"] = {}
 	return data
 
 func save_player_data(data: Dictionary, _user_id: String = current_user_id) -> void:
@@ -413,6 +415,7 @@ func _create_default_player_data() -> Dictionary:
 		"total_play_time": 0,
 		"total_runs": 0,
 		"total_victories": 0,
+		"achievements": {},
 	}
 
 func _migrate_run_state_from_legacy(_user_id: String) -> bool:
@@ -429,6 +432,22 @@ func unlock_hero(hero_id: String) -> bool:
 		print("[SaveManager] 解锁英雄: %s" % hero_id)
 		return true
 	return false
+
+
+func unlock_achievement(achievement_id: String) -> bool:
+	var data: Dictionary = load_player_data()
+	var achievements: Dictionary = data.get("achievements", {})
+	if not achievements.get(achievement_id, false):
+		achievements[achievement_id] = true
+		data["achievements"] = achievements
+		save_player_data(data)
+		print("[SaveManager] 解锁成就: %s" % achievement_id)
+		return true
+	return false
+
+
+func get_achievements() -> Dictionary:
+	return load_player_data().get("achievements", {})
 
 func update_archive(archive_id: String, new_data: Dictionary) -> bool:
 	var data: Dictionary = _load_archive_data()
