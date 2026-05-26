@@ -36,8 +36,8 @@ enum TransitionType {
 # ==========================================
 # 配置常量
 # ==========================================
-const DEFAULT_FADE_DURATION := 0.4
-const DEFAULT_WAIT_TIME := 0.15
+const DEFAULT_FADE_DURATION := 0.2
+const DEFAULT_WAIT_TIME := 0.08
 const DEFAULT_EASE := Tween.EASE_IN_OUT
 const DEFAULT_TRANS := Tween.TRANS_CUBIC
 
@@ -70,30 +70,30 @@ const TRANSITION_CONFIG: Dictionary = {
 	"tavern_to_run_main": {
 		"type": TransitionType.FADE,
 		"color": Color(0.91, 0.93, 0.96, 1),
-		"duration": 0.5,
-		"wait_time": 0.2,
+		"duration": 0.25,
+		"wait_time": 0.10,
 		"ease": Tween.EASE_IN_OUT,
 	},
 	"run_to_battle": {
 		"type": TransitionType.DISSOLVE,
 		"dissolve_shape": "circle",
 		"color": Color(0.1, 0.02, 0.02, 1),
-		"duration": 0.5,
-		"wait_time": 0.15,
+		"duration": 0.25,
+		"wait_time": 0.07,
 		"ease": Tween.EASE_IN,
 	},
 	"battle_to_run": {
 		"type": TransitionType.FADE,
 		"color": Color(0.91, 0.93, 0.96, 1),
-		"duration": 0.4,
-		"wait_time": 0.1,
+		"duration": 0.20,
+		"wait_time": 0.05,
 		"ease": Tween.EASE_OUT,
 	},
 	"battle_to_settlement": {
 		"type": TransitionType.FADE,
 		"color": Color(0.1, 0.1, 0.1, 1),
-		"duration": 0.8,
-		"wait_time": 0.3,
+		"duration": 0.40,
+		"wait_time": 0.15,
 		"ease": Tween.EASE_IN_OUT,
 	},
 	"any_to_menu": {
@@ -106,23 +106,23 @@ const TRANSITION_CONFIG: Dictionary = {
 	"popup_open": {
 		"type": TransitionType.SCALE_DOWN,
 		"color": Color(0, 0, 0, 0.5),
-		"duration": 0.3,
-		"wait_time": 0.0,
+		"duration": 0.15,
+		"wait_time": 0,
 		"ease": Tween.EASE_OUT,
 	},
 	"popup_close": {
 		"type": TransitionType.SCALE_DOWN,
 		"color": Color(0, 0, 0, 0.5),
-		"duration": 0.25,
-		"wait_time": 0.0,
+		"duration": 0.12,
+		"wait_time": 0,
 		"ease": Tween.EASE_IN,
 		"reverse": true,
 	},
 	"pause_menu": {
 		"type": TransitionType.FADE_IN_PLACE,
 		"color": Color(0, 0, 0, 0.6),
-		"duration": 0.25,
-		"wait_time": 0.0,
+		"duration": 0.12,
+		"wait_time": 0,
 		"ease": Tween.EASE_OUT,
 	},
 }
@@ -246,8 +246,8 @@ func fade_in_place(fade_in: bool = true, transition_key: String = "pause_menu") 
 		config = {
 			"type": TransitionType.FADE_IN_PLACE,
 			"color": Color(0, 0, 0, 0.6),
-			"duration": 0.25,
-			"wait_time": 0.0,
+			"duration": 0.12,
+			"wait_time": 0,
 			"ease": Tween.EASE_OUT,
 		}
 	

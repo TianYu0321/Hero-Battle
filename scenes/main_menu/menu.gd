@@ -19,36 +19,18 @@ var _settings_panel: Control = null
 @onready var _bg_texture: TextureRect = $BackgroundLayer/BackgroundTexture
 @onready var _character_layer: CanvasLayer = $CharacterLayer
 @onready var _title_label: Label = $UILayer/TitleLabel
-@onready var _ambient_particles: Node2D = $BackgroundLayer/AmbientParticles
+@onready var _ambient_particles: CanvasLayer = $BackgroundLayer/AmbientParticles
 @onready var _menu_buttons_container: VBoxContainer = $UILayer/MenuButtons
-@onready var _icon_bar: HBoxContainer = $UILayer/IconBar
+@onready var _icon_bar: VBoxContainer = $UILayer/IconBar
 @onready var _transition_overlay: ColorRect = $TransitionOverlay
+
+@onready var _vignette_overlay: TextureRect = $BackgroundLayer/VignetteOverlay
 
 var _menu_buttons: Array[BaseButton] = []
 var _sub_menu: Control = null
 
-@onready var menu_theme: Theme = preload("res://resources/themes/menu_theme.tres")
-
-const BUTTON_TEXTS := {
-	"BtnNewGame": "开始冒险",
-	"BtnContinue": "继续冒险",
-	"BtnSettings": "系统设置",
-	"BtnQuit": "退出游戏",
-	"BtnArchive": "存档",
-	"BtnPVP": "PVP对战",
-	"BtnShop": "商店",
-	"BtnLeaderboard": "排行",
-}
 
 func _ready() -> void:
-	# 加载可爱字体
-	var font_cn: FontFile = load("res://assets/fonts/cute/ZCOOLKuaiLe-Regular.ttf")
-	var font_en: FontFile = load("res://assets/fonts/cute/FredokaOne-Regular.ttf")
-	if font_cn == null:
-		push_error("[MainMenu] 中文字体加载失败")
-	if font_en == null:
-		push_error("[MainMenu] 英文字体加载失败")
-	
 	print("[MainMenu] _ready 开始, continue_button=", _btn_continue != null)
 	
 	# 动态创建设置面板（添加到 UILayer 避免被背景遮挡）
@@ -145,40 +127,26 @@ func _ready() -> void:
 	# 入场动画
 	_play_entrance_animation()
 	
+	# 暗角
+	_setup_vignette()
+	
+	# 人物层级
+	_setup_character_layer()
+	
 	# 氛围粒子
+	_setup_fireflies()
+	_setup_dust_motes()
+	_setup_petals()
 	_start_ambient_particles()
-	
-	# 下雨效果 + 镜头呼吸
-	_start_rain()
-	_start_camera_breath()
-	
-	# 应用可爱字体
-	_apply_fonts_recursive(self, font_cn)
-	print("[MainMenu] 字体已应用: cn=", font_cn != null, " en=", font_en != null)
 	
 	EventBus.save_loaded.connect(_on_save_loaded)
 	EventBus.load_failed.connect(_on_load_failed)
 
 
-func _apply_fonts_recursive(node: Node, font: FontFile) -> void:
-	if font == null:
-		return
-	for child in node.get_children():
-		if child is Label or child is BaseButton:
-			child.add_theme_font_override("font", font)
-		if child.get_child_count() > 0:
-			_apply_fonts_recursive(child, font)
+# ========== 按钮样式 ==========
 
-# ========== 按钮样式（明亮卡片风格）==========
-
-func _setup_button_style(button: BaseButton) -> void:
-	if button == null or not is_instance_valid(button):
-		push_warning("[MainMenu] _setup_button_style: button 为 null")
-		return
-	button.theme = menu_theme
-	button.add_theme_font_size_override("font_size", 24)
-	if button.name in BUTTON_TEXTS:
-		button.text = BUTTON_TEXTS[button.name]
+func _setup_button_style(_button: BaseButton) -> void:
+	pass
 
 
 func _setup_button_signals(button: BaseButton) -> void:
@@ -516,84 +484,146 @@ func _show_panel(panel: Control) -> void:
 	tween.parallel().tween_property(panel, "modulate:a", 1.0, 0.2)
 
 
-func _start_rain() -> void:
-	## 动态创建雨滴父节点
-	var rain_parent := Node2D.new()
-	rain_parent.name = "RainParent"
-	$BackgroundLayer.add_child(rain_parent)
-	
-	## 第一层：近景大雨滴
-	var rain_near := GPUParticles2D.new()
-	rain_near.name = "RainNear"
-	rain_near.position = Vector2(960, -100)
-	rain_near.amount = 300
-	rain_near.lifetime = 1.2
-	rain_near.preprocess = 2.0
-	rain_near.visibility_rect = Rect2(-200, -200, 2240, 1480)
-	
-	var mat_near := ParticleProcessMaterial.new()
-	mat_near.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	mat_near.emission_box_extents = Vector3(1200, 10, 1)
-	mat_near.direction = Vector3(0.15, 1, 0)
-	mat_near.spread = 2.0
-	mat_near.initial_velocity_min = 500.0
-	mat_near.initial_velocity_max = 700.0
-	mat_near.gravity = Vector3(0, 800, 0)
-	mat_near.scale_min = 1.0
-	mat_near.scale_max = 2.0
-	mat_near.color = Color(0.55, 0.65, 0.75, 0.35)
-	rain_near.process_material = mat_near
-	
-	var drop_texture_near := GradientTexture2D.new()
-	drop_texture_near.gradient = Gradient.new()
-	drop_texture_near.gradient.colors = [Color(1,1,1,0.6), Color(1,1,1,0)]
-	drop_texture_near.width = 2
-	drop_texture_near.height = 24
-	drop_texture_near.fill_from = Vector2(0.5, 0)
-	drop_texture_near.fill_to = Vector2(0.5, 1)
-	rain_near.texture = drop_texture_near
-	
-	rain_parent.add_child(rain_near)
-	
-	## 第二层：远景小雨滴（更淡更细）
-	var rain_far := GPUParticles2D.new()
-	rain_far.name = "RainFar"
-	rain_far.position = Vector2(960, -50)
-	rain_far.amount = 400
-	rain_far.lifetime = 2.0
-	rain_far.preprocess = 3.0
-	rain_far.visibility_rect = Rect2(-200, -200, 2240, 1480)
-	
-	var mat_far := ParticleProcessMaterial.new()
-	mat_far.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	mat_far.emission_box_extents = Vector3(1400, 10, 1)
-	mat_far.direction = Vector3(0.1, 1, 0)
-	mat_far.spread = 5.0
-	mat_far.initial_velocity_min = 300.0
-	mat_far.initial_velocity_max = 450.0
-	mat_far.gravity = Vector3(0, 500, 0)
-	mat_far.scale_min = 0.5
-	mat_far.scale_max = 1.0
-	mat_far.color = Color(0.45, 0.50, 0.60, 0.15)
-	rain_far.process_material = mat_far
-	
-	var drop_texture_far := GradientTexture2D.new()
-	drop_texture_far.gradient = Gradient.new()
-	drop_texture_far.gradient.colors = [Color(1,1,1,0.3), Color(1,1,1,0)]
-	drop_texture_far.width = 1
-	drop_texture_far.height = 16
-	drop_texture_far.fill_from = Vector2(0.5, 0)
-	drop_texture_far.fill_to = Vector2(0.5, 1)
-	rain_far.texture = drop_texture_far
-	
-	rain_parent.add_child(rain_far)
-
-
-func _start_camera_breath() -> void:
-	## 背景轻微缩放呼吸（6秒周期）
-	if _bg_texture == null:
+func _setup_character_layer() -> void:
+	if _character_layer == null:
 		return
-	_bg_texture.pivot_offset = Vector2(960, 540)
-	var tween := create_tween().set_loops()
-	tween.tween_property(_bg_texture, "scale", Vector2(1.02, 1.02), 6.0)
-	tween.tween_property(_bg_texture, "scale", Vector2(1.0, 1.0), 6.0)
+	var sprite: Sprite2D = _character_layer.get_node_or_null("PersonSprite")
+	if sprite == null or sprite.texture == null:
+		return
+	
+	var viewport_size := get_viewport().get_visible_rect().size
+	var target_height := viewport_size.y * 0.28
+	var scale_needed := target_height / sprite.texture.get_height()
+	sprite.scale = Vector2(scale_needed, scale_needed)
+	sprite.position = Vector2(viewport_size.x * 0.5, viewport_size.y - target_height * 0.5)
+
+
+# ========== 氛围粒子（CPUParticles2D 预置节点）==========
+
+func _setup_fireflies() -> void:
+	var particles: CPUParticles2D = _ambient_particles.get_node_or_null("Fireflies")
+	if particles == null:
+		return
+	particles.emitting = true
+	particles.amount = 30
+	particles.lifetime = 4.0
+	particles.preprocess = 4.0
+	particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	particles.emission_rect_extents = Vector2(960, 540)
+	particles.position = Vector2(960, 540)
+	particles.direction = Vector2(0, -1)
+	particles.spread = 30.0
+	particles.gravity = Vector2(0, -5)
+	particles.initial_velocity_min = 10.0
+	particles.initial_velocity_max = 30.0
+	particles.scale_amount_min = 0.5
+	particles.scale_amount_max = 1.5
+	particles.scale_amount_curve = _create_pulse_curve()
+	particles.color = Color(0.9, 1.0, 0.4, 0.8)
+	particles.color_ramp = _create_firefly_color_ramp()
+
+func _setup_dust_motes() -> void:
+	var particles: CPUParticles2D = _ambient_particles.get_node_or_null("DustMotes")
+	if particles == null:
+		return
+	particles.emitting = true
+	particles.amount = 50
+	particles.lifetime = 6.0
+	particles.preprocess = 6.0
+	particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	particles.emission_rect_extents = Vector2(1200, 100)
+	particles.position = Vector2(960, 0)
+	particles.direction = Vector2(0.3, 1.0)
+	particles.spread = 15.0
+	particles.gravity = Vector2(0, 2)
+	particles.initial_velocity_min = 5.0
+	particles.initial_velocity_max = 15.0
+	particles.scale_amount_min = 0.3
+	particles.scale_amount_max = 0.8
+	particles.color = Color(1.0, 0.98, 0.9, 0.3)
+	particles.texture = _create_circle_texture(8, Color.WHITE)
+	particles.angle_min = 0.0
+	particles.angle_max = 360.0
+	particles.angular_velocity_min = -10.0
+	particles.angular_velocity_max = 10.0
+
+func _setup_petals() -> void:
+	var particles: CPUParticles2D = _ambient_particles.get_node_or_null("Petals")
+	if particles == null:
+		return
+	particles.emitting = true
+	particles.amount = 15
+	particles.lifetime = 8.0
+	particles.preprocess = 8.0
+	particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	particles.emission_rect_extents = Vector2(1400, 50)
+	particles.position = Vector2(960, -50)
+	particles.direction = Vector2(0, 1)
+	particles.spread = 45.0
+	particles.gravity = Vector2(0, 8)
+	particles.initial_velocity_min = 20.0
+	particles.initial_velocity_max = 40.0
+	particles.orbit_velocity_min = 0.1
+	particles.orbit_velocity_max = 0.3
+	particles.scale_amount_min = 0.4
+	particles.scale_amount_max = 0.8
+	particles.color = Color(1.0, 0.75, 0.8, 0.6)
+	particles.angle_min = 0.0
+	particles.angle_max = 360.0
+	particles.angular_velocity_min = -30.0
+	particles.angular_velocity_max = 30.0
+
+func _create_firefly_color_ramp() -> Gradient:
+	var grad := Gradient.new()
+	grad.add_point(0.0, Color(0.9, 1.0, 0.4, 0.0))
+	grad.add_point(0.2, Color(0.9, 1.0, 0.4, 1.0))
+	grad.add_point(0.8, Color(0.9, 1.0, 0.4, 1.0))
+	grad.add_point(1.0, Color(0.9, 1.0, 0.4, 0.0))
+	return grad
+
+func _create_pulse_curve() -> Curve:
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.5))
+	curve.add_point(Vector2(0.5, 1.0))
+	curve.add_point(Vector2(1.0, 0.5))
+	return curve
+
+func _create_circle_texture(size: int, color: Color) -> Texture2D:
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var center := Vector2(size / 2, size / 2)
+	var radius := size / 2 - 1
+	for x in range(size):
+		for y in range(size):
+			if Vector2(x, y).distance_to(center) <= radius:
+				img.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(img)
+
+
+# ========== 暗角遮罩 ==========
+
+func _setup_vignette() -> void:
+	if _vignette_overlay == null:
+		return
+	_vignette_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_vignette_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_vignette_overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var vignette_tex := _create_vignette_texture(1920, 1080, 0.4)
+	_vignette_overlay.texture = vignette_tex
+	_vignette_overlay.modulate = Color(1, 1, 1, 0.3)
+	_vignette_overlay.visible = true
+
+func _create_vignette_texture(width: int, height: int, strength: float) -> Texture2D:
+	var img := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	var center := Vector2(width / 2, height / 2)
+	var max_dist := center.length() * 0.8
+	for x in range(width):
+		for y in range(height):
+			var dist := Vector2(x, y).distance_to(center)
+			var t := clampf(dist / max_dist, 0.0, 1.0)
+			var alpha := pow(t, 2.0) * strength
+			img.set_pixel(x, y, Color(0, 0, 0, alpha))
+	return ImageTexture.create_from_image(img)
+
+
+# ========== Q版风格颜色调优 ==========

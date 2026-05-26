@@ -142,59 +142,16 @@ const ENEMY_SPRITE_PATHS: Dictionary = {
 const DEFAULT_HERO_SPRITE: String = "res://assets/characters/default_hero_frames.tres"
 const DEFAULT_ENEMY_SPRITE: String = "res://assets/characters/enemies/default_enemy_frames.tres"
 
-# --- 选人界面立绘路径配置 ---
-const HERO_PORTRAIT_PATHS: Dictionary = {
-	"hero_warrior": "res://assets/characters/hero/warrior.png",
-	"hero_shadow_dancer": "res://assets/characters/hero/shinobi/idle/shinobi_idle_01.png",
-	"hero_iron_guard": "res://assets/characters/hero/paladin.png",
-}
-
-const HERO_AVATAR_PATHS: Dictionary = {
-	"hero_warrior": "res://assets/characters/hero/warrior.png",
-	"hero_shadow_dancer": "res://assets/characters/hero/shinobi/idle/shinobi_idle_01.png",
-	"hero_iron_guard": "res://assets/characters/hero/paladin.png",
-}
-
-## 获取英雄精灵图路径
+## 获取英雄精灵图路径（战斗动画 SpriteFrames，UI 展示图请使用 ResourcePaths）
 static func get_hero_sprite_path(hero_config_id: int) -> String:
 	return HERO_SPRITE_PATHS.get(hero_config_id, DEFAULT_HERO_SPRITE)
 
-## 获取敌人精灵图路径
+## 获取敌人精灵图路径（战斗动画 SpriteFrames）
 static func get_enemy_sprite_path(enemy_config_id: int) -> String:
 	return ENEMY_SPRITE_PATHS.get(enemy_config_id, DEFAULT_ENEMY_SPRITE)
 
-## 获取英雄选人界面立绘路径
-static func get_hero_portrait_path(hero_id: String) -> String:
-	return HERO_PORTRAIT_PATHS.get(hero_id, "")
-
-## 获取英雄选人界面头像路径
-static func get_hero_avatar_path(hero_id: String) -> String:
-	return HERO_AVATAR_PATHS.get(hero_id, "")
-
-## 获取伙伴头像路径
-func get_partner_avatar_path(partner_id: String) -> String:
-	var cfg := get_partner_config(partner_id)
-	return cfg.get("avatar_path", "")
-
-## 获取伙伴立绘/肖像路径（营救卡片大图）
-func get_partner_portrait_path(partner_config_id: int) -> String:
-	var cfg := get_partner_config(str(partner_config_id))
-	var path: String = cfg.get("portrait_path", "")
-	if path.is_empty():
-		path = cfg.get("avatar_path", "")
-	return path
-
-## 获取伙伴卡片框路径（支持专用卡片 + 通用等级 fallback）
-func get_partner_card_path(partner_id: String, level: int) -> String:
-	level = clampi(level, 1, 5)
-	## 映射数字ID到partner_id（如 "1001" → "partner_swordsman"）
-	var mapped_id: String = _PARTNER_ID_MAP.get(partner_id, partner_id)
-	## 先查专用卡片（后续美术在 partners/ 目录下补充）
-	var dedicated: String = "res://assets/characters/card/partners/%s_lv%d.png" % [mapped_id, level]
-	if FileAccess.file_exists(dedicated):
-		return dedicated
-	## fallback 到通用等级卡片
-	return "res://assets/characters/card/LV%d.png" % level
+## @deprecated: 所有头像/立绘/背景路径已迁移到 ResourcePaths autoload
+## 请使用 ResourcePaths.get_hero_avatar() / get_hero_portrait() / get_partner_avatar() 等
 
 ## 获取稀有度颜色
 static func get_rarity_color(rarity: String) -> Color:
@@ -367,14 +324,14 @@ func _load_all_configs() -> void:
 			else:
 				cfg["role"] = "伙伴"
 		if not cfg.has("avatar_path") or cfg.get("avatar_path", "").is_empty():
-			## 自动探测标准路径下的伙伴头像
-			var auto_avatar: String = "res://assets/characters/card/partners/%s_lv1.png" % partner_id
+			## 自动探测酒馆集结头像（半身像/头像，非卡片）
+			var auto_avatar: String = "res://assets/characters/partner/%s/portrait.png" % partner_id
 			if FileAccess.file_exists(auto_avatar):
 				cfg["avatar_path"] = auto_avatar
 			else:
 				cfg["avatar_path"] = ""
 		if not cfg.has("icon_path") or cfg.get("icon_path", "").is_empty():
-			## icon_path 与 avatar_path 共用同一张图（酒馆集结小头像）
+			## icon_path 保留卡片图（chain 槽 fallback 用）
 			var auto_icon: String = "res://assets/characters/card/partners/%s_lv1.png" % partner_id
 			if FileAccess.file_exists(auto_icon):
 				cfg["icon_path"] = auto_icon

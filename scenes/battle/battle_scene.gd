@@ -5,6 +5,7 @@ extends Control
 ## 职责：接收 GameManager.current_battle_data，播放战斗动画，结束后返回爬塔
 
 @onready var battle_animation_panel: BattleAnimationPanel = $BattleAnimationPanel
+@onready var pause_menu: PauseMenu = $PauseMenu
 
 func _ready() -> void:
 	## 从 GameManager 读取战斗数据
@@ -31,6 +32,10 @@ func _ready() -> void:
 	## 连接动画结束信号
 	battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)
 	
+	## 暂停菜单信号
+	pause_menu.resume_requested.connect(_on_resume_game)
+	pause_menu.main_menu_requested.connect(_on_return_main_menu)
+	
 	## 启动战斗动画回放
 	battle_animation_panel.start_playback(
 		null, hero_name, enemy_name,
@@ -42,6 +47,26 @@ func _ready() -> void:
 		current_floor,
 		battle_data.get("events_by_turn", {})
 	)
+
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		if pause_menu.visible:
+			pause_menu.hide_menu()
+		else:
+			pause_menu.show_menu()
+
+
+func _on_resume_game() -> void:
+	pass
+
+
+func _on_return_main_menu() -> void:
+	## 清理战斗数据
+	GameManager.current_battle_data = {}
+	GameManager.pending_battle_result = {}
+	## 返回主菜单
+	GameManager.change_scene("MENU", "fade")
 
 
 func _on_battle_animation_finished() -> void:

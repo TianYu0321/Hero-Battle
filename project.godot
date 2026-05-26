@@ -32,6 +32,10 @@ TweenFX="*uid://d2n10rw2dnx8o"
 VFX="*uid://ecyiymmaj3jv"
 EnvVFX="*uid://qomyut16hnoi"
 TransitionManager="*res://autoload/transition_manager.gd"
+ResourcePaths="*res://autoload/resource_paths.gd"
+ScreenShake="*res://scripts/autoload/screen_shake.gd"
+HitPause="*res://scripts/autoload/hit_pause.gd"
+FeedbackManager="*res://scenes/effects/feedback_manager.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [debug]

@@ -75,6 +75,9 @@ var _event_tween: Tween = null
 var _sim_total_rounds: int = 0
 var _is_frenzy_active: bool = false
 
+## 可选的回调：战斗结束时不依赖信号，直接调用（用于PVP等场景）
+var battle_finished_callback: Callable = Callable()
+
 ## 卡牌原始位置缓存
 var _hero_card_orig_pos: Vector2 = Vector2.ZERO
 var _enemy_card_orig_pos: Vector2 = Vector2.ZERO
@@ -613,9 +616,8 @@ func _process_event(evt: Dictionary) -> void:
 					
 					if is_crit:
 						VFX.critical_hit(hero_card.global_position + hero_card.size / 2)
-						VFX.freeze_frame(0.08, 0.05)
 					else:
-						VFX.freeze_frame(0.05, 0.05)
+						HitPause.trigger(50.0)
 					
 					## 拟声词（SD纸片小剧场风格）
 					var _sfx: String = SFX_CRIT.pick_random() if is_crit else SFX_ATTACK.pick_random()
@@ -644,9 +646,8 @@ func _process_event(evt: Dictionary) -> void:
 					
 					if is_crit:
 						VFX.critical_hit(enemy_card.global_position + enemy_card.size / 2)
-						VFX.freeze_frame(0.08, 0.05)
 					else:
-						VFX.freeze_frame(0.05, 0.05)
+						HitPause.trigger(50.0)
 					
 					## 拟声词（SD纸片小剧场风格）
 					var _sfx: String = SFX_CRIT.pick_random() if is_crit else SFX_ATTACK.pick_random()
@@ -829,9 +830,8 @@ func _play_card_attack(is_hero: bool, action_type: String, combo_hits: Array = [
 							if hit.is_crit:
 								var _target_card: Control = hero_card if _target_is_hero else enemy_card
 								VFX.critical_hit(_target_card.global_position + _target_card.size / 2)
-								VFX.freeze_frame(0.08, 0.05)
 							else:
-								VFX.freeze_frame(0.05, 0.05)
+								HitPause.trigger(50.0)
 							AudioManager.play_sfx("hero_hit" if _target_is_hero else "enemy_hit")
 						## 强制保持攻击者 scale = BASE_CARD_SCALE 防止异常
 						portrait.scale = Vector2.ONE * BASE_CARD_SCALE
@@ -843,7 +843,7 @@ func _play_card_attack(is_hero: bool, action_type: String, combo_hits: Array = [
 				tween.tween_callback(func():
 					var _target_is_hero: bool = not is_hero
 					_play_hit_reaction(_target_is_hero, true, false)
-					VFX.freeze_frame(0.08, 0.05)
+					HitPause.trigger(80.0)
 					AudioManager.play_sfx("hero_hit" if _target_is_hero else "enemy_hit")
 				)
 			
@@ -1134,9 +1134,15 @@ func _card_glow_pulse(card: Control, glow_color: Color, duration: float) -> void
 	tween.tween_property(glow, "color:a", 0.0, duration * 0.7)
 
 func _flash_sprite(sprite: Sprite2D) -> void:
-	sprite.modulate = Color(2.5, 2.5, 2.5, 1.0)
-	var tween := _create_anim_tween()
-	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
+	if sprite.get_meta("_is_flashing", false):
+		return
+	var original := sprite.modulate
+	sprite.modulate = Color(1.5, 1.5, 1.5, 1.0)
+	sprite.set_meta("_is_flashing", true)
+	await get_tree().create_timer(0.08, true, false, true).timeout
+	if is_instance_valid(sprite):
+		sprite.modulate = original
+	sprite.set_meta("_is_flashing", false)
 
 # ==========================================
 # VFX 辅助
@@ -1253,13 +1259,18 @@ func _init_chain_slots() -> void:
 			chain_label.add_theme_font_size_override("font_size", 12)
 
 func _get_partner_icon_path(partner_name: String) -> String:
-	match partner_name:
-		"猎人": return "res://assets/characters/card/partners/aibo icon/assassin icon.png"
-		"斥候": return "res://assets/characters/card/partners/aibo icon/archor icon.png"
-		"术士": return "res://assets/characters/card/partners/aibo icon/maho icon.png"
-		"药师": return "res://assets/characters/card/partners/aibo icon/wizard icon.png"
-		"剑士": return "res://assets/characters/card/partners/aibo icon/sword icon.png"
-		_: return ""
+	var name_to_id: Dictionary = {
+		"猎人": "partner_hunter",
+		"斥候": "partner_scout",
+		"术士": "partner_sorcerer",
+		"药师": "partner_pharmacist",
+		"剑士": "partner_swordsman",
+		"盾卫": "partner_shieldguard",
+	}
+	var partner_id: String = name_to_id.get(partner_name, "")
+	if partner_id.is_empty():
+		return ""
+	return ResourcePaths.get_partner_avatar(partner_id)
 
 
 func _update_chain_slots(partners: Array) -> void:
@@ -1276,15 +1287,15 @@ func _update_chain_slots(partners: Array) -> void:
 			
 			## 职业图标（32×32）
 			var icon_path: String = _get_partner_icon_path(p.get("name", ""))
-			var tex: Texture2D = load(icon_path) as Texture2D if not icon_path.is_empty() else null
-			if tex == null:
+			var tex: Texture2D = ResourcePaths.load_texture_safe(icon_path)
+			if tex is ImageTexture:
 				## fallback 到旧头像
 				var fallback_path: String = p.get("icon_path", "")
 				tex = _resolve_texture_from_path(fallback_path)
 				if tex == null or fallback_path.is_empty():
 					var fallback_name: String = p.get("name", "")
 					if not fallback_name.is_empty():
-						fallback_path = "res://assets/characters/partner/" + fallback_name + "/partner_" + fallback_name + "_lv1.png"
+						fallback_path = ResourcePaths.get_partner_portrait(fallback_name)
 						tex = _resolve_texture_from_path(fallback_path)
 			if avatar != null:
 				avatar.texture = tex
@@ -1530,13 +1541,16 @@ func _show_result() -> void:
 	## 战斗结束标记（死亡日志已由 unit_died 事件处理，此处不再重复）
 	battle_log.append_text("\n[color=#E6C040]=== 战斗结束 ===[/color]")
 	print("[BattleAnimation] confirmed, gen=%d" % _playback_generation)
-	confirmed.emit.call_deferred()
+	confirmed.emit()
+	if battle_finished_callback.is_valid():
+		battle_finished_callback.call()
 
 func reset_panel() -> void:
 	_is_playing = false
 	turn_timer.stop()
 	if _event_tween != null and _event_tween.is_valid():
 		_event_tween.kill()
+	battle_finished_callback = Callable()
 	_current_round = 0
 	_hero_hp = 0
 	_hero_max_hp = 0
@@ -1648,22 +1662,25 @@ func _update_hp_display() -> void:
 			enemy_hp_bar.modulate = Color(1, 1, 1)
 
 func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool, is_chain: bool = false, chain_count: int = 0) -> void:
+	## @deprecated: 普通/暴击伤害已迁移到 FeedbackManager.play_damage_only()
+	## CHAIN 伤害保留旧格式（FeedbackManager 暂不支持 CHAIN 显示）
+	
+	var target_card: Control = enemy_card if is_enemy_side else hero_card
+	var card_center: Vector2 = target_card.global_position + target_card.size / 2
+	var pos := Vector2(card_center.x - 20, card_center.y - 30)
+	
+	if not is_chain:
+		## 普通/暴击 → 使用 FeedbackManager
+		FeedbackManager.play_damage_only(pos, damage, is_crit)
+		return
+	
+	## CHAIN 伤害保留旧格式
 	var label := Label.new()
 	label.name = "DamageNum_%d" % randi()
 	label.add_theme_font_override("font", _font_cn)
-	
-	if is_chain:
-		label.text = "CHAIN x%d! %d" % [chain_count, damage]
-		label.add_theme_font_size_override("font_size", 28)
-		label.modulate = Color(0.8, 0.3, 1.0)
-	elif is_crit:
-		label.text = str(damage)
-		label.add_theme_font_size_override("font_size", 36)
-		label.modulate = Color(1, 0.1, 0.1)
-	else:
-		label.text = str(damage)
-		label.add_theme_font_size_override("font_size", 26)
-		label.modulate = Color(1, 0.9, 0.3)
+	label.text = "CHAIN x%d! %d" % [chain_count, damage]
+	label.add_theme_font_size_override("font_size", 28)
+	label.modulate = Color(0.8, 0.3, 1.0)
 	
 	var label_settings := LabelSettings.new()
 	label_settings.font_size = label.get_theme_font_size("font_size")
@@ -1674,31 +1691,15 @@ func _show_damage_number(damage: int, is_crit: bool, is_enemy_side: bool, is_cha
 	label_settings.shadow_color = Color(0, 0, 0, 0.5)
 	label.label_settings = label_settings
 	
-	var target_card: Control = enemy_card if is_enemy_side else hero_card
-	var card_center: Vector2 = target_card.global_position + target_card.size / 2
-	label.global_position = Vector2(card_center.x - 20, card_center.y - 30)
+	label.global_position = pos
 	label.z_index = 100
 	add_child(label)
 	
 	var tween := _create_anim_tween()
 	var start_y: float = label.global_position.y
-	
-	if is_crit:
-		label.scale = Vector2(1.5, 1.5)
-		tween.tween_property(label, "scale", Vector2(1.0, 1.0), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "global_position:y", start_y - 80, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "global_position:y", start_y + 20, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tween.tween_property(label, "modulate:a", 0, 0.3)
-	elif is_chain:
-		tween.tween_property(label, "global_position:y", start_y - 100, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tween.parallel().tween_property(label, "rotation", deg_to_rad(10), 0.3)
-		tween.tween_property(label, "modulate:a", 0, 0.4)
-	else:
-		label.scale = Vector2(1.15, 1.15)
-		tween.tween_property(label, "scale", Vector2(1.0, 1.0), 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "global_position:y", start_y - 60, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.tween_property(label, "global_position:y", start_y + 10, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		tween.tween_property(label, "modulate:a", 0, 0.3)
+	tween.tween_property(label, "global_position:y", start_y - 100, 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(label, "rotation", deg_to_rad(10), 0.3)
+	tween.tween_property(label, "modulate:a", 0, 0.4)
 	
 	tween.tween_callback(func():
 		if is_instance_valid(label):
@@ -1764,20 +1765,10 @@ func _switch_camera_to(target: String) -> void:
 			pcam_enemy.set_priority(0)
 			pcam_default.set_priority(10)
 
-func _screen_shake(strength: float = 4.0, duration: float = 0.1) -> void:
-	## 使用 Phantom Camera Noise Emitter 替代手写 offset 震动
-	if noise_emitter == null:
-		return
-	## 根据强度动态切换 noise 资源
-	var noise_res: PhantomCameraNoise2D
-	if strength >= 15.0:
-		noise_res = load("res://resources/phantom_camera_noise_heavy.tres") as PhantomCameraNoise2D
-	else:
-		noise_res = load("res://resources/phantom_camera_noise_medium.tres") as PhantomCameraNoise2D
-	if noise_res != null:
-		noise_emitter.noise = noise_res
-	noise_emitter.duration = duration
-	noise_emitter.emit()
+func _screen_shake(_strength: float = 4.0, duration: float = 0.1) -> void:
+	if noise_emitter != null and noise_emitter.noise != null:
+		noise_emitter.duration = duration
+		noise_emitter.emit()
 
 func _flash_partner_icon(_partner_name: String) -> void:
 	pass
@@ -1902,7 +1893,7 @@ func _play_hunter_dash_slash(assist_value: int = 0) -> void:
 	## 阶段3: 斩击命中（_switch_partner_pose 右跳 200px 后，sprite.global_position 才是真正的攻击点）
 	_switch_partner_pose(sprite, _hunter_poses["action"])
 	var actual_slash_pos: Vector2 = sprite.to_global(Vector2.ZERO)
-	VFX.freeze_frame(0.1, 0.05)
+	HitPause.trigger(100.0)
 	_screen_shake(12.0, 0.25)
 	_flash_sprite(enemy_portrait)
 	VFX.spawn_energy_burst(actual_slash_pos, Color(0.8, 0.3, 0.9))
@@ -2516,6 +2507,7 @@ func _switch_partner_pose(sprite: Sprite2D, tex: Texture2D) -> void:
 # ==========================================
 # SFX 文字弹出
 # ==========================================
+## @deprecated: 自定义中文SFX保留兼容，新代码请使用 FeedbackManager.play_sfx_only()
 func _spawn_sfx_text(pos: Vector2, text: String, color: Color = Color.WHITE) -> void:
 	var label: Label = Label.new()
 	label.text = text
@@ -2981,12 +2973,12 @@ func _set_stage_background(floor_num: int) -> void:
 
 func _get_stage_bg_path(floor_num: int) -> String:
 	## 阶段划分：每10层一个阶段
-	if floor_num <= 10:
-		return "res://assets/backgrounds/pve/stages1/dead forest.png"
-	elif floor_num <= 20:
-		return "res://assets/backgrounds/pve/stages2/castle.png"
-	else:
-		return "res://assets/backgrounds/pve/stages3/terrace.png"
+	var bg_type := "normal"
+	if floor_num > 20:
+		bg_type = "boss"
+	elif floor_num > 10:
+		bg_type = "elite"
+	return ResourcePaths.get_battle_background(bg_type)
 
 
 func _setup_fancy_hp_bars() -> void:

@@ -1,13 +1,67 @@
 [gd_scene format=3 uid="uid://c0m8q1p2x3y5a"]
 
-[ext_resource type="Script" path="res://scenes/menu/pause_menu.gd" id="1_pause"]
+[ext_resource type="Script" uid="uid://bbonk31x6aa58" path="res://scenes/menu/pause_menu.gd" id="1_pause"]
+[ext_resource type="Texture2D" uid="uid://debyjnn532qi6" path="res://assets/ui/options.png" id="2_xtxec"]
+[ext_resource type="Theme" uid="uid://ckpshjojudi1p" path="res://resources/themes/pause_menu_theme.tres" id="3_theme"]
+[ext_resource type="Texture2D" uid="uid://db2jq88q11wxy" path="res://assets/ui/main_menu/button2.png" id="4_msl3b"]
+[ext_resource type="Texture2D" uid="uid://b2jlntp6t116g" path="res://assets/ui/main_menu/btn_hover.png" id="5_2yk66"]
 
-[node name="PauseMenu" type="CanvasLayer"]
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_2yk66"]
+texture = ExtResource("2_xtxec")
+expand_margin_left = 300.0
+expand_margin_top = 200.0
+expand_margin_right = 330.0
+expand_margin_bottom = 200.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_mb26x"]
+texture = ExtResource("4_msl3b")
+expand_margin_left = 30.0
+expand_margin_top = 40.0
+expand_margin_right = 30.0
+expand_margin_bottom = 40.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_xkyws"]
+texture = ExtResource("5_2yk66")
+expand_margin_left = 30.0
+expand_margin_top = 50.0
+expand_margin_right = 30.0
+expand_margin_bottom = 50.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_rdkub"]
+texture = ExtResource("5_2yk66")
+expand_margin_left = 30.0
+expand_margin_top = 50.0
+expand_margin_right = 30.0
+expand_margin_bottom = 50.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_5nn8h"]
+texture = ExtResource("4_msl3b")
+expand_margin_left = 30.0
+expand_margin_top = 40.0
+expand_margin_right = 30.0
+expand_margin_bottom = 40.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_eb3yi"]
+texture = ExtResource("5_2yk66")
+expand_margin_left = 30.0
+expand_margin_top = 50.0
+expand_margin_right = 30.0
+expand_margin_bottom = 50.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_a7btn"]
+texture = ExtResource("5_2yk66")
+expand_margin_left = 30.0
+expand_margin_top = 50.0
+expand_margin_right = 30.0
+expand_margin_bottom = 50.0
+
+[node name="PauseMenu" type="CanvasLayer" unique_id=1582747772]
 process_mode = 3
+layer = 10
 script = ExtResource("1_pause")
 
-[node name="Panel" type="Panel" parent="."]
-custom_minimum_size = Vector2(600.0, 450.0)
+[node name="Panel" type="Panel" parent="." unique_id=1786578261]
+custom_minimum_size = Vector2(600, 450)
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -19,51 +73,62 @@ offset_right = 300.0
 offset_bottom = 225.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("3_theme")
+theme_override_styles/panel = SubResource("StyleBoxTexture_2yk66")
 
-[node name="TitleLabel" type="Label" parent="Panel"]
+[node name="TitleLabel" type="Label" parent="Panel" unique_id=1665030060]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 60.0
+offset_left = 1.0
+offset_top = -130.0
+offset_right = 1.0
+offset_bottom = -70.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.9137255, 0.68235296, 0.10980392, 1)
+theme_override_font_sizes/font_size = 30
 text = "菜单"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="VolumeLabel" type="Label" parent="Panel"]
+[node name="VolumeLabel" type="Label" parent="Panel" unique_id=305229966]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 90.0
-offset_bottom = 127.5
+offset_left = -238.0
+offset_top = -40.0
+offset_right = -238.0
+offset_bottom = -2.5
 grow_horizontal = 2
+theme_override_font_sizes/font_size = 22
 text = "音量"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="VolumeSlider" type="HSlider" parent="Panel"]
+[node name="VolumeSlider" type="HSlider" parent="Panel" unique_id=999849594]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 60.0
-offset_top = 142.5
-offset_right = -60.0
-offset_bottom = 172.5
+offset_left = 119.0
+offset_top = -33.0
+offset_right = -51.0
+offset_bottom = -3.0
 grow_horizontal = 2
-max_value = 100.0
 value = 50.0
 
-[node name="FullscreenCheck" type="CheckBox" parent="Panel"]
+[node name="FullscreenCheck" type="CheckBox" parent="Panel" unique_id=2024609242]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 210.0
-offset_bottom = 256.5
+offset_left = 15.0
+offset_top = 13.0
+offset_right = 15.0
+offset_bottom = 59.5
 grow_horizontal = 2
+theme_override_font_sizes/font_size = 22
 text = "全屏"
 
-[node name="ResumeButton" type="Button" parent="Panel"]
+[node name="ResumeButton" type="Button" parent="Panel" unique_id=1831332800]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -72,9 +137,13 @@ offset_top = 300.0
 offset_right = -150.0
 offset_bottom = 360.0
 grow_horizontal = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxTexture_mb26x")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_xkyws")
+theme_override_styles/hover = SubResource("StyleBoxTexture_rdkub")
 text = "返回游戏"
 
-[node name="MainMenuButton" type="Button" parent="Panel"]
+[node name="MainMenuButton" type="Button" parent="Panel" unique_id=1224831078]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -83,4 +152,8 @@ offset_top = 375.0
 offset_right = -150.0
 offset_bottom = 435.0
 grow_horizontal = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxTexture_5nn8h")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_eb3yi")
+theme_override_styles/hover = SubResource("StyleBoxTexture_a7btn")
 text = "返回主菜单"

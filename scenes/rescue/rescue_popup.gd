@@ -39,7 +39,7 @@ func _create_rescue_card(candidate: Dictionary) -> Control:
 	card_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	card_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	card_bg.texture = load(ConfigManager.get_partner_card_path(partner_id, level))
+	card_bg.texture = ResourcePaths.load_texture_safe(ResourcePaths.get_partner_card_path(partner_id, level))
 	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(card_bg)
 	
@@ -75,7 +75,7 @@ func _create_rescue_card(candidate: Dictionary) -> Control:
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	var portrait_path: String = candidate.get("portrait_path", "")
 	if portrait_path.is_empty():
-		portrait_path = ConfigManager.get_partner_portrait_path(int(candidate.get("partner_id", 0)))
+		portrait_path = ResourcePaths.get_partner_portrait(str(candidate.get("partner_id", 0)))
 	var tex: Texture2D = _resolve_texture_from_path(portrait_path)
 	if tex != null:
 		portrait.texture = tex

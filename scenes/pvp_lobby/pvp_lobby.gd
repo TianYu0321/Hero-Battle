@@ -256,6 +256,8 @@ func _on_start_battle() -> void:
 		battle_animation_panel.reset_panel()
 		battle_animation_panel.visible = true
 		battle_animation_panel.z_index = 100
+		## 使用回调代替信号，避免信号丢失问题
+		battle_animation_panel.battle_finished_callback = _on_battle_animation_finished
 		battle_animation_panel.start_playback(
 			recorder, hero_name, enemy_name,
 			hero_max_hp, enemy_max_hp,
@@ -263,9 +265,6 @@ func _on_start_battle() -> void:
 			hero_max_hp, enemy_max_hp,
 			hero_sprite_path, enemy_sprite_path
 		)
-
-		if not battle_animation_panel.confirmed.is_connected(_on_battle_animation_finished):
-			battle_animation_panel.confirmed.connect(_on_battle_animation_finished, CONNECT_ONE_SHOT)
 	else:
 		# 没有 recorder，直接显示结算
 		_show_pvp_summary(result)
@@ -275,6 +274,7 @@ func _on_start_battle() -> void:
 
 func _on_battle_animation_finished() -> void:
 	print("[PvpLobby] PVP战斗动画播放完毕，显示结算")
+	battle_animation_panel.battle_finished_callback = Callable()
 	battle_animation_panel.visible = false
 	_show_pvp_summary(_pending_pvp_result)
 

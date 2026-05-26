@@ -1,0 +1,6 @@
+[gd_resource type="Theme" format=3 uid="uid://ckpshjojudi1p"]
+
+[ext_resource type="FontFile" uid="uid://8tbrwv71jfnb" path="res://assets/fonts/SourceHanSerifSC-SemiBold.otf" id="1_786is"]
+
+[resource]
+default_font = ExtResource("1_786is")

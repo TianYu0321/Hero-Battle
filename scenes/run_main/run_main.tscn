@@ -1,15 +1,13 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene format=3 uid="uid://dtiojmhpvllbn"]
 
-[ext_resource type="Script" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
+[ext_resource type="Script" uid="uid://cvfqvd5okb40y" path="res://scenes/run_main/run_main.gd" id="1_abc12"]
 [ext_resource type="PackedScene" uid="uid://c0m8q1p2x3y5a" path="res://scenes/menu/pause_menu.tscn" id="2_pause"]
-[ext_resource type="PackedScene" uid="uid://battlesummary01" path="res://scenes/run_main/battle_summary_panel.tscn" id="3_bsp"]
-[ext_resource type="PackedScene" path="res://scenes/run_main/battle_animation_panel.tscn" id="4_bap"]
-[ext_resource type="PackedScene" uid="uid://outingpopup01" path="res://scenes/outing/outing_popup.tscn" id="5_op"]
-[ext_resource type="PackedScene" path="res://scenes/rescue/rescue_popup.tscn" id="6_rp"]
-[ext_resource type="PackedScene" path="res://scenes/partner/partner_select_popup.tscn" id="7_psp"]
+[ext_resource type="PackedScene" uid="uid://dalvvaxw083qq" path="res://scenes/outing/outing_popup.tscn" id="3_op"]
+[ext_resource type="PackedScene" uid="uid://c5c25kbikw2b" path="res://scenes/rescue/rescue_popup.tscn" id="6_rp"]
 [ext_resource type="PackedScene" uid="uid://dynamicbg01" path="res://scenes/backgrounds/dynamic_bg.tscn" id="7_dbg"]
+[ext_resource type="PackedScene" path="res://scenes/partner/partner_select_popup.tscn" id="7_psp"]
 
-[node name="RunMain" type="Control"]
+[node name="RunMain" type="Control" unique_id=1166187807]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -18,15 +16,10 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_abc12")
 
-[node name="DynamicBg" parent="." instance=ExtResource("7_dbg")]
+[node name="DynamicBg" parent="." unique_id=1450650792 instance=ExtResource("7_dbg")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
-[node name="MenuButton" type="Button" parent="."]
+[node name="MenuButton" type="Button" parent="." unique_id=624010575]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -35,58 +28,55 @@ offset_left = -60.0
 offset_top = 20.0
 offset_right = -20.0
 offset_bottom = 60.0
+grow_horizontal = 0
 
-[node name="HudContainer" type="PanelContainer" parent="."]
-layout_mode = 3
+[node name="HudContainer" type="PanelContainer" parent="." unique_id=1546845912]
+layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 52.0
 grow_horizontal = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="HudContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="HudContainer" unique_id=122784523]
 layout_mode = 2
-offset_left = 24.0
-offset_top = 20.0
-offset_right = 1896.0
-offset_bottom = 80.0
 theme_override_constants/separation = 32
 
-[node name="FloorLabel" type="Label" parent="HudContainer/HBoxContainer"]
+[node name="FloorLabel" type="Label" parent="HudContainer/HBoxContainer" unique_id=389680781]
 layout_mode = 2
 text = "层数: 1/30"
 
-[node name="GoldLabel" type="Label" parent="HudContainer/HBoxContainer"]
+[node name="GoldLabel" type="Label" parent="HudContainer/HBoxContainer" unique_id=342145901]
 layout_mode = 2
 text = "金币: 0"
 
-[node name="HpLabel" type="Label" parent="HudContainer/HBoxContainer"]
+[node name="HpLabel" type="Label" parent="HudContainer/HBoxContainer" unique_id=1993820053]
 layout_mode = 2
 text = "生命: 100/100"
 
-[node name="OptionContainer" type="VBoxContainer" parent="."]
+[node name="OptionContainer" type="VBoxContainer" parent="." unique_id=1063744575]
 layout_mode = 0
 offset_left = 360.0
 offset_top = 420.0
 offset_right = 960.0
 offset_bottom = 705.0
 
-[node name="TrainButton" type="Button" parent="OptionContainer"]
+[node name="TrainButton" type="Button" parent="OptionContainer" unique_id=1078626821]
 layout_mode = 2
 text = "训练"
 
-[node name="BattleButton" type="Button" parent="OptionContainer"]
+[node name="BattleButton" type="Button" parent="OptionContainer" unique_id=1137477612]
 layout_mode = 2
 text = "战斗"
 
-[node name="RestButton" type="Button" parent="OptionContainer"]
+[node name="RestButton" type="Button" parent="OptionContainer" unique_id=1396842016]
 layout_mode = 2
 text = "休息"
 
-[node name="OutingButton" type="Button" parent="OptionContainer"]
+[node name="OutingButton" type="Button" parent="OptionContainer" unique_id=871694079]
 layout_mode = 2
 text = "外出"
 
-[node name="TrainingPanel" type="VBoxContainer" parent="."]
+[node name="TrainingPanel" type="VBoxContainer" parent="." unique_id=878883854]
 visible = false
 layout_mode = 0
 offset_left = 360.0
@@ -94,183 +84,151 @@ offset_top = 420.0
 offset_right = 960.0
 offset_bottom = 795.0
 
-[node name="TitleLabel" type="Label" parent="TrainingPanel"]
+[node name="TitleLabel" type="Label" parent="TrainingPanel" unique_id=667698913]
 layout_mode = 2
 text = "选择训练属性"
 horizontal_alignment = 1
 
-[node name="AttrRow1" type="HBoxContainer" parent="TrainingPanel"]
+[node name="AttrRow1" type="HBoxContainer" parent="TrainingPanel" unique_id=1127975188]
 layout_mode = 2
 alignment = 2
 
-[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow1"]
+[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow1" unique_id=165987241]
 layout_mode = 2
 text = "💪 体魄"
 
-[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow1"]
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow1" unique_id=1887590857]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow1"]
+[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow1" unique_id=1787925380]
 layout_mode = 2
 text = "LV:0"
 
-[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow1"]
+[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow1" unique_id=790794646]
 layout_mode = 2
 text = "训练"
 
-[node name="AttrRow2" type="HBoxContainer" parent="TrainingPanel"]
+[node name="AttrRow2" type="HBoxContainer" parent="TrainingPanel" unique_id=1744385007]
 layout_mode = 2
 alignment = 2
 
-[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow2"]
+[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow2" unique_id=810393651]
 layout_mode = 2
 text = "⚔️ 力量"
 
-[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow2"]
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow2" unique_id=792887715]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow2"]
+[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow2" unique_id=1378245276]
 layout_mode = 2
 text = "LV:0"
 
-[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow2"]
+[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow2" unique_id=351740768]
 layout_mode = 2
 text = "训练"
 
-[node name="AttrRow3" type="HBoxContainer" parent="TrainingPanel"]
+[node name="AttrRow3" type="HBoxContainer" parent="TrainingPanel" unique_id=254087552]
 layout_mode = 2
 alignment = 2
 
-[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow3"]
+[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow3" unique_id=425958121]
 layout_mode = 2
 text = "🏃 敏捷"
 
-[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow3"]
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow3" unique_id=90791307]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow3"]
+[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow3" unique_id=1165294769]
 layout_mode = 2
 text = "LV:0"
 
-[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow3"]
+[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow3" unique_id=509276488]
 layout_mode = 2
 text = "训练"
 
-[node name="AttrRow4" type="HBoxContainer" parent="TrainingPanel"]
+[node name="AttrRow4" type="HBoxContainer" parent="TrainingPanel" unique_id=1525596698]
 layout_mode = 2
 alignment = 2
 
-[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow4"]
+[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow4" unique_id=359940855]
 layout_mode = 2
 text = "🎯 技巧"
 
-[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow4"]
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow4" unique_id=927786293]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow4"]
+[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow4" unique_id=1196412127]
 layout_mode = 2
 text = "LV:0"
 
-[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow4"]
+[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow4" unique_id=2143193233]
 layout_mode = 2
 text = "训练"
 
-[node name="AttrRow5" type="HBoxContainer" parent="TrainingPanel"]
+[node name="AttrRow5" type="HBoxContainer" parent="TrainingPanel" unique_id=1181448984]
 layout_mode = 2
 alignment = 2
 
-[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow5"]
+[node name="AttrName" type="Label" parent="TrainingPanel/AttrRow5" unique_id=465680793]
 layout_mode = 2
 text = "🔮 精神"
 
-[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow5"]
+[node name="Spacer" type="Control" parent="TrainingPanel/AttrRow5" unique_id=658557215]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow5"]
+[node name="LvLabel" type="Label" parent="TrainingPanel/AttrRow5" unique_id=540615113]
 layout_mode = 2
 text = "LV:0"
 
-[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow5"]
+[node name="SelectBtn" type="Button" parent="TrainingPanel/AttrRow5" unique_id=802968974]
 layout_mode = 2
 text = "训练"
 
-[node name="PlayerInfoPanel" type="VBoxContainer" parent="."]
-layout_mode = 0
-offset_left = 30.0
-offset_top = 240.0
-offset_right = 270.0
-offset_bottom = 630.0
-
-[node name="PlayerPortrait" type="ColorRect" parent="PlayerInfoPanel"]
-custom_minimum_size = Vector2(90.0, 90.0)
-layout_mode = 2
-color = Color(0.28, 0.6, 0.82, 1)
-
-[node name="PlayerVitLabel" type="Label" parent="PlayerInfoPanel"]
-layout_mode = 2
-text = "体魄: 0"
-
-[node name="PlayerStrLabel" type="Label" parent="PlayerInfoPanel"]
-layout_mode = 2
-text = "力量: 0"
-
-[node name="PlayerAgiLabel" type="Label" parent="PlayerInfoPanel"]
-layout_mode = 2
-text = "敏捷: 0"
-
-[node name="PlayerTecLabel" type="Label" parent="PlayerInfoPanel"]
-layout_mode = 2
-text = "技巧: 0"
-
-[node name="PlayerMndLabel" type="Label" parent="PlayerInfoPanel"]
-layout_mode = 2
-text = "精神: 0"
-
-[node name="EnemyInfoPanel" type="VBoxContainer" parent="."]
+[node name="EnemyInfoPanel" type="VBoxContainer" parent="." unique_id=31922599]
 layout_mode = 0
 offset_left = 1020.0
 offset_top = 240.0
 offset_right = 1320.0
 offset_bottom = 390.0
 
-[node name="EnemyNameLabel" type="Label" parent="EnemyInfoPanel"]
+[node name="EnemyNameLabel" type="Label" parent="EnemyInfoPanel" unique_id=146059949]
 layout_mode = 2
 text = "敌人: ???"
 
-[node name="EnemyHpLabel" type="Label" parent="EnemyInfoPanel"]
+[node name="EnemyHpLabel" type="Label" parent="EnemyInfoPanel" unique_id=1469015663]
 layout_mode = 2
 text = "HP: ???"
 
-[node name="EstimatedDamageLabel" type="Label" parent="EnemyInfoPanel"]
+[node name="EstimatedDamageLabel" type="Label" parent="EnemyInfoPanel" unique_id=888424353]
 layout_mode = 2
 text = "预计损失: ???"
 
-[node name="RiskLabel" type="Label" parent="EnemyInfoPanel"]
+[node name="RiskLabel" type="Label" parent="EnemyInfoPanel" unique_id=1567110108]
 layout_mode = 2
 text = "风险: ???"
 
-[node name="RescuePopup" parent="." instance=ExtResource("6_rp")]
+[node name="RescuePopup" parent="." unique_id=1332880939 instance=ExtResource("6_rp")]
+visible = false
+layout_mode = 1
+
+[node name="PartnerSelectPopup" parent="." unique_id=862139810 instance=ExtResource("7_psp")]
 visible = false
 
-[node name="PartnerSelectPopup" parent="." instance=ExtResource("7_psp")]
-visible = false
+[node name="PauseMenu" parent="." unique_id=948033444 instance=ExtResource("2_pause")]
 
-[node name="PauseMenu" parent="." instance=ExtResource("2_pause")]
-
-[node name="PartnerHUDLayer" type="CanvasLayer" parent="."]
+[node name="PartnerHUDLayer" type="CanvasLayer" parent="." unique_id=238823178]
 layer = 3
 
-[node name="PartnerPanel" type="PanelContainer" parent="PartnerHUDLayer"]
-layout_mode = 1
+[node name="PartnerPanel" type="PanelContainer" parent="PartnerHUDLayer" unique_id=242087836]
 anchors_preset = 7
 anchor_left = 0.5
-anchor_right = 0.5
 anchor_top = 1.0
+anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -300.0
 offset_top = -200.0
@@ -279,20 +237,20 @@ offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="PartnerList" type="HBoxContainer" parent="PartnerHUDLayer/PartnerPanel"]
+[node name="PartnerList" type="HBoxContainer" parent="PartnerHUDLayer/PartnerPanel" unique_id=2039600500]
 layout_mode = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="PartnerTitle" type="Label" parent="PartnerHUDLayer/PartnerPanel/PartnerList"]
+[node name="PartnerTitle" type="Label" parent="PartnerHUDLayer/PartnerPanel/PartnerList" unique_id=1195458182]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.95, 0.72, 0.25, 1)
+theme_override_font_sizes/font_size = 16
 text = "随行伙伴"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="UIModalBlocker" type="ColorRect" parent="."]
+[node name="UIModalBlocker" type="ColorRect" parent="." unique_id=300261436]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -300,10 +258,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.08, 0.06, 0.04, 0.4)
 mouse_filter = 1
+color = Color(0.08, 0.06, 0.04, 0.4)
 
-[node name="ShopPanel" type="Panel" parent="."]
+[node name="ShopPanel" type="Panel" parent="." unique_id=1867791983]
 visible = false
 layout_mode = 0
 offset_left = 660.0
@@ -311,7 +269,7 @@ offset_top = 210.0
 offset_right = 1260.0
 offset_bottom = 810.0
 
-[node name="ContentVBox" type="VBoxContainer" parent="ShopPanel"]
+[node name="ContentVBox" type="VBoxContainer" parent="ShopPanel" unique_id=1563033253]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -323,48 +281,42 @@ offset_bottom = -15.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TitleLabel" type="Label" parent="ShopPanel/ContentVBox"]
+[node name="TitleLabel" type="Label" parent="ShopPanel/ContentVBox" unique_id=193690145]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "商店"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="GoldDisplayLabel" type="Label" parent="ShopPanel/ContentVBox"]
+[node name="GoldDisplayLabel" type="Label" parent="ShopPanel/ContentVBox" unique_id=522867642]
 layout_mode = 2
 text = "持有金币: 0"
 horizontal_alignment = 1
 
-[node name="Scroll" type="ScrollContainer" parent="ShopPanel/ContentVBox"]
+[node name="Scroll" type="ScrollContainer" parent="ShopPanel/ContentVBox" unique_id=72146447]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ShopItemContainer" type="VBoxContainer" parent="ShopPanel/ContentVBox/Scroll"]
+[node name="ShopItemContainer" type="VBoxContainer" parent="ShopPanel/ContentVBox/Scroll" unique_id=1861477853]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="CloseButton" type="Button" parent="ShopPanel/ContentVBox"]
+[node name="CloseButton" type="Button" parent="ShopPanel/ContentVBox" unique_id=520333402]
 layout_mode = 2
 text = "关闭"
 
-[node name="BattleSummaryPanel" parent="." instance=ExtResource("3_bsp")]
-visible = false
+[node name="OutingPopup" parent="." unique_id=1945988495 instance=ExtResource("3_op")]
+layout_mode = 1
 
-[node name="BattleAnimationPanel" parent="." instance=ExtResource("4_bap")]
+[node name="CombatConfirmPanel" type="Panel" parent="." unique_id=364554246]
 visible = false
-
-[node name="OutingPopup" parent="." instance=ExtResource("5_op")]
-visible = false
-
-[node name="CombatConfirmPanel" type="Panel" parent="."]
 layout_mode = 0
 offset_left = 660.0
 offset_top = 420.0
 offset_right = 1260.0
 offset_bottom = 600.0
-visible = false
 
-[node name="EnterCombatButton" type="Button" parent="CombatConfirmPanel"]
+[node name="EnterCombatButton" type="Button" parent="CombatConfirmPanel" unique_id=1143770516]
 layout_mode = 0
 offset_left = 30.0
 offset_top = 15.0
@@ -372,7 +324,7 @@ offset_right = 570.0
 offset_bottom = 75.0
 text = "进入战斗"
 
-[node name="ReturnButton" type="Button" parent="CombatConfirmPanel"]
+[node name="ReturnButton" type="Button" parent="CombatConfirmPanel" unique_id=1457341634]
 layout_mode = 0
 offset_left = 30.0
 offset_top = 90.0

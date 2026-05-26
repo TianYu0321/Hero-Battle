@@ -467,9 +467,15 @@ func _screen_shake(strength: float, duration: float) -> void:
 
 
 func _flash_sprite(sprite: Sprite2D) -> void:
-	sprite.modulate = Color(2.5, 2.5, 2.5, 1.0)
-	var tween: Tween = create_tween()
-	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
+	if sprite.get_meta("_is_flashing", false):
+		return
+	var original := sprite.modulate
+	sprite.modulate = Color(1.5, 1.5, 1.5, 1.0)
+	sprite.set_meta("_is_flashing", true)
+	await get_tree().create_timer(0.08, true, false, true).timeout
+	if is_instance_valid(sprite):
+		sprite.modulate = original
+	sprite.set_meta("_is_flashing", false)
 
 
 # ==========================================

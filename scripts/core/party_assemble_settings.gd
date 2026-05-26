@@ -68,3 +68,16 @@ const RADIUS_AVATAR := 8                   ## 头像框圆角
 ## ========== 背景 ==========
 const COLOR_BG_SCENE := Color(0.96, 0.97, 0.99, 1)
 const BG_TEXTURE_MODULATE := Color(0.88, 0.92, 0.98, 0.4)
+
+## ========== 拳皇99风格布局常量 ==========
+const ICON_CELL_SIZE := 80
+const ICON_AVATAR_SIZE := 64
+const ICON_NAME_HEIGHT := 16
+const GRID_COLUMNS := 5
+const GRID_H_SEPARATION := 8
+const GRID_V_SEPARATION := 8
+
+const PORTRAIT_SIZE := Vector2(520, 520)
+const TEAM_BAR_HEIGHT := 90
+const TEAM_SLOT_SIZE := Vector2(80, 80)
+const DETAIL_PANEL_HEIGHT := 220

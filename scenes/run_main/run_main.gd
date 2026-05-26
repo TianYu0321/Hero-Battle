@@ -7,13 +7,6 @@ extends Control
 @onready var gold_label: Label = $HudContainer/HBoxContainer/GoldLabel
 @onready var hp_label: Label = $HudContainer/HBoxContainer/HpLabel
 
-@onready var player_info_panel: VBoxContainer = $PlayerInfoPanel
-@onready var player_vit_label: Label = $PlayerInfoPanel/PlayerVitLabel
-@onready var player_str_label: Label = $PlayerInfoPanel/PlayerStrLabel
-@onready var player_agi_label: Label = $PlayerInfoPanel/PlayerAgiLabel
-@onready var player_tec_label: Label = $PlayerInfoPanel/PlayerTecLabel
-@onready var player_mnd_label: Label = $PlayerInfoPanel/PlayerMndLabel
-
 @onready var option_buttons: Array[Button] = [
 	$OptionContainer/TrainButton,
 	$OptionContainer/BattleButton,
@@ -26,8 +19,6 @@ extends Control
 @onready var shop_panel: Panel = $ShopPanel
 @onready var shop_item_container: VBoxContainer = $ShopPanel/ContentVBox/Scroll/ShopItemContainer
 @onready var shop_gold_label: Label = $ShopPanel/ContentVBox/GoldDisplayLabel
-@onready var battle_summary_panel = $BattleSummaryPanel
-@onready var battle_animation_panel: BattleAnimationPanel = $BattleAnimationPanel
 @onready var ui_modal_blocker: ColorRect = $UIModalBlocker
 
 @onready var rescue_popup: RescuePopup = $RescuePopup
@@ -99,7 +90,7 @@ var _current_ui_state: UISceneState = UISceneState.LOADING
 func _process(_delta: float) -> void:
 	# 安全检测：UIModalBlocker 不应该在没有任何面板打开时保持 visible
 	if ui_modal_blocker.visible:
-		var any_modal_visible: bool = shop_panel.visible or battle_summary_panel.visible or rescue_popup.visible or partner_select_popup.visible or training_panel.visible or combat_confirm_panel.visible or outing_popup.visible
+		var any_modal_visible: bool = shop_panel.visible or rescue_popup.visible or partner_select_popup.visible or training_panel.visible or combat_confirm_panel.visible or outing_popup.visible
 		if not any_modal_visible:
 			print("[RunMain] 安全检测：UIModalBlocker 异常可见，自动隐藏")
 			ui_modal_blocker.visible = false
@@ -169,15 +160,17 @@ func _ready() -> void:
 	if _run_controller == null:
 		_run_controller = RunController.new()
 		_run_controller.name = "RunController"
-		get_tree().root.add_child(_run_controller)
+		get_tree().root.call_deferred("add_child", _run_controller)
 
 	# 检查是否从战斗场景返回
 	if GameManager.returning_from_battle:
 		print("[RunMain] 从战斗场景返回")
 		GameManager.returning_from_battle = false
+		_init_ui_styles()
 		_update_hud()
 		if not GameManager.pending_battle_result.is_empty():
-			_show_battle_summary(GameManager.pending_battle_result)
+			if _run_controller != null:
+				_run_controller.confirm_battle_result()
 			GameManager.pending_battle_result = {}
 		return
 
@@ -185,6 +178,8 @@ func _ready() -> void:
 	var pending_save: Dictionary = GameManager.pending_save_data
 	if not pending_save.is_empty():
 		print("[RunMain] 检测到待恢复存档")
+		if not _run_controller.is_inside_tree():
+			await get_tree().process_frame
 		var success = _run_controller.continue_from_save(pending_save)
 		if success:
 			GameManager.pending_save_data = {}
@@ -205,7 +200,12 @@ func _ready() -> void:
 
 	if hero_config_id <= 0:
 		push_error("[RunMain] No hero selected, cannot start run")
+		GameManager.change_scene("MENU", "")
 		return
+
+	# 等待 RunController 被添加到场景树（call_deferred）
+	if not _run_controller.is_inside_tree():
+		await get_tree().process_frame
 
 	_run_controller.start_new_run(hero_config_id, partner_config_ids)
 	
@@ -267,12 +267,6 @@ func _update_hud() -> void:
 	gold_label.text = "%d" % gold
 	hp_label.text = "%d / %d" % [current_hp, max_hp]
 
-	player_vit_label.text = "💪 体魄: %d" % hero_data.get("current_vit", 0)
-	player_str_label.text = "⚔️ 力量: %d" % hero_data.get("current_str", 0)
-	player_agi_label.text = "🏃 敏捷: %d" % hero_data.get("current_agi", 0)
-	player_tec_label.text = "🎯 技巧: %d" % hero_data.get("current_tec", 0)
-	player_mnd_label.text = "🔮 精神: %d" % hero_data.get("current_mnd", 0)
-	
 	_update_partner_hud()
 
 
@@ -355,8 +349,6 @@ func _show_combat_preview(opt: Dictionary, index: int) -> void:
 	# 显示确认按钮（进入战斗 / 返回）
 	partner_panel.visible = false
 	_animate_show_panel(combat_confirm_panel)
-	print("[RunMain] summary_panel.visible=%s" % battle_summary_panel.visible)
-	print("[RunMain] animation_panel.visible=%s" % battle_animation_panel.visible)
 	print("[RunMain] 战斗预览: %s" % enemy_cfg.get("name", "???"))
 
 
@@ -365,7 +357,6 @@ func _on_combat_confirmed() -> void:
 	# 隐藏预览
 	_animate_hide_panel(combat_confirm_panel)
 	enemy_info_panel.visible = false
-	battle_summary_panel.visible = false  # 确保结算面板隐藏
 	partner_panel.visible = false
 	
 	# 执行战斗（战斗面板由 _on_battle_ended 统一打开）
@@ -407,12 +398,6 @@ func _on_run_started(run_config: Dictionary) -> void:
 
 func _on_node_options_presented(node_options: Array) -> void:
 	print("[RunMain] _on_node_options_presented: 选项数=%d, 当前blocker=%s" % [node_options.size(), ui_modal_blocker.visible])
-	
-	# 保护：如果战斗动画还在播放，缓存选项但不切换UI状态
-	if battle_animation_panel.visible and battle_animation_panel._is_playing:
-		print("[RunMain] 动画播放中，缓存 node_options")
-		_cached_node_options = node_options.duplicate()
-		return
 	
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 	
@@ -660,7 +645,7 @@ func _show_modal_panel(panel: Control, animated: bool = true) -> void:
 	ui_modal_blocker.modulate = Color(1, 1, 1, 0)
 	ui_modal_blocker.z_index = panel.z_index - 1 if panel.z_index > 0 else 50
 	_current_ui_state = UISceneState.LOADING
-	# 只隐藏 option_container，保留 HudContainer / PlayerInfoPanel / PartnerHUDLayer
+	# 只隐藏 option_container，保留 HudContainer / PartnerHUDLayer
 	option_container.visible = false
 	panel.visible = true
 	panel.z_index = 100
@@ -759,7 +744,7 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 				## RuntimePartner 对象
 				p_dict = {
 					"name": p.name if p.get("name") != null else ConfigManager.get_partner_config(str(p.partner_config_id)).get("name", "???"),
-					"avatar_path": ConfigManager.get_partner_avatar_path(str(p.partner_config_id)),
+					"avatar_path": ResourcePaths.get_partner_avatar(str(p.partner_config_id)),
 					"chain_count": 0,
 					"level": p.current_level if p.get("current_level") != null else 1,
 				}
@@ -788,45 +773,6 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		}
 		GameManager.pending_battle_result = battle_result
 		GameManager.change_scene("BATTLE", "fade")
-	else:
-		# 没有录像，直接显示结算面板
-		_show_battle_summary(battle_result)
-
-func _on_battle_animation_finished() -> void:
-	print("[RunMain] 战斗动画播放完毕，显示结算面板")
-	_show_battle_summary(_pending_battle_result)
-
-func _show_battle_summary(battle_result: Dictionary) -> void:
-	print("[RunMain] _show_battle_summary 被调用: winner=%s, turns=%d" % [
-		battle_result.get("winner", "???"), battle_result.get("turns_elapsed", 0)
-	])
-	# 先隐藏战斗动画面板，避免叠加混乱
-	battle_animation_panel.visible = false
-	
-	battle_summary_panel.show_result(battle_result)
-	_show_modal_panel(battle_summary_panel)
-	if not battle_summary_panel.confirmed.is_connected(_on_battle_summary_confirmed):
-		battle_summary_panel.confirmed.connect(_on_battle_summary_confirmed, CONNECT_ONE_SHOT)
-
-func _on_battle_summary_confirmed() -> void:
-	print("[RunMain] 战斗结算确认关闭")
-	_hide_modal_panel(battle_summary_panel)
-	
-	# 在这里统一更新HUD（战斗后的最终状态）
-	_update_hud()
-	
-	# 推进游戏状态
-	if _run_controller != null:
-		_run_controller.confirm_battle_result()
-	
-	# 清理缓存
-	_pending_battle_result = {}
-	
-	# 如果有缓存的选项（动画播放期间到达的 node_options），现在处理
-	if _cached_node_options.size() > 0:
-		var cached = _cached_node_options.duplicate()
-		_cached_node_options.clear()
-		_on_node_options_presented(cached)
 
 func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	if node_type == "OUTING":
@@ -860,16 +806,7 @@ func _on_stats_changed(_unit_id: String, stat_changes: Dictionary) -> void:
 					var hero_data = summary.get("hero", {})
 					max_hp = hero_data.get("max_hp", 100)
 				hp_label.text = "生命: %d/%d" % [new_hp, max_hp]
-			1:
-				player_vit_label.text = "💪 体魄: %d" % change.get("new", 0)
-			2:
-				player_str_label.text = "⚔️ 力量: %d" % change.get("new", 0)
-			3:
-				player_agi_label.text = "🏃 敏捷: %d" % change.get("new", 0)
-			4:
-				player_tec_label.text = "🎯 技巧: %d" % change.get("new", 0)
-			5:
-				player_mnd_label.text = "🔮 精神: %d" % change.get("new", 0)
+
 
 
 func _on_pvp_result(result: Dictionary) -> void:
@@ -915,7 +852,7 @@ func _on_enemy_encountered(enemy_data: Dictionary) -> void:
 
 
 func update_enemy_info(enemy_data: Dictionary) -> void:
-	## 此函数保留供 CombatConfirmPanel / BattleAnimationPanel 显式调用
+	## 此函数保留供 CombatConfirmPanel / 战斗预览显式调用
 	enemy_info_panel.visible = true
 	enemy_name_label.text = "敌人: %s" % enemy_data.get("name", "???")
 	var max_hp: int = enemy_data.get("max_hp", 0)
@@ -1206,7 +1143,6 @@ func _stop_slot_flash(slot: PanelContainer) -> void:
 
 func _on_partner_unlocked(_config_id: String, partner_name: String, _slot_index: int, _turn: int, _role: String) -> void:
 	_update_partner_hud()
-	_show_floating_text("+%s 加入队伍！" % partner_name, Color(0.35, 0.75, 0.45))
 	
 	## 对最后一个可见 slot 执行缩放弹出动画
 	var last_visible_index: int = -1
@@ -1224,42 +1160,17 @@ func _on_partner_unlocked(_config_id: String, partner_name: String, _slot_index:
 		tween.parallel().tween_property(slot, "modulate:a", 1.0, 0.3)
 
 func _on_partner_skill_triggered(_config_id: String, skill_name: String, effect_desc: String) -> void:
-	_show_floating_text("%s: %s" % [skill_name, effect_desc], Color(0.95, 0.72, 0.25))
+	pass
 
 func _on_partner_charge_changed(_config_id: String, _current: int, _max_charge: int) -> void:
 	_update_partner_hud()
 
 func _show_rest_feedback(heal_amount: int) -> void:
-	## 在 HeroHPBar 上方飘出 "+XX HP" 绿色文字
-	_show_floating_text("+%d HP" % heal_amount, Color(0.35, 0.75, 0.45))
-	
 	## HP 条闪烁绿色后恢复白色
 	if hp_label != null:
 		var hp_tween := create_tween()
 		hp_tween.tween_property(hp_label, "modulate", Color(0.35, 0.75, 0.45), 0.2)
 		hp_tween.tween_property(hp_label, "modulate", Color.WHITE, 0.3)
-
-
-func _show_floating_text(text: String, color: Color) -> void:
-	## 简单飘字提示（可在后续替换为更复杂的动画系统）
-	var label := Label.new()
-	label.text = text
-	label.modulate = color
-	label.add_theme_font_size_override("font_size", 18)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(label)
-	
-	## 使用最小尺寸直接居中，无需等待布局
-	var min_size: Vector2 = label.get_combined_minimum_size()
-	label.position = Vector2(size.x / 2 - min_size.x / 2, size.y / 2)
-	
-	var tween := create_tween()
-	tween.tween_property(label, "position:y", label.position.y - 80, 1.0)
-	tween.parallel().tween_property(label, "modulate:a", 0.0, 1.0)
-	tween.tween_callback(func():
-		if is_instance_valid(label):
-			label.queue_free()
-	)
 
 
 # ============================================================
@@ -1274,7 +1185,6 @@ func _show_floating_text(text: String, color: Color) -> void:
 
 func _init_ui_styles() -> void:
 	_setup_hud()
-	_setup_player_info_panel()
 	_setup_enemy_info_panel()
 	_setup_option_buttons()
 	_setup_menu_button()
@@ -1384,43 +1294,6 @@ func _add_parchment_background(container: VBoxContainer) -> void:
 	sync.call()
 
 
-func _setup_player_info_panel() -> void:
-	_add_parchment_background(player_info_panel)
-	player_info_panel.add_theme_constant_override("separation", 8)
-	
-	## 头像加圆形木框
-	var portrait: ColorRect = player_info_panel.get_node("PlayerPortrait")
-	var portrait_index := portrait.get_index()
-	player_info_panel.remove_child(portrait)
-	
-	var frame := PanelContainer.new()
-	frame.name = "PortraitFrame"
-	frame.custom_minimum_size = Vector2(100, 100)
-	var frame_style := RunMainSettings.create_wood_flat_style(
-		RunMainSettings.COLOR_WOOD_MEDIUM,
-		RunMainSettings.COLOR_WOOD_DARK, 3, 50
-	)
-	frame.add_theme_stylebox_override("panel", frame_style)
-	player_info_panel.add_child(frame)
-	player_info_panel.move_child(frame, portrait_index)
-	
-	portrait.custom_minimum_size = Vector2(90, 90)
-	portrait.color = Color(0.95, 0.82, 0.70)
-	portrait.layout_mode = 1
-	portrait.set_anchors_preset(Control.PRESET_FULL_RECT)
-	portrait.offset_left = 5
-	portrait.offset_top = 5
-	portrait.offset_right = -5
-	portrait.offset_bottom = -5
-	frame.add_child(portrait)
-	
-	## 给每个属性标签加图标和墨水色
-	var labels := [player_vit_label, player_str_label, player_agi_label, player_tec_label, player_mnd_label]
-	for i in range(labels.size()):
-		labels[i].add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
-		labels[i].add_theme_font_size_override("font_size", 14)
-
-
 func _setup_enemy_info_panel() -> void:
 	_add_parchment_background(enemy_info_panel)
 	enemy_info_panel.add_theme_constant_override("separation", 6)
@@ -1473,33 +1346,110 @@ func _setup_training_panel() -> void:
 	## 标题样式
 	var title: Label = $TrainingPanel/TitleLabel
 	title.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
-	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_font_size_override("font_size", 32)
 	title.add_theme_font_override("font", _font_cn)
+	title.add_theme_constant_override("outline_size", 1)
+	title.add_theme_color_override("font_outline_color", Color(0.9, 0.88, 0.84, 1))
+	
+	## 标题下方装饰线
+	if not training_panel.has_node("TitleSeparator"):
+		var title_sep := ColorRect.new()
+		title_sep.name = "TitleSeparator"
+		title_sep.custom_minimum_size = Vector2(0, 2)
+		title_sep.color = RunMainSettings.COLOR_WOOD_MEDIUM
+		title_sep.layout_mode = 2
+		var title_index: int = training_panel.get_node("TitleLabel").get_index()
+		training_panel.add_child(title_sep)
+		training_panel.move_child(title_sep, title_index + 1)
 	
 	## 训练面板间距
 	training_panel.add_theme_constant_override("separation", 16)
 	
-	## 每行属性卡片样式
-	var attr_names := ["体魄", "力量", "敏捷", "技巧", "精神"]
-	for i in range(5):
-		var row: HBoxContainer = training_panel.get_child(i + 1)  # 跳过标题
-		row.custom_minimum_size.y = 48
+	## 属性颜色
+	var attr_colors: Array[Color] = [
+		Color(0.305882, 0.803922, 0.768627, 1),   # 体魄 - 绿
+		Color(1, 0.419608, 0.419608, 1),           # 力量 - 红
+		Color(0.901961, 0.752941, 0.25098, 1),     # 敏捷 - 黄
+		Color(0.352941, 0.560784, 0.815686, 1),    # 技巧 - 蓝
+		Color(0.607843, 0.34902, 0.713725, 1),     # 精神 - 紫
+	]
+	
+	## 收集所有属性行
+	var rows: Array[HBoxContainer] = []
+	for child in training_panel.get_children():
+		if child is HBoxContainer and str(child.name).begins_with("AttrRow"):
+			rows.append(child)
+	
+	for i in range(rows.size()):
+		var row: HBoxContainer = rows[i]
+		row.custom_minimum_size.y = 64
+		row.alignment = BoxContainer.ALIGNMENT_BEGIN
+		row.add_theme_constant_override("separation", 14)
+		
+		## 左侧留白（内容不贴边）
+		if not row.has_node("LeftPad"):
+			var left_pad := Control.new()
+			left_pad.name = "LeftPad"
+			left_pad.custom_minimum_size = Vector2(16, 0)
+			left_pad.layout_mode = 2
+			left_pad.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			row.add_child(left_pad)
+			row.move_child(left_pad, 0)
+		
+		## 右侧留白（内容不贴边）
+		if not row.has_node("RightPad"):
+			var right_pad := Control.new()
+			right_pad.name = "RightPad"
+			right_pad.custom_minimum_size = Vector2(32, 0)
+			right_pad.layout_mode = 2
+			right_pad.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+			row.add_child(right_pad)
+		
+		## 交替色圆角背景
+		if not row.has_node("BgPanel"):
+			var bg := Panel.new()
+			bg.name = "BgPanel"
+			bg.layout_mode = 1
+			bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+			bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var bg_style := StyleBoxFlat.new()
+			bg_style.bg_color = Color(0.96, 0.93, 0.87, 0.35) if i % 2 == 0 else Color(0.93, 0.90, 0.84, 0.35)
+			bg_style.corner_radius_top_left = 8
+			bg_style.corner_radius_top_right = 8
+			bg_style.corner_radius_bottom_left = 8
+			bg_style.corner_radius_bottom_right = 8
+			bg.add_theme_stylebox_override("panel", bg_style)
+			row.add_child(bg)
+			row.move_child(bg, 0)
+		
+		## 左侧彩色竖条
+		if not row.has_node("ColorBar"):
+			var color_bar := ColorRect.new()
+			color_bar.name = "ColorBar"
+			color_bar.custom_minimum_size = Vector2(4, 32)
+			color_bar.color = attr_colors[i]
+			color_bar.layout_mode = 2
+			color_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			row.add_child(color_bar)
+			row.move_child(color_bar, 1)
 		
 		## 属性名样式
 		var name_label: Label = row.get_node("AttrName")
 		name_label.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
 		name_label.add_theme_font_size_override("font_size", 18)
 		name_label.add_theme_font_override("font", _font_cn)
+		name_label.add_theme_constant_override("outline_size", 1)
+		name_label.add_theme_color_override("font_outline_color", Color(1, 1, 1, 0.8))
 		
 		## 等级样式
 		var lv_label: Label = row.get_node("LvLabel")
 		lv_label.add_theme_color_override("font_color", RunMainSettings.COLOR_WOOD_MEDIUM)
-		lv_label.add_theme_font_size_override("font_size", 16)
+		lv_label.add_theme_font_size_override("font_size", 14)
 		lv_label.add_theme_font_override("font", _font_cn)
 		
-		## 按钮样式已在 _setup_shop_and_training 中设置，这里补充最小宽度
+		## 按钮补充最小宽度
 		var btn: Button = row.get_node("SelectBtn")
-		btn.custom_minimum_size.x = 80
+		btn.custom_minimum_size.x = 72
 
 
 func _setup_shop_and_training() -> void:
@@ -1597,6 +1547,8 @@ func _apply_parchment_button_style(btn: Button) -> void:
 # ============================================================
 
 func _apply_font_recursive(node: Node) -> void:
+	if node is PauseMenu:
+		return
 	if node is Label or node is Button:
 		node.add_theme_font_override("font", _font_cn)
 	for child in node.get_children():

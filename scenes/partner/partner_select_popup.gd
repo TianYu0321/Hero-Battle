@@ -231,7 +231,7 @@ func _create_partner_card(partner_data: Dictionary, index: int) -> PanelContaine
 	avatar.custom_minimum_size = AVATAR_SIZE
 	var portrait_path: String = partner_data.get("portrait_path", "")
 	if portrait_path.is_empty():
-		portrait_path = ConfigManager.get_partner_portrait_path(int(partner_data.get("partner_id", 0)))
+		portrait_path = ResourcePaths.get_partner_portrait(str(partner_data.get("partner_id", 0)))
 	var tex: Texture2D = _resolve_texture_from_path(portrait_path)
 	if tex != null:
 		avatar.texture = tex

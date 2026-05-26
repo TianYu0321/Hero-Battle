@@ -284,13 +284,10 @@ func _create_hero_card(hero_id: String, config: Dictionary, is_unlocked: bool) -
 	avatar.expand_mode = TextureRect.EXPAND_FIT_WIDTH
 	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	var avatar_path: String = ConfigManager.get_hero_avatar_path(hero_id)
-	if not avatar_path.is_empty():
-		var tex: Texture2D = load(avatar_path)
-		if tex != null:
-			avatar.texture = tex
-		else:
-			avatar.modulate = portrait_color
+	var avatar_path: String = ResourcePaths.get_hero_avatar(hero_id)
+	var tex: Texture2D = ResourcePaths.load_texture_safe(avatar_path)
+	if tex != null:
+		avatar.texture = tex
 	else:
 		avatar.modulate = portrait_color
 	hbox.add_child(avatar)
@@ -468,7 +465,7 @@ func _update_right_panel(hero_id: String, is_unlocked: bool) -> void:
 		return
 	
 	var portrait_color := Color.html(config.get("portrait_color", "#888888"))
-	var portrait_path: String = ConfigManager.get_hero_portrait_path(hero_id)
+	var portrait_path: String = ResourcePaths.get_hero_portrait(hero_id)
 	
 	# 立绘 fade + scale 切换
 	var tween_out := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
@@ -478,14 +475,10 @@ func _update_right_panel(hero_id: String, is_unlocked: bool) -> void:
 	await tween_out.finished
 	
 	if is_unlocked:
-		if not portrait_path.is_empty():
-			var tex: Texture2D = load(portrait_path)
-			if tex != null:
-				_big_portrait.texture = tex
-				_big_portrait.modulate = Color.WHITE
-			else:
-				_big_portrait.texture = null
-				_big_portrait.modulate = portrait_color
+		var tex: Texture2D = ResourcePaths.load_texture_safe(portrait_path)
+		if tex != null:
+			_big_portrait.texture = tex
+			_big_portrait.modulate = Color.WHITE
 		else:
 			_big_portrait.texture = null
 			_big_portrait.modulate = portrait_color
