@@ -334,6 +334,14 @@ func _process_partner_assist(ctx: Dictionary) -> void:
 				"partner_names": partner_names,
 			})
 		
+		## 累计每个伙伴的 chain 总次数
+		for a in assists:
+			var pid: String = a.get("partner_id", "")
+			for p in _partners:
+				if p.get("partner_id", "") == pid:
+					p.chain_count = p.get("chain_count", 0) + 1
+					break
+		
 		## 逐个触发伙伴援助动画
 		for a in assists:
 			_result.record_partner_assist(a.partner_id)

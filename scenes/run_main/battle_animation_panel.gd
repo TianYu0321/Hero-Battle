@@ -360,9 +360,10 @@ func start_playback(recorder, hero_name: String, enemy_name: String,
 	_load_card_portrait(hero_portrait, hero_sprite_path, true)
 	_load_card_portrait(enemy_portrait, enemy_sprite_path, false)
 	
-	## 设置关卡背景与敌方伙伴槽
+	## 设置关卡背景与伙伴槽
 	_current_floor = current_floor
 	_set_stage_background(current_floor)
+	_update_chain_slots(_hero_partners)
 	_update_enemy_chain_slots(_enemy_partners)
 	
 	## 重置 Overlay
@@ -1532,14 +1533,28 @@ func _show_result() -> void:
 	_clear_vfx_residuals()
 	
 	## 胜利/失败 Pose
+	var pose_delay: float = 0.0
 	if _hero_hp <= 0 and _enemy_hp > 0:
 		_play_victory_pose(false)
+		pose_delay = 0.6
 	elif _enemy_hp <= 0 and _hero_hp > 0:
 		_play_victory_pose(true)
+		pose_delay = 0.6
 	_update_hp_display()
 	
 	## 战斗结束标记（死亡日志已由 unit_died 事件处理，此处不再重复）
 	battle_log.append_text("\n[color=#E6C040]=== 战斗结束 ===[/color]")
+	
+	## 延迟发射 confirmed，让玩家看到胜利/失败动作
+	if pose_delay > 0.0:
+		get_tree().create_timer(pose_delay).timeout.connect(func():
+			_emit_confirmed()
+		, CONNECT_ONE_SHOT)
+	else:
+		_emit_confirmed()
+
+
+func _emit_confirmed() -> void:
 	print("[BattleAnimation] confirmed, gen=%d" % _playback_generation)
 	confirmed.emit()
 	if battle_finished_callback.is_valid():

@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://c5c25kbikw2b" path="res://scenes/rescue/rescue_popup.tscn" id="6_rp"]
 [ext_resource type="PackedScene" uid="uid://dynamicbg01" path="res://scenes/backgrounds/dynamic_bg.tscn" id="7_dbg"]
 [ext_resource type="PackedScene" path="res://scenes/partner/partner_select_popup.tscn" id="7_psp"]
+[ext_resource type="PackedScene" uid="uid://brp3q0x1v2y8a" path="res://scenes/run_main/battle_result_panel.tscn" id="8_brp"]
 
 [node name="RunMain" type="Control" unique_id=1166187807]
 layout_mode = 3
@@ -331,3 +332,6 @@ offset_top = 90.0
 offset_right = 570.0
 offset_bottom = 150.0
 text = "返回"
+
+[node name="BattleResultPanel" parent="." instance=ExtResource("8_brp")]
+visible = false

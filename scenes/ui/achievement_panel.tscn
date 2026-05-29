@@ -1,0 +1,58 @@
+[gd_scene load_steps=2 format=3 uid="uid://d7e8f9a0b1c2d3e4f5a6"]
+
+[ext_resource type="Script" path="res://scenes/ui/achievement_panel.gd" id="1_script"]
+
+[node name="AchievementPanel" type="PanelContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 80.0
+offset_top = 80.0
+offset_right = -80.0
+offset_bottom = -80.0
+script = ExtResource("1_script")
+
+[node name="Content" type="VBoxContainer" parent="."]
+layout_mode = 2
+alignment = 1
+
+[node name="TitleBar" type="HBoxContainer" parent="Content"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="Content/TitleBar"]
+layout_mode = 2
+text = "成就"
+horizontal_alignment = 1
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="TotalLabel" type="Label" parent="Content/TitleBar"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 2
+mouse_filter = 2
+
+[node name="CloseButton" type="Button" parent="Content/TitleBar"]
+layout_mode = 2
+text = "X"
+custom_minimum_size = Vector2(32, 32)
+
+[node name="TabContainer" type="TabContainer" parent="Content"]
+layout_mode = 2
+size_flags_vertical = 3
+tab_alignment = 0
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 1
+color = Color(0, 0, 0, 0.3)
+
+[node name="BgDismiss" type="Button" parent="Background"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+flat = true

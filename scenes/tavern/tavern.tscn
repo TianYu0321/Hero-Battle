@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://ptpxtcu45me6"]
 
-[ext_resource type="Script" path="res://scenes/tavern/tavern.gd" id="1_tavern"]
+[ext_resource type="Script" uid="uid://bc8kwdktpuyvx" path="res://scenes/tavern/tavern.gd" id="1_tavern"]
 [ext_resource type="Texture2D" uid="uid://dv1iyaf152ymf" path="res://assets/backgrounds/menu_bg.png" id="2_bg"]
 
-[node name="Tavern" type="Control"]
+[node name="Tavern" type="Control" unique_id=601554501]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,10 +12,10 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tavern")
 
-[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+[node name="BackgroundLayer" type="CanvasLayer" parent="." unique_id=740151254]
 layer = 0
 
-[node name="BackgroundColor" type="ColorRect" parent="BackgroundLayer"]
+[node name="BackgroundColor" type="ColorRect" parent="BackgroundLayer" unique_id=2021538443]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -23,7 +23,8 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.96, 0.97, 0.99, 1)
 
-[node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer"]
+[node name="BackgroundTexture" type="TextureRect" parent="BackgroundLayer" unique_id=300596966]
+modulate = Color(0.88, 0.92, 0.98, 0.4)
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -32,12 +33,11 @@ grow_vertical = 2
 texture = ExtResource("2_bg")
 expand_mode = 1
 stretch_mode = 4
-modulate = Color(0.88, 0.92, 0.98, 0.4)
 
-[node name="UILayer" type="CanvasLayer" parent="."]
+[node name="UILayer" type="CanvasLayer" parent="." unique_id=726768715]
 layer = 2
 
-[node name="TopBar" type="HBoxContainer" parent="UILayer"]
+[node name="TopBar" type="HBoxContainer" parent="UILayer" unique_id=69719539]
 unique_name_in_owner = true
 offset_left = 30.0
 offset_top = 20.0
@@ -45,35 +45,35 @@ offset_right = 1890.0
 offset_bottom = 75.0
 theme_override_constants/separation = 20
 
-[node name="BackButton" type="Button" parent="UILayer/TopBar"]
+[node name="BackButton" type="Button" parent="UILayer/TopBar" unique_id=1142161694]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 50)
 layout_mode = 2
 text = "← 返回"
 
-[node name="TitleLabel" type="Label" parent="UILayer/TopBar"]
+[node name="TitleLabel" type="Label" parent="UILayer/TopBar" unique_id=2049251428]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 36
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
 theme_override_colors/font_shadow_color = Color(0.8, 0.85, 0.95, 0.6)
 theme_override_constants/shadow_offset_x = 2
 theme_override_constants/shadow_offset_y = 2
+theme_override_font_sizes/font_size = 36
 text = "酒馆集结"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="StepLabel" type="Label" parent="UILayer/TopBar"]
+[node name="StepLabel" type="Label" parent="UILayer/TopBar" unique_id=392218987]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 14
 text = "2/3 组建队伍"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="TeamBar" type="HBoxContainer" parent="UILayer"]
+[node name="TeamBar" type="HBoxContainer" parent="UILayer" unique_id=445234398]
 unique_name_in_owner = true
 offset_left = 30.0
 offset_top = 90.0
@@ -82,30 +82,30 @@ offset_bottom = 180.0
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="TeamSlot_0" type="PanelContainer" parent="UILayer/TeamBar"]
+[node name="TeamSlot_0" type="PanelContainer" parent="UILayer/TeamBar" unique_id=663349528]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="TeamSlot_1" type="PanelContainer" parent="UILayer/TeamBar"]
+[node name="TeamSlot_1" type="PanelContainer" parent="UILayer/TeamBar" unique_id=180507677]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="TeamSlot_2" type="PanelContainer" parent="UILayer/TeamBar"]
+[node name="TeamSlot_2" type="PanelContainer" parent="UILayer/TeamBar" unique_id=869054555]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
 
-[node name="TeamCountLabel" type="Label" parent="UILayer/TeamBar"]
+[node name="TeamCountLabel" type="Label" parent="UILayer/TeamBar" unique_id=568667827]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 24
 theme_override_colors/font_color = Color(0.3, 0.3, 0.35, 1)
+theme_override_font_sizes/font_size = 24
 text = "0/3"
 vertical_alignment = 1
 
-[node name="MainSection" type="HBoxContainer" parent="UILayer"]
+[node name="MainSection" type="HBoxContainer" parent="UILayer" unique_id=2136557169]
 unique_name_in_owner = true
 offset_left = 30.0
 offset_top = 200.0
@@ -113,94 +113,88 @@ offset_right = 1890.0
 offset_bottom = 950.0
 theme_override_constants/separation = 24
 
-[node name="LeftPanel" type="VBoxContainer" parent="UILayer/MainSection"]
+[node name="LeftPanel" type="VBoxContainer" parent="UILayer/MainSection" unique_id=305730788]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="PoolTitle" type="Label" parent="UILayer/MainSection/LeftPanel"]
+[node name="PoolTitle" type="Label" parent="UILayer/MainSection/LeftPanel" unique_id=989151033]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
 theme_override_colors/font_color = Color(0.2, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 18
 text = "可选伙伴"
 
-[node name="PartnerIconScroll" type="ScrollContainer" parent="UILayer/MainSection/LeftPanel"]
+[node name="PartnerIconScroll" type="ScrollContainer" parent="UILayer/MainSection/LeftPanel" unique_id=1331838379]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PartnerIconGrid" type="GridContainer" parent="UILayer/MainSection/LeftPanel/PartnerIconScroll"]
+[node name="PartnerIconGrid" type="GridContainer" parent="UILayer/MainSection/LeftPanel/PartnerIconScroll" unique_id=981791267]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-columns = 5
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
+columns = 5
 
-[node name="RightPanel" type="VBoxContainer" parent="UILayer/MainSection"]
+[node name="RightPanel" type="VBoxContainer" parent="UILayer/MainSection" unique_id=2109932827]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="PortraitContainer" type="PanelContainer" parent="UILayer/MainSection/RightPanel"]
+[node name="PortraitContainer" type="PanelContainer" parent="UILayer/MainSection/RightPanel" unique_id=745511242]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(520, 520)
 layout_mode = 2
 size_flags_horizontal = 4
 
-[node name="PortraitTexture" type="TextureRect" parent="UILayer/MainSection/RightPanel/PortraitContainer"]
+[node name="PortraitTexture" type="TextureRect" parent="UILayer/MainSection/RightPanel/PortraitContainer" unique_id=1479168213]
 unique_name_in_owner = true
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="DetailPanel" type="VBoxContainer" parent="UILayer/MainSection/RightPanel"]
+[node name="DetailPanel" type="VBoxContainer" parent="UILayer/MainSection/RightPanel" unique_id=540896063]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/separation = 10
 
-[node name="NameLabel" type="Label" parent="UILayer/MainSection/RightPanel/DetailPanel"]
+[node name="NameLabel" type="Label" parent="UILayer/MainSection/RightPanel/DetailPanel" unique_id=1197669546]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(0.15, 0.15, 0.2, 1)
+theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
 
-[node name="ClassRow" type="HBoxContainer" parent="UILayer/MainSection/RightPanel/DetailPanel"]
+[node name="ClassRow" type="HBoxContainer" parent="UILayer/MainSection/RightPanel/DetailPanel" unique_id=2123525709]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 12
 alignment = 1
 
-[node name="ClassLabel" type="Label" parent="UILayer/MainSection/RightPanel/DetailPanel/ClassRow"]
+[node name="ClassLabel" type="Label" parent="UILayer/MainSection/RightPanel/DetailPanel/ClassRow" unique_id=1409448099]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.4, 0.4, 0.45, 1)
+theme_override_font_sizes/font_size = 16
 
-[node name="RarityBar" type="ColorRect" parent="UILayer/MainSection/RightPanel/DetailPanel/ClassRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 4)
-layout_mode = 2
-size_flags_vertical = 4
-
-[node name="DescLabel" type="Label" parent="UILayer/MainSection/RightPanel/DetailPanel"]
+[node name="DescLabel" type="Label" parent="UILayer/MainSection/RightPanel/DetailPanel" unique_id=1973201624]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
-theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.4, 0.4, 0.45, 1)
+theme_override_font_sizes/font_size = 13
 text = "请点击左侧伙伴查看详情"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="ActionButton" type="Button" parent="UILayer/MainSection/RightPanel/DetailPanel"]
+[node name="ActionButton" type="Button" parent="UILayer/MainSection/RightPanel/DetailPanel" unique_id=617005880]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(180, 48)
 layout_mode = 2
@@ -208,7 +202,7 @@ size_flags_horizontal = 4
 disabled = true
 text = "加入队伍"
 
-[node name="BottomBar" type="HBoxContainer" parent="UILayer"]
+[node name="BottomBar" type="HBoxContainer" parent="UILayer" unique_id=78963392]
 unique_name_in_owner = true
 offset_left = 60.0
 offset_top = 965.0
@@ -217,21 +211,22 @@ offset_bottom = 1040.0
 theme_override_constants/separation = 20
 alignment = 2
 
-[node name="TeamStatsPreview" type="HBoxContainer" parent="UILayer/BottomBar"]
+[node name="TeamStatsPreview" type="HBoxContainer" parent="UILayer/BottomBar" unique_id=820377042]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 16
 
-[node name="StartRunButton" type="Button" parent="UILayer/BottomBar"]
+[node name="StartRunButton" type="Button" parent="UILayer/BottomBar" unique_id=1173825301]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(220, 56)
 layout_mode = 2
 disabled = true
 text = "开始冒险"
 
-[node name="TransitionOverlay" type="ColorRect" parent="."]
+[node name="TransitionOverlay" type="ColorRect" parent="." unique_id=1013695310]
 visible = false
+z_index = 100
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -239,4 +234,3 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.96, 0.95, 0.92, 1)
-z_index = 100

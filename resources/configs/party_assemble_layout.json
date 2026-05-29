@@ -1,0 +1,28 @@
+{
+  "layout": {
+    "icon_cell_width":100,
+    "icon_cell_height": 66,
+    "icon_avatar_width": 64,
+    "icon_avatar_height": 64,
+    "icon_name_height": 16,
+    "grid_columns": 4,
+    "grid_h_separation": 8,
+    "grid_v_separation": 8,
+    "card_width": 200,
+    "card_height": 280,
+    "card_avatar_size": 120,
+    "slot_card_width": 180,
+    "slot_card_height": 240,
+    "slot_avatar_size": 96,
+    "portrait_width": 520,
+    "portrait_height": 520,
+    "team_bar_height": 90,
+    "team_slot_width": 80,
+    "team_slot_height": 64,
+    "detail_panel_height": 220,
+    "radius_avatar": 8,
+    "radius_card": 12,
+    "radius_panel": 16,
+    "radius_button": 8
+  }
+}

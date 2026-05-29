@@ -8,6 +8,9 @@ extends Control
 @onready var pause_menu: PauseMenu = $PauseMenu
 
 func _ready() -> void:
+	## 确保暂停菜单盖过所有 HUD（包括 BattleAnimationPanel 内的 CanvasLayer）
+	pause_menu.layer = 100
+	
 	## 从 GameManager 读取战斗数据
 	var battle_data: Dictionary = GameManager.current_battle_data
 	if battle_data.is_empty():
@@ -76,6 +79,12 @@ func _on_battle_animation_finished() -> void:
 
 
 func _return_to_run_main() -> void:
+	## 通知成就系统
+	if AchievementManager != null:
+		var result: Dictionary = GameManager.pending_battle_result
+		if not result.is_empty():
+			AchievementManager.on_battle_won(result)
+	
 	## 设置返回标记，RunMain 读取 pending_battle_result 显示结算
 	GameManager.returning_from_battle = true
 	## 清理战斗数据标记

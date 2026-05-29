@@ -58,16 +58,6 @@ func _create_rescue_card(candidate: Dictionary) -> Control:
 	vbox.add_theme_constant_override("separation", 6)
 	margin.add_child(vbox)
 	
-	## 稀有度角标
-	var rarity: String = candidate.get("rarity_str", "C")
-	var border_color: Color = _get_rarity_color(rarity)
-	var badge := Label.new()
-	badge.text = rarity
-	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 14)
-	badge.add_theme_color_override("font_color", border_color)
-	vbox.add_child(badge)
-	
 	## 头像
 	var portrait := TextureRect.new()
 	portrait.custom_minimum_size = Vector2(120, 120)
@@ -109,13 +99,6 @@ func _create_rescue_card(candidate: Dictionary) -> Control:
 
 func _on_recruit_pressed(partner_config_id: int) -> void:
 	partner_selected.emit(partner_config_id)
-
-func _get_rarity_color(rarity: String) -> Color:
-	match rarity:
-		"S": return Color("#E6C040")
-		"A": return Color("#5A8FD0")
-		"B": return Color("#4ECDC4")
-		_:   return Color("#888888")
 
 func _resolve_texture_from_path(path: String) -> Texture2D:
 	if path.is_empty():

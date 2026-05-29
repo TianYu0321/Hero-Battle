@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/archive_view/archive_view.gd" id="1_view"]
 [ext_resource type="PackedScene" path="res://scenes/archive_view/archive_detail.tscn" id="2_detail"]
 [ext_resource type="PackedScene" path="res://scenes/archive_view/leaderboard_panel.tscn" id="3_leaderboard"]
+[ext_resource type="PackedScene" path="res://scenes/ui/achievement_panel.tscn" id="4_achievement"]
 
 [node name="ArchiveView" type="Control"]
 layout_mode = 3
@@ -64,6 +65,10 @@ text = "档案列表"
 layout_mode = 2
 text = "排行榜"
 
+[node name="BtnAchievements" type="Button" parent="VBox/TabButtons"]
+layout_mode = 2
+text = "成就"
+
 [node name="Scroll" type="ScrollContainer" parent="VBox"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -81,3 +86,9 @@ layout_mode = 2
 [node name="LeaderboardPanel" parent="VBox" instance=ExtResource("3_leaderboard")]
 visible = false
 layout_mode = 2
+
+[node name="AchievementPanel" parent="VBox" instance=ExtResource("4_achievement")]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+play_open_animation = false

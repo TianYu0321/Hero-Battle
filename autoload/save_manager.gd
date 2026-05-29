@@ -416,6 +416,8 @@ func _create_default_player_data() -> Dictionary:
 		"total_runs": 0,
 		"total_victories": 0,
 		"achievements": {},
+		"pvp_history": [],
+		"pvp_deck": {},
 	}
 
 func _migrate_run_state_from_legacy(_user_id: String) -> bool:

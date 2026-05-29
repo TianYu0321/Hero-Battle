@@ -153,14 +153,6 @@ static func get_enemy_sprite_path(enemy_config_id: int) -> String:
 ## @deprecated: 所有头像/立绘/背景路径已迁移到 ResourcePaths autoload
 ## 请使用 ResourcePaths.get_hero_avatar() / get_hero_portrait() / get_partner_avatar() 等
 
-## 获取稀有度颜色
-static func get_rarity_color(rarity: String) -> Color:
-	match rarity:
-		"S": return Color("#E6C040")  ## 暗金
-		"A": return Color("#5A8FD0")  ## 蓝
-		"B": return Color("#4ECDC4")  ## 青
-		_:   return Color("#888888")  ## 灰
-
 ## 获取精灵图动画帧配置
 static func get_sprite_anim_config(_path: String) -> Dictionary:
 	return {
@@ -220,7 +212,6 @@ const _FALLBACK_PARTNER_CONFIGS: Dictionary = {
 		"name": "剑士",
 		"role": "输出",
 		"portrait_color": "#E74C3C",
-		"rarity_str": "B",
 		"skill_charge_max": 3,
 		"avatar_path": "",
 	},
@@ -229,7 +220,6 @@ const _FALLBACK_PARTNER_CONFIGS: Dictionary = {
 		"name": "斥候",
 		"role": "输出",
 		"portrait_color": "#2ECC71",
-		"rarity_str": "B",
 		"skill_charge_max": 3,
 		"avatar_path": "",
 	},
@@ -238,7 +228,6 @@ const _FALLBACK_PARTNER_CONFIGS: Dictionary = {
 		"name": "盾卫",
 		"role": "防御",
 		"portrait_color": "#3498DB",
-		"rarity_str": "B",
 		"skill_charge_max": 3,
 		"avatar_path": "",
 	},
@@ -247,16 +236,16 @@ const _FALLBACK_PARTNER_CONFIGS: Dictionary = {
 		"name": "药师",
 		"role": "辅助",
 		"portrait_color": "#F1C40F",
-		"rarity_str": "B",
 		"skill_charge_max": 3,
 		"avatar_path": "",
+		"icon_path": "res://assets/characters/partner/pharmacist/icon/icon.png",
+		"is_default_unlock": true,
 	},
 	"partner_sorcerer": {
 		"partner_id": "partner_sorcerer",
 		"name": "术士",
 		"role": "控场",
 		"portrait_color": "#9B59B6",
-		"rarity_str": "A",
 		"skill_charge_max": 3,
 		"avatar_path": "",
 	},
@@ -265,7 +254,6 @@ const _FALLBACK_PARTNER_CONFIGS: Dictionary = {
 		"name": "猎人",
 		"role": "斩杀",
 		"portrait_color": "#E67E22",
-		"rarity_str": "B",
 		"skill_charge_max": 3,
 		"avatar_path": "",
 	},
@@ -339,13 +327,14 @@ func _load_all_configs() -> void:
 				cfg["icon_path"] = ""
 		if not cfg.has("skill_charge_max"):
 			cfg["skill_charge_max"] = 3
-		if not cfg.has("rarity_str"):
-			var rarity_int: int = cfg.get("rarity", 1)
-			match rarity_int:
-				3: cfg["rarity_str"] = "A"
-				2: cfg["rarity_str"] = "B"
-				1: cfg["rarity_str"] = "C"
-				_: cfg["rarity_str"] = "C"
+		## 自动推断 availability（向后兼容）
+		if not cfg.has("availability"):
+			if cfg.get("is_default_unlock", false):
+				cfg["availability"] = "default"
+			elif cfg.has("unlock_price_mocheng"):
+				cfg["availability"] = "shop"
+			else:
+				cfg["availability"] = "hidden"
 	
 	push_warning("[ConfigManager] Configs loaded. H:%d P:%d S:%d E:%d F:%d A:%d PVP:%d Shop:%d Node:%d Score:%d Support:%d" % [_hero_configs.size(), _partner_configs.size(), _skill_configs.size(), _enemy_configs.size(), _formula_configs.size(), _partner_assist_configs.size(), _pvp_opponent_configs.size(), _shop_configs.size(), _node_configs.size(), _scoring_configs.size(), _partner_support_configs.size()])
 
@@ -543,3 +532,61 @@ func get_hero_config_id_by_hero_id(hero_id: String) -> int:
 
 func get_final_boss_configs() -> Dictionary:
 	return _final_boss_configs.duplicate()
+
+
+## ========== 伙伴可获得性 / 显示状态 ==========
+
+enum PartnerDisplayState {
+	OWNED,           ## 已拥有（可选中）
+	LOCKED_VISIBLE,  ## 未拥有但可购买（显示变灰，不可选中）
+	HIDDEN,          ## 隐藏（不显示）
+}
+
+## 获取配置的 availability 值（default / shop / achievement / hidden）
+func get_partner_availability(partner_id: String) -> String:
+	var cfg: Dictionary = get_partner_config(partner_id)
+	return cfg.get("availability", "hidden")
+
+## 获取伙伴运行时显示状态（结合存档判断）
+func get_partner_display_state(partner_id: String) -> PartnerDisplayState:
+	var cfg: Dictionary = get_partner_config(partner_id)
+	if cfg.is_empty():
+		return PartnerDisplayState.HIDDEN
+	
+	## 已拥有？
+	if cfg.get("is_default_unlock", false):
+		return PartnerDisplayState.OWNED
+	
+	var unlock_state: Dictionary = SaveManager.load_unlock_state()
+	var unlocked_raw: Array = unlock_state.get("unlocked_partners", [])
+	var partner_num_id: int = cfg.get("id", 0)
+	for u in unlocked_raw:
+		if int(u) == partner_num_id:
+			return PartnerDisplayState.OWNED
+	
+	## 未拥有，根据 availability 决定是显示变灰还是隐藏
+	var availability: String = cfg.get("availability", "hidden")
+	match availability:
+		"default", "shop":
+			return PartnerDisplayState.LOCKED_VISIBLE
+		_:
+			return PartnerDisplayState.HIDDEN
+
+## 判断伙伴是否已解锁（用于商店购买、队伍组建等）
+func is_partner_unlocked(partner_id: String) -> bool:
+	return get_partner_display_state(partner_id) == PartnerDisplayState.OWNED
+
+## 获取所有应显示的伙伴ID（OWNED + LOCKED_VISIBLE），按 sort_order 排序
+func get_displayable_partner_ids() -> Array[String]:
+	var result: Array[String] = []
+	for pid in _partner_configs.keys():
+		var state: PartnerDisplayState = get_partner_display_state(pid)
+		if state == PartnerDisplayState.OWNED or state == PartnerDisplayState.LOCKED_VISIBLE:
+			result.append(pid)
+	## 按 sort_order 排序
+	result.sort_custom(func(a, b):
+		var cfg_a: Dictionary = _partner_configs.get(a, {})
+		var cfg_b: Dictionary = _partner_configs.get(b, {})
+		return cfg_a.get("sort_order", 999) < cfg_b.get("sort_order", 999)
+	)
+	return result

@@ -255,13 +255,6 @@ func _create_partner_card(partner_data: Dictionary, index: int) -> PanelContaine
 	class_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(class_label)
 
-	## 稀有度装饰条
-	var rarity: String = partner_data.get("rarity_str", "C")
-	var rarity_bar := ColorRect.new()
-	rarity_bar.custom_minimum_size = Vector2(200, 4)
-	rarity_bar.color = _get_rarity_color(rarity)
-	vbox.add_child(rarity_bar)
-
 	## 交互信号
 	card.gui_input.connect(func(event: InputEvent):
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
@@ -426,14 +419,6 @@ func _on_cancel_pressed() -> void:
 	AudioManager.play_ui("cancel")
 	popup_cancelled.emit()
 	hide_popup()
-
-
-func _get_rarity_color(rarity: String) -> Color:
-	match rarity:
-		"S": return Color("#E6C040")
-		"A": return Color("#5A8FD0")
-		"B": return Color("#4ECDC4")
-		_:	 return RunMainSettings.COLOR_WOOD_MEDIUM
 
 
 func _resolve_texture_from_path(path: String) -> Texture2D:

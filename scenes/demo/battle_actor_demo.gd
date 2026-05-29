@@ -1530,7 +1530,6 @@ func _on_partner_select_pressed() -> void:
 			"name": "暗影刺客",
 			"level": 3,
 			"role": "刺客",
-			"rarity_str": "S",
 			"skill_desc": "对敌方单体造成高额物理伤害，并有概率触发连击。",
 			"portrait_path": ""
 		},
@@ -1539,7 +1538,6 @@ func _on_partner_select_pressed() -> void:
 			"name": "圣光祭司",
 			"level": 2,
 			"role": "治疗",
-			"rarity_str": "A",
 			"skill_desc": "恢复主角 15% 最大生命值，并清除一个负面状态。",
 			"portrait_path": ""
 		},
@@ -1548,7 +1546,6 @@ func _on_partner_select_pressed() -> void:
 			"name": "铁壁卫士",
 			"level": 4,
 			"role": "坦克",
-			"rarity_str": "B",
 			"skill_desc": "为主角提供护盾，吸收相当于自身生命 20% 的伤害。",
 			"portrait_path": ""
 		}

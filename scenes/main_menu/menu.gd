@@ -47,11 +47,13 @@ func _ready() -> void:
 	var btn_shop: BaseButton = get_node_or_null("UILayer/IconBar/BtnShopWrapper/BtnShop")
 	var btn_leaderboard: BaseButton = get_node_or_null("UILayer/IconBar/BtnLeaderboardWrapper/BtnLeaderboard")
 	var btn_settings: BaseButton = get_node_or_null("UILayer/MenuButtons/BtnSettingsWrapper/BtnSettings")
+	var btn_achievement: BaseButton = get_node_or_null("UILayer/IconBar/BtnAchievementWrapper/BtnAchievement")
 	if btn_archive != null: _menu_buttons.append(btn_archive)
 	if btn_pvp != null: _menu_buttons.append(btn_pvp)
 	if btn_shop != null: _menu_buttons.append(btn_shop)
 	if btn_leaderboard != null: _menu_buttons.append(btn_leaderboard)
 	if btn_settings != null: _menu_buttons.append(btn_settings)
+	if btn_achievement != null: _menu_buttons.append(btn_achievement)
 
 	# 判断存档，无存档时彻底移除继续游戏按钮，让下方按钮自动补上
 	var save_data = SaveManager.load_latest_run()
@@ -113,6 +115,15 @@ func _ready() -> void:
 		print("[MainMenu] 设置按钮已启用")
 	else:
 		push_warning("[MainMenu] BtnSettings 未找到")
+	
+	# 启用成就按钮
+	if btn_achievement != null:
+		btn_achievement.visible = true
+		btn_achievement.disabled = false
+		_connect_with_bounce(btn_achievement, _on_achievement_pressed)
+		print("[MainMenu] 成就按钮已启用")
+	else:
+		print("[MainMenu] 成就按钮未找到（需要在场景中创建 BtnAchievementWrapper/BtnAchievement）")
 
 	# 主菜单中隐藏PauseMenu的"返回主菜单"按钮
 	_pause_menu.set_is_main_menu(true)
@@ -474,6 +485,19 @@ func _on_settings_pressed() -> void:
 		_settings_panel.load_settings()
 	else:
 		push_warning("[MainMenu] 设置面板为 null")
+
+
+func _on_achievement_pressed() -> void:
+	print("[MainMenu] 【点击】成就")
+	AudioManager.play_ui("confirm")
+	
+	var panel_scene = load("res://scenes/ui/achievement_panel.tscn")
+	if panel_scene == null:
+		push_warning("[MainMenu] 成就面板场景未找到")
+		return
+	
+	var panel = panel_scene.instantiate()
+	add_child(panel)
 
 func _show_panel(panel: Control) -> void:
 	panel.visible = true

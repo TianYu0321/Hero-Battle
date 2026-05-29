@@ -190,6 +190,14 @@ func continue_from_save(save_data: Dictionary) -> bool:
 	})
 	EventBus.emit_signal("gold_changed", _run.gold_owned, 0, "continue_from_save")
 	EventBus.emit_signal("run_continued", _run.current_turn)
+	
+	if AchievementManager != null:
+		var partner_ids: Array[String] = []
+		for p in partners:
+			if p is RuntimePartner:
+				partner_ids.append(str(p.partner_config_id))
+		AchievementManager.on_run_started(str(_run.hero_config_id), partner_ids)
+	
 	print("[RunController] 存档恢复完成，当前层=%d" % _run.current_turn)
 	return true
 
@@ -213,6 +221,12 @@ func start_new_run(hero_config_id: int, starter_partner_ids: Array[int]) -> void
 		"partner_ids": starter_partner_ids,
 		"run_seed": _run.run_seed,
 	})
+	
+	if AchievementManager != null:
+		var partner_str_ids: Array[String] = []
+		for pid in starter_partner_ids:
+			partner_str_ids.append(str(pid))
+		AchievementManager.on_run_started(str(hero_config_id), partner_str_ids)
 
 	_change_state(RunState.RUNNING_NODE_SELECT)
 
@@ -296,6 +310,9 @@ func advance_turn() -> void:
 		return
 
 	_run.current_turn += 1
+	
+	if AchievementManager != null:
+		AchievementManager.on_floor_reached(_run.current_turn)
 
 	# 自动存档
 	_auto_save()
@@ -546,6 +563,8 @@ func _process_reward(reward: Dictionary) -> void:
 			_run.gold_owned += amount
 			_run.gold_earned_total += amount
 			EventBus.emit_signal("gold_changed", _run.gold_owned, amount, "battle_reward")
+			if AchievementManager != null:
+				AchievementManager.on_gold_earned(amount)
 		"attr_up":
 			pass  # 属性提升已在TrainingSystem中通过CharacterManager应用
 		"elite_reward_choice":
@@ -587,6 +606,8 @@ func _process_reward(reward: Dictionary) -> void:
 				EventBus.emit_signal("stats_changed", _hero.id, {
 					0: {"old": old_hp, "new": _hero.current_hp, "delta": _hero.current_hp - old_hp, "attr_code": 0}
 				})
+				if AchievementManager != null:
+					AchievementManager.on_heal(_hero.current_hp - old_hp)
 		"hp_damage":
 			var amount: int = reward.get("amount", 0)
 			if _hero != null and amount > 0:
@@ -598,6 +619,8 @@ func _process_reward(reward: Dictionary) -> void:
 				EventBus.emit_signal("stats_changed", _hero.id, {
 					0: {"old": old_hp, "new": _hero.current_hp, "delta": old_hp - _hero.current_hp, "attr_code": 0}
 				})
+				if AchievementManager != null:
+					AchievementManager.on_hero_damage_taken(amount)
 		"level_up":
 			var partners: Array = _character_manager.get_partners()
 			if partners.size() > 0:
@@ -690,6 +713,9 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 	# 同步战斗后的 HP 回写到 RuntimeHero
 	_hero.current_hp = battle_hero.get("hp", _hero.current_hp)
 	_hero.is_alive = battle_hero.get("is_alive", true)
+	
+	if AchievementManager != null:
+		AchievementManager.on_max_hp_changed(_hero.max_hp)
 	return result
 
 
@@ -715,6 +741,12 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 	# 更新生涯统计与成就
 	_update_career_stats(true)
 	var new_achievements: Array[String] = _check_achievements()
+	if AchievementManager != null:
+		var partner_ids: Array[String] = []
+		for p in _character_manager.get_partners():
+			if p is RuntimePartner:
+				partner_ids.append(str(p.partner_config_id))
+		AchievementManager.on_run_ended(true, _run.current_turn, _run.total_score, _run.current_turn, partner_ids)
 	archive_dict["new_achievements_unlocked"] = new_achievements
 	
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
@@ -732,6 +764,13 @@ func _end_run() -> void:
 	# 更新生涯统计与成就
 	_update_career_stats(false)
 	var new_achievements: Array[String] = _check_achievements()
+	if AchievementManager != null:
+		var partner_ids: Array[String] = []
+		for p in _character_manager.get_partners():
+			if p is RuntimePartner:
+				partner_ids.append(str(p.partner_config_id))
+		var victory: bool = _run.run_status == 2
+		AchievementManager.on_run_ended(victory, _run.current_turn, _run.total_score if victory else 0, _run.current_turn, partner_ids)
 	
 	# 生成基础档案数据（死亡/放弃时也能显示结算信息）
 	var archive_dict: Dictionary = {}
@@ -868,6 +907,9 @@ func _check_achievements() -> Array[String]:
 		player_data["achievements"] = achievements
 		SaveManager.save_player_data(player_data)
 		print("[RunController] 新解锁成就: %s" % str(new_unlocked))
+		for ach_id in new_unlocked:
+			if AchievementManager != null and not AchievementManager.is_unlocked(ach_id):
+				AchievementManager._unlocked_achievements.append(ach_id)
 	
 	return new_unlocked
 

@@ -41,6 +41,8 @@ extends Control
 
 @onready var partner_panel: PanelContainer = $PartnerHUDLayer/PartnerPanel
 
+@onready var _battle_result_panel = $BattleResultPanel
+
 @onready var training_select_buttons: Array[Button] = [
 	$TrainingPanel/AttrRow1/SelectBtn,
 	$TrainingPanel/AttrRow2/SelectBtn,
@@ -73,6 +75,7 @@ var _cached_enemy_data: Dictionary = {}
 ## 伙伴 HUD
 var _partner_slots: Array[PanelContainer] = []
 var _max_partner_slots: int = 4
+const PARTNER_HUD_SLOT_SCENE: PackedScene = preload("res://scenes/run_main/partner_hud_slot.tscn")
 
 enum UISceneState {
 	LOADING,		   # 什么都不显示，等待初始化
@@ -169,9 +172,16 @@ func _ready() -> void:
 		_init_ui_styles()
 		_update_hud()
 		if not GameManager.pending_battle_result.is_empty():
-			if _run_controller != null:
-				_run_controller.confirm_battle_result()
+			var battle_result: Dictionary = GameManager.pending_battle_result.duplicate()
+			var winner: String = battle_result.get("winner", "")
 			GameManager.pending_battle_result = {}
+			if winner == "player" and _battle_result_panel != null:
+				## 胜利：弹出结算面板，等待玩家点击"继续"
+				_show_victory_panel(battle_result)
+			else:
+				## 失败：走现有 Settlement 流程
+				if _run_controller != null:
+					_run_controller.confirm_battle_result()
 		return
 
 	# 检查是否有待加载的存档（继续游戏）
@@ -743,10 +753,10 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 			else:
 				## RuntimePartner 对象
 				p_dict = {
-					"name": p.name if p.get("name") != null else ConfigManager.get_partner_config(str(p.partner_config_id)).get("name", "???"),
+					"name": ConfigManager.get_partner_config(str(p.partner_config_id)).get("name", "???"),
 					"avatar_path": ResourcePaths.get_partner_avatar(str(p.partner_config_id)),
 					"chain_count": 0,
-					"level": p.current_level if p.get("current_level") != null else 1,
+					"level": p.current_level,
 				}
 			partner_summaries.append(p_dict)
 		
@@ -773,6 +783,27 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		}
 		GameManager.pending_battle_result = battle_result
 		GameManager.change_scene("BATTLE", "fade")
+
+func _show_victory_panel(battle_result: Dictionary) -> void:
+	var summary: Dictionary = _run_controller.get_current_run_summary()
+	var panel_data: Dictionary = {
+		"outcome": "victory",
+		"gold_earned": battle_result.get("gold_reward", 0),
+		"total_gold": summary.get("gold", 0),
+		"chain_count": battle_result.get("max_chain_count", battle_result.get("chain_stats", {}).get("max_chain", 0)),
+		"turns": battle_result.get("turns_elapsed", 0),
+		"enemy_name": battle_result.get("enemies", [{}])[0].get("name", "???"),
+	}
+	_battle_result_panel.show_result(panel_data)
+	_battle_result_panel.primary_action_pressed.connect(
+		_on_victory_panel_continued, CONNECT_ONE_SHOT
+	)
+	print("[RunMain] 显示胜利结算面板")
+
+func _on_victory_panel_continued() -> void:
+	print("[RunMain] 胜利面板关闭，继续爬塔")
+	if _run_controller != null:
+		_run_controller.confirm_battle_result()
 
 func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	if node_type == "OUTING":
@@ -913,27 +944,22 @@ func _init_partner_slots() -> void:
 		_partner_slots.append(slot)
 		slot.visible = false
 	
-	## PartnerPanel 背景样式：舞台木质地板
-	var stage_wood := RunMainSettings.create_wood_style(true)
-	partner_panel.add_theme_stylebox_override("panel", stage_wood)
+	## PartnerPanel 透明背景：只显示头像，不显示底板
+	var empty_panel := StyleBoxEmpty.new()
+	partner_panel.add_theme_stylebox_override("panel", empty_panel)
 	
 	partner_panel.visible = false
 
 func _create_partner_slot(index: int) -> PanelContainer:
-	var slot := PanelContainer.new()
+	var slot: PanelContainer = PARTNER_HUD_SLOT_SCENE.instantiate()
 	slot.name = "PartnerSlot_%d" % index
-	slot.custom_minimum_size = Vector2(RunMainSettings.PARTNER_SLOT_WIDTH, RunMainSettings.PARTNER_SLOT_HEIGHT)
-	
-	## 卡片样式：羊皮纸底 + 木色边框 + 圆角 + 阴影
-	var card_style := RunMainSettings.create_parchment_flat_style(8)
-	slot.add_theme_stylebox_override("panel", card_style)
 	
 	## Hover 效果：scale 放大 + z_index 提升
 	slot.pivot_offset = Vector2(RunMainSettings.PARTNER_SLOT_WIDTH / 2.0, RunMainSettings.PARTNER_SLOT_HEIGHT / 2.0)
 	slot.mouse_entered.connect(func():
 		_kill_slot_tween(slot)
 		var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		tween.tween_property(slot, "scale", Vector2(1.08, 1.08), RunMainSettings.DURATION_HOVER)
+		tween.tween_property(slot, "scale", Vector2(1.12, 1.12), RunMainSettings.DURATION_HOVER)
 		slot.set_meta("hover_tween", tween)
 		slot.z_index = 5
 	)
@@ -945,75 +971,6 @@ func _create_partner_slot(index: int) -> PanelContainer:
 			slot.set_meta("hover_tween", tween)
 			slot.z_index = 0
 	)
-	
-	## 内容边距
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
-	slot.add_child(margin)
-	
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 4)
-	margin.add_child(vbox)
-	
-	## 头像框（圆角木框）
-	var portrait_frame := PanelContainer.new()
-	portrait_frame.name = "PortraitFrame"
-	portrait_frame.custom_minimum_size = Vector2(64, 64)
-	var portrait_style := RunMainSettings.create_wood_flat_style(
-		RunMainSettings.COLOR_PARCHMENT_DARK,
-		RunMainSettings.COLOR_WOOD_MEDIUM, 1, 8
-	)
-	portrait_frame.add_theme_stylebox_override("panel", portrait_style)
-	vbox.add_child(portrait_frame)
-	
-	var portrait := TextureRect.new()
-	portrait.name = "Portrait"
-	portrait.layout_mode = 1
-	portrait.set_anchors_preset(Control.PRESET_FULL_RECT)
-	portrait.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	portrait_frame.add_child(portrait)
-	
-	## 名字
-	var name_label := Label.new()
-	name_label.name = "NameLabel"
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.add_theme_font_size_override("font_size", 13)
-	name_label.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
-	vbox.add_child(name_label)
-	
-	## 等级 + 职业
-	var level_label := Label.new()
-	level_label.name = "LevelLabel"
-	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	level_label.add_theme_font_size_override("font_size", 10)
-	level_label.add_theme_color_override("font_color", RunMainSettings.COLOR_WOOD_MEDIUM)
-	vbox.add_child(level_label)
-	
-	## 充能条
-	var charge_bar := ProgressBar.new()
-	charge_bar.name = "ChargeBar"
-	charge_bar.custom_minimum_size = Vector2(0, 6)
-	charge_bar.show_percentage = false
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = RunMainSettings.COLOR_GOLD
-	fill.corner_radius_top_left = 3
-	fill.corner_radius_top_right = 3
-	fill.corner_radius_bottom_left = 3
-	fill.corner_radius_bottom_right = 3
-	charge_bar.add_theme_stylebox_override("fill", fill)
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.25, 0.18, 0.12, 1)
-	bg.corner_radius_top_left = 3
-	bg.corner_radius_top_right = 3
-	bg.corner_radius_bottom_left = 3
-	bg.corner_radius_bottom_right = 3
-	charge_bar.add_theme_stylebox_override("background", bg)
-	vbox.add_child(charge_bar)
 	
 	return slot
 
@@ -1037,6 +994,15 @@ func _update_partner_hud() -> void:
 	
 	## 总面板：有伙伴时显示，无伙伴时隐藏
 	partner_panel.visible = (partners.size() > 0)
+
+func _get_level_frame_color(level: int) -> Color:
+	match level:
+		1: return Color(0.75, 0.75, 0.78, 1)  ## Lv.1 · 灰白
+		2: return Color(0.30, 0.65, 0.95, 1)  ## Lv.2 · 蓝
+		3: return Color(0.85, 0.45, 0.95, 1)  ## Lv.3 · 紫
+		4: return Color(0.95, 0.75, 0.20, 1)  ## Lv.4 · 金
+		5: return Color(0.95, 0.30, 0.30, 1)  ## Lv.5 · 红
+		_: return Color(0.85, 0.65, 0.15, 1)  ## 默认金
 
 func _resolve_texture_from_path(path: String) -> Texture2D:
 	## 支持 Texture2D 和 SpriteFrames（自动取第一帧）
@@ -1063,31 +1029,52 @@ func _fill_partner_slot(slot: PanelContainer, partner) -> void:
 	var level: int = partner.current_level if partner is RuntimePartner else partner.get("current_level", 1)
 	level = clampi(level, 1, 5)
 	
-	## 内容子节点（MarginContainer = child 0）
-	var margin: MarginContainer = slot.get_child(0)
-	var vbox: VBoxContainer = margin.get_child(0)
+	## 内容子节点（VBoxContainer = child 0）
+	var vbox: VBoxContainer = slot.get_child(0)
 	var portrait: TextureRect = vbox.get_node("PortraitFrame/Portrait")
 	var name_label: Label = vbox.get_node("NameLabel")
 	var level_label: Label = vbox.get_node("LevelLabel")
-	var charge_bar: ProgressBar = vbox.get_node("ChargeBar")
 	
-	## 头像
+	## 头像（公主链接风格：圆角矩形 + 稀有度边框 + 外发光）
 	var avatar_path: String = cfg.get("avatar_path", "")
 	portrait.texture = _resolve_texture_from_path(avatar_path)
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	
-	## 名字
+	## 头像框样式：根据等级变色
+	var portrait_frame: PanelContainer = vbox.get_node("PortraitFrame")
+	var frame_color: Color = _get_level_frame_color(level)
+	
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color(0.12, 0.12, 0.18, 1.0)  ## 深色底
+	frame_style.border_color = frame_color
+	frame_style.border_width_left = 2
+	frame_style.border_width_top = 2
+	frame_style.border_width_right = 2
+	frame_style.border_width_bottom = 2
+	frame_style.corner_radius_top_left = 10
+	frame_style.corner_radius_top_right = 10
+	frame_style.corner_radius_bottom_left = 10
+	frame_style.corner_radius_bottom_right = 10
+	frame_style.shadow_size = 6
+	frame_style.shadow_color = Color(frame_color.r, frame_color.g, frame_color.b, 0.35)
+	frame_style.shadow_offset = Vector2(0, 1)
+	frame_style.content_margin_left = 4  ## 留边距：头像缩在圆角内部
+	frame_style.content_margin_top = 4
+	frame_style.content_margin_right = 4
+	frame_style.content_margin_bottom = 4
+	portrait_frame.add_theme_stylebox_override("panel", frame_style)
+	## 去掉 clip_children：gl_compatibility 下不可靠
+	
+	## 名字（头像框下侧）
 	name_label.text = cfg.get("name", "???")
 	
-	## 等级 + 职业
-	level_label.text = "Lv.%d | %s" % [level, cfg.get("role", "伙伴")]
+	## 等级（名字下侧，类似 TP 条标签）
+	level_label.text = "Lv.%d" % level
 	
-	## 充能条
+	## 满充能时头像框闪烁（替代充能条）
 	var charge: int = partner.skill_charge if partner is RuntimePartner else partner.get("skill_charge", 0)
 	var charge_max: int = partner.skill_charge_max if partner is RuntimePartner else partner.get("skill_charge_max", cfg.get("skill_charge_max", 3))
-	charge_bar.max_value = charge_max
-	charge_bar.value = charge
-	
-	## 满充能时卡片整体闪烁
 	if charge >= charge_max:
 		_flash_slot_ready(slot)
 	else:
@@ -1152,7 +1139,7 @@ func _on_partner_unlocked(_config_id: String, partner_name: String, _slot_index:
 	
 	if last_visible_index >= 0:
 		var slot: PanelContainer = _partner_slots[last_visible_index]
-		slot.pivot_offset = Vector2(RunMainSettings.PARTNER_SLOT_WIDTH / 2.0, RunMainSettings.PARTNER_SLOT_HEIGHT / 2.0)
+		slot.pivot_offset = Vector2(slot.custom_minimum_size.x / 2.0, slot.custom_minimum_size.y / 2.0)
 		slot.scale = Vector2(0.5, 0.5)
 		slot.modulate.a = 0.0
 		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

@@ -44,8 +44,8 @@ const BUTTON_ICON_SIZE := 40
 const HUD_HEIGHT := 52
 const WOOD_BADGE_WIDTH := 130
 const WOOD_BADGE_HEIGHT := 40
-const PARTNER_SLOT_WIDTH := 140
-const PARTNER_SLOT_HEIGHT := 180
+const PARTNER_SLOT_WIDTH := 80
+const PARTNER_SLOT_HEIGHT := 105
 
 # ============================================================
 # 字体路径

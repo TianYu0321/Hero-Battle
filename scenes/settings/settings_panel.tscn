@@ -1,98 +1,106 @@
-[gd_scene load_steps=2 format=3 uid="uid://settings_panel01"]
+[gd_scene format=3 uid="uid://b8npejpc5wvwl"]
 
-[ext_resource type="Script" path="res://scenes/settings/settings_panel.gd" id="1_sp"]
+[ext_resource type="Texture2D" uid="uid://debyjnn532qi6" path="res://assets/ui/options.png" id="1_oj0hr"]
+[ext_resource type="Script" uid="uid://dvdrbv4cfr8nu" path="res://scenes/settings/settings_panel.gd" id="1_sp"]
 
-[node name="SettingsPanel" type="Panel"]
-visible = false
-anchors_preset = 8
-anchor_left = 0.5
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_dw1ql"]
+texture = ExtResource("1_oj0hr")
+expand_margin_left = 330.0
+expand_margin_top = 30.0
+expand_margin_right = 370.0
+expand_margin_bottom = 30.0
+
+[node name="SettingsPanel" type="Panel" unique_id=1269244815]
+anchors_preset = -1
+anchor_left = 0.49300003
 anchor_top = 0.5
-anchor_right = 0.5
+anchor_right = 0.49300003
 anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -375.0
-offset_right = 300.0
-offset_bottom = 375.0
+offset_left = -287.56006
+offset_top = -423.0
+offset_right = 312.43994
+offset_bottom = 327.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxTexture_dw1ql")
 script = ExtResource("1_sp")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=2009771069]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 30.0
-offset_top = 30.0
-offset_right = -30.0
+offset_top = 45.0
+offset_right = -27.0
 offset_bottom = -30.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 16
 
-[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="VBoxContainer" unique_id=680945523]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "设置"
 horizontal_alignment = 1
 
-[node name="SFXLabel" type="Label" parent="VBoxContainer"]
+[node name="SFXLabel" type="Label" parent="VBoxContainer" unique_id=45676377]
 layout_mode = 2
 text = "音效音量"
 
-[node name="SFXSlider" type="HSlider" parent="VBoxContainer"]
+[node name="SFXSlider" type="HSlider" parent="VBoxContainer" unique_id=1284400261]
 layout_mode = 2
 max_value = 1.0
 step = 0.05
 value = 0.8
 
-[node name="UILabel" type="Label" parent="VBoxContainer"]
+[node name="UILabel" type="Label" parent="VBoxContainer" unique_id=1204658646]
 layout_mode = 2
 text = "UI音量"
 
-[node name="UISlider" type="HSlider" parent="VBoxContainer"]
+[node name="UISlider" type="HSlider" parent="VBoxContainer" unique_id=283488522]
 layout_mode = 2
 max_value = 1.0
 step = 0.05
 value = 0.8
 
-[node name="MusicLabel" type="Label" parent="VBoxContainer"]
+[node name="MusicLabel" type="Label" parent="VBoxContainer" unique_id=848601962]
 layout_mode = 2
 text = "音乐音量"
 
-[node name="MusicSlider" type="HSlider" parent="VBoxContainer"]
+[node name="MusicSlider" type="HSlider" parent="VBoxContainer" unique_id=768887680]
 layout_mode = 2
 max_value = 1.0
 step = 0.05
 value = 0.5
 
-[node name="HSeparator" type="HSeparator" parent="VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="VBoxContainer" unique_id=557317847]
 layout_mode = 2
 
-[node name="ResolutionLabel" type="Label" parent="VBoxContainer"]
+[node name="ResolutionLabel" type="Label" parent="VBoxContainer" unique_id=225042593]
 layout_mode = 2
 text = "分辨率"
 
-[node name="ResolutionOption" type="OptionButton" parent="VBoxContainer"]
+[node name="ResolutionOption" type="OptionButton" parent="VBoxContainer" unique_id=597404335]
 layout_mode = 2
 
-[node name="FullscreenToggle" type="CheckButton" parent="VBoxContainer"]
+[node name="FullscreenToggle" type="CheckButton" parent="VBoxContainer" unique_id=590090114]
 layout_mode = 2
 text = "全屏"
 
-[node name="HSeparator2" type="HSeparator" parent="VBoxContainer"]
+[node name="HSeparator2" type="HSeparator" parent="VBoxContainer" unique_id=966349061]
 layout_mode = 2
 
-[node name="ShakeToggle" type="CheckButton" parent="VBoxContainer"]
+[node name="ShakeToggle" type="CheckButton" parent="VBoxContainer" unique_id=107556570]
 layout_mode = 2
+button_pressed = true
 text = "屏幕震动"
-button_pressed = true
 
-[node name="DamageToggle" type="CheckButton" parent="VBoxContainer"]
+[node name="DamageToggle" type="CheckButton" parent="VBoxContainer" unique_id=1157948686]
 layout_mode = 2
-text = "伤害数字"
 button_pressed = true
+text = "伤害数字"
 
-[node name="CloseButton" type="Button" parent="VBoxContainer"]
+[node name="CloseButton" type="Button" parent="VBoxContainer" unique_id=1283222060]
 layout_mode = 2
 text = "关闭"

@@ -36,6 +36,9 @@ ResourcePaths="*res://autoload/resource_paths.gd"
 ScreenShake="*res://scripts/autoload/screen_shake.gd"
 HitPause="*res://scripts/autoload/hit_pause.gd"
 FeedbackManager="*res://scenes/effects/feedback_manager.gd"
+AchievementData="*res://autoload/achievement_data.gd"
+AchievementManager="*res://autoload/achievement_manager.gd"
+PVPManager="*res://autoload/pvp_manager.gd"
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
 
 [debug]

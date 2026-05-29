@@ -91,6 +91,8 @@ func add_partner(partner_config_id: int, position: int) -> RuntimePartner:
 	p.is_skill_ready = false
 	_partners.append(p)
 	EventBus.emit_signal("partner_unlocked", str(partner_config_id), config.get("name", ""), position, 0, "")
+	if AchievementManager != null:
+		AchievementManager.on_partner_unlocked(str(partner_config_id))
 	return p
 
 

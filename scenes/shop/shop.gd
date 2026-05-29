@@ -29,7 +29,10 @@ func _load_player_data() -> void:
 
 func _load_shop_items() -> void:
 	var all_configs: Dictionary = ConfigManager.get_all_partner_configs()
-	var unlocked: Array = _player_data.get("unlocked_partners", [])
+	var unlocked_raw: Array = _player_data.get("unlocked_partners", [])
+	var unlocked: Array[String] = []
+	for u in unlocked_raw:
+		unlocked.append(str(u))
 	
 	_shop_items.clear()
 	for partner_key in all_configs.keys():
@@ -94,7 +97,10 @@ func _process_purchase(item: Dictionary) -> void:
 		return
 	
 	var unlocked: Array = _player_data.get("unlocked_partners", [])
-	if not pid in unlocked:
+	var unlocked_str: Array[String] = []
+	for u in unlocked:
+		unlocked_str.append(str(u))
+	if not pid in unlocked_str:
 		unlocked.append(pid)
 	_player_data["unlocked_partners"] = unlocked
 	SaveManager.save_player_data(_player_data)

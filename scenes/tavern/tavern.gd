@@ -28,7 +28,6 @@ extends Control
 @onready var _detail_panel: VBoxContainer = $UILayer/MainSection/RightPanel/DetailPanel
 @onready var _detail_name: Label = $UILayer/MainSection/RightPanel/DetailPanel/NameLabel
 @onready var _detail_class: Label = $UILayer/MainSection/RightPanel/DetailPanel/ClassRow/ClassLabel
-@onready var _detail_rarity: ColorRect = $UILayer/MainSection/RightPanel/DetailPanel/ClassRow/RarityBar
 @onready var _detail_desc: Label = $UILayer/MainSection/RightPanel/DetailPanel/DescLabel
 @onready var _action_btn: Button = $UILayer/MainSection/RightPanel/DetailPanel/ActionButton
 
@@ -128,37 +127,44 @@ func _create_stylebox(
 	return s
 
 func _create_cell_style(state: String) -> StyleBoxFlat:
+	var s: StyleBoxFlat
 	match state:
 		"normal":
-			return _create_stylebox(
+			s = _create_stylebox(
 				SETTINGS.COLOR_BG_PANEL,
-				SETTINGS.COLOR_BORDER, 2, 2,
+				Color(0.85, 0.85, 0.85, 0), 0, 0,
 				SETTINGS.RADIUS_AVATAR,
 				4, Vector2(0, 1), Color(0, 0, 0, 0.06)
 			)
 		"hover":
-			return _create_stylebox(
+			s = _create_stylebox(
 				SETTINGS.COLOR_BG_PANEL,
 				SETTINGS.COLOR_BORDER_HOVER, 2, 2,
 				SETTINGS.RADIUS_AVATAR,
 				6, Vector2(0, 2), Color(0.4, 0.6, 1, 0.1)
 			)
 		"selected":
-			return _create_stylebox(
+			s = _create_stylebox(
 				SETTINGS.COLOR_BG_SELECTED,
 				SETTINGS.COLOR_BORDER_SELECTED, 3, 3,
 				SETTINGS.RADIUS_AVATAR,
 				6, Vector2(0, 2), Color(0.25, 0.55, 0.95, 0.15)
 			)
 		"in_team":
-			return _create_stylebox(
-				Color(0.94, 0.94, 0.96, 0.6),
+			s = _create_stylebox(
+				Color(0.94, 0.94, 0.96, 1),
 				Color(0.8, 0.8, 0.82, 0.5), 2, 2,
 				SETTINGS.RADIUS_AVATAR,
 				0, Vector2.ZERO, Color.TRANSPARENT
 			)
 		_:
 			return _create_cell_style("normal")
+	# 关键：content margin 设为 0，让头像贴满 cell，不留白边
+	s.content_margin_left = 0
+	s.content_margin_top = 0
+	s.content_margin_right = 0
+	s.content_margin_bottom = 0
+	return s
 
 func _create_slot_style(state: String) -> StyleBoxFlat:
 	match state:
@@ -274,8 +280,8 @@ func _build_team_slot_content(partner: Dictionary) -> VBoxContainer:
 	
 	# 头像
 	var avatar := TextureRect.new()
-	avatar.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	avatar.custom_minimum_size = Vector2(56, 56)
 	avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var icon_path: String = _get_icon_path_for_partner(partner)
@@ -306,6 +312,10 @@ func _populate_partner_pool() -> void:
 		child.queue_free()
 	_icon_cells.clear()
 	
+	_partner_icon_grid.columns = SETTINGS.GRID_COLUMNS
+	_partner_icon_grid.add_theme_constant_override("h_separation", SETTINGS.GRID_H_SEPARATION)
+	_partner_icon_grid.add_theme_constant_override("v_separation", SETTINGS.GRID_V_SEPARATION)
+	
 	for partner_id in _partner_ids:
 		var config: Dictionary = ConfigManager.get_partner_config(partner_id)
 		if config.is_empty():
@@ -316,57 +326,83 @@ func _populate_partner_pool() -> void:
 		_icon_cells[partner_id] = cell
 
 func _create_icon_cell(partner_id: String, partner: Dictionary) -> PanelContainer:
+	var display_state: ConfigManager.PartnerDisplayState = ConfigManager.get_partner_display_state(partner_id)
+	var is_locked: bool = (display_state == ConfigManager.PartnerDisplayState.LOCKED_VISIBLE)
+	
 	var cell := PanelContainer.new()
-	cell.custom_minimum_size = Vector2(SETTINGS.ICON_CELL_SIZE, SETTINGS.ICON_CELL_SIZE + SETTINGS.ICON_NAME_HEIGHT)
+	cell.custom_minimum_size = Vector2(SETTINGS.ICON_CELL_WIDTH, SETTINGS.ICON_CELL_HEIGHT + SETTINGS.ICON_NAME_HEIGHT)
 	cell.set_meta("partner_id", partner_id)
 	cell.set_meta("partner_data", partner)
 	cell.set_meta("state", "normal")
+	cell.set_meta("display_state", display_state)
 	cell.mouse_filter = Control.MOUSE_FILTER_STOP
-	
 	cell.add_theme_stylebox_override("panel", _create_cell_style("normal"))
+	cell.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 	
-	var vbox := VBoxContainer.new()
-	vbox.name = "VBoxContainer"
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 2)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cell.add_child(vbox)
+	# 用 Control 作为内容根，绕过 PanelContainer 的强制布局，anchors 才能生效
+	var content := Control.new()
+	content.name = "Content"
+	content.set_anchors_preset(Control.PRESET_FULL_RECT)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cell.add_child(content)
 	
-	# 头像容器（圆角背景）
-	var avatar_container := PanelContainer.new()
-	avatar_container.custom_minimum_size = Vector2(SETTINGS.ICON_AVATAR_SIZE, SETTINGS.ICON_AVATAR_SIZE)
-	var avatar_bg := StyleBoxFlat.new()
-	avatar_bg.bg_color = Color(0.95, 0.95, 0.97, 1)
-	avatar_bg.corner_radius_top_left = 6
-	avatar_bg.corner_radius_top_right = 6
-	avatar_bg.corner_radius_bottom_left = 6
-	avatar_bg.corner_radius_bottom_right = 6
-	avatar_container.add_theme_stylebox_override("panel", avatar_bg)
-	avatar_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(avatar_container)
-	
-	# 头像
+	# 头像占据 cell 上半部分（图片区域），保持比例不裁切
 	var avatar := TextureRect.new()
-	avatar.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
+	avatar.name = "Avatar"
+	avatar.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	avatar.offset_bottom = SETTINGS.ICON_CELL_HEIGHT
+	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	avatar.custom_minimum_size = Vector2(SETTINGS.ICON_AVATAR_SIZE, SETTINGS.ICON_AVATAR_SIZE)
 	avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var icon_path: String = _get_icon_path_for_partner(partner)
 	if not icon_path.is_empty():
 		var tex: Texture2D = load(icon_path)
 		if tex != null:
 			avatar.texture = tex
-	avatar_container.add_child(avatar)
+	# 未拥有：头像变灰
+	if is_locked:
+		avatar.self_modulate = Color(0.5, 0.5, 0.5, 1)
+	content.add_child(avatar)
 	
-	# 名字
+	# 名字底条固定在底部
+	var name_bar := PanelContainer.new()
+	name_bar.name = "NameBar"
+	name_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	name_bar.offset_top = -SETTINGS.ICON_NAME_HEIGHT
+	name_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var name_bg := StyleBoxFlat.new()
+	name_bg.bg_color = Color(1, 1, 1, 0.9)
+	name_bg.corner_radius_bottom_left = SETTINGS.RADIUS_AVATAR
+	name_bg.corner_radius_bottom_right = SETTINGS.RADIUS_AVATAR
+	name_bg.content_margin_left = 0
+	name_bg.content_margin_top = 2
+	name_bg.content_margin_right = 0
+	name_bg.content_margin_bottom = 2
+	name_bar.add_theme_stylebox_override("panel", name_bg)
+	content.add_child(name_bar)
+	
 	var name_label := Label.new()
 	name_label.text = partner.get("name", "???")
 	name_label.add_theme_font_size_override("font_size", 11)
-	name_label.add_theme_color_override("font_color", SETTINGS.COLOR_TEXT_MAIN)
+	var name_color: Color = SETTINGS.COLOR_TEXT_DISABLED if is_locked else SETTINGS.COLOR_TEXT_MAIN
+	name_label.add_theme_color_override("font_color", name_color)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(name_label)
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_bar.add_child(name_label)
 	
-	# 勾选标记（默认隐藏）
+	# 锁定标记（未拥有时显示在名字条上）
+	if is_locked:
+		var lock_label := Label.new()
+		lock_label.name = "LockMark"
+		lock_label.text = "🔒"
+		lock_label.add_theme_font_size_override("font_size", 14)
+		lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lock_label.set_anchors_preset(Control.PRESET_CENTER)
+		lock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content.add_child(lock_label)
+	
+	# 勾选标记（默认隐藏，固定在右上角）
 	var check_mark := Label.new()
 	check_mark.name = "CheckMark"
 	check_mark.text = "✓"
@@ -375,27 +411,33 @@ func _create_icon_cell(partner_id: String, partner: Dictionary) -> PanelContaine
 	check_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	check_mark.visible = false
 	check_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(check_mark)
+	check_mark.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	check_mark.offset_right = -4
+	check_mark.offset_bottom = 24
+	content.add_child(check_mark)
 	
-	# 交互
-	cell.gui_input.connect(_on_icon_cell_gui_input.bind(cell, partner))
-	cell.mouse_entered.connect(_on_icon_cell_hover_enter.bind(cell))
-	cell.mouse_exited.connect(_on_icon_cell_hover_exit.bind(cell))
+	# 交互（已拥有的才响应点击）
+	if not is_locked:
+		cell.gui_input.connect(_on_icon_cell_gui_input.bind(cell, partner))
+		cell.mouse_entered.connect(_on_icon_cell_hover_enter.bind(cell))
+		cell.mouse_exited.connect(_on_icon_cell_hover_exit.bind(cell))
+	else:
+		cell.mouse_default_cursor_shape = Control.CURSOR_FORBIDDEN
+		cell.focus_mode = Control.FOCUS_NONE
 	
 	return cell
 
 func _get_icon_path_for_partner(partner: Dictionary) -> String:
-	# 优先级：icon_path → avatar_path → card图
-	var icon_path: String = partner.get("icon_path", "")
-	if not icon_path.is_empty() and FileAccess.file_exists(icon_path):
+	# 统一使用 partner/{key}/icon/icon.png（去掉 partner_ 前缀），没有就不显示
+	var partner_key: String = partner.get("partner_id_str", "")
+	if partner_key.is_empty():
+		partner_key = str(partner.get("id", ""))
+	# 去掉 partner_ 前缀，比如 partner_pharmacist → pharmacist
+	if partner_key.begins_with("partner_"):
+		partner_key = partner_key.substr(8)
+	var icon_path: String = "res://assets/characters/partner/%s/icon/icon.png" % partner_key
+	if FileAccess.file_exists(icon_path):
 		return icon_path
-	var avatar_path: String = partner.get("avatar_path", "")
-	if not avatar_path.is_empty() and FileAccess.file_exists(avatar_path):
-		return avatar_path
-	var partner_id: String = str(partner.get("id", ""))
-	var card_path: String = "res://assets/characters/card/partners/%s_lv1.png" % partner_id
-	if FileAccess.file_exists(card_path):
-		return card_path
 	return ""
 
 func _get_portrait_path_for_partner(partner: Dictionary) -> String:
@@ -428,14 +470,6 @@ func _format_role_label(title: String) -> String:
 		return "⚡ 斩杀"
 	return title
 
-func _get_rarity_color(rarity) -> Color:
-	var rarity_str: String = str(rarity).to_lower()
-	match rarity_str:
-		"rare", "3": return Color(0.3, 0.6, 0.9, 1)
-		"epic", "4": return Color(0.7, 0.4, 0.9, 1)
-		"legendary", "5": return Color(0.95, 0.7, 0.2, 1)
-		_: return Color(0.7, 0.7, 0.75, 1)
-
 # ========== 图标 Hover ==========
 
 func _on_icon_cell_hover_enter(cell: PanelContainer) -> void:
@@ -452,6 +486,7 @@ func _on_icon_cell_hover_exit(cell: PanelContainer) -> void:
 		cell.add_theme_stylebox_override("panel", _create_cell_style("in_team"))
 	else:
 		cell.add_theme_stylebox_override("panel", _create_cell_style("normal"))
+	cell.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 
 # ========== 图标点击（预览） ==========
 
@@ -577,7 +612,6 @@ func _show_partner_detail(partner_id: String) -> void:
 	# 更新文字信息
 	_detail_name.text = config.get("name", "???")
 	_detail_class.text = _format_role_label(config.get("title", "伙伴"))
-	_detail_rarity.color = _get_rarity_color(str(config.get("rarity", "common")))
 	_detail_desc.text = config.get("desc", "")
 	if _detail_desc.text.is_empty():
 		_detail_desc.text = "暂无描述"
@@ -643,7 +677,7 @@ func _add_to_team_by_id(partner_id: String) -> void:
 		var cell: PanelContainer = _icon_cells[partner_id]
 		cell.set_meta("state", "in_team")
 		cell.add_theme_stylebox_override("panel", _create_cell_style("in_team"))
-		var check: Label = cell.get_node("VBoxContainer/CheckMark") if cell.has_node("VBoxContainer/CheckMark") else null
+		var check: Label = cell.get_node("Content/CheckMark") if cell.has_node("Content/CheckMark") else null
 		if check != null:
 			check.visible = true
 	
@@ -674,7 +708,7 @@ func _remove_from_team(index: int) -> void:
 		var cell: PanelContainer = _icon_cells[removed_id]
 		cell.set_meta("state", "normal")
 		cell.add_theme_stylebox_override("panel", _create_cell_style("normal"))
-		var check: Label = cell.get_node("VBoxContainer/CheckMark") if cell.has_node("VBoxContainer/CheckMark") else null
+		var check: Label = cell.get_node("Content/CheckMark") if cell.has_node("Content/CheckMark") else null
 		if check != null:
 			check.visible = false
 	
@@ -696,22 +730,8 @@ func _on_team_slot_gui_input(event: InputEvent, index: int) -> void:
 # ========== 伙伴池加载 ==========
 
 func _get_available_partner_ids() -> Array[String]:
-	var user_id: String = SaveManager.get_user_id()
-	var unlock_state: Dictionary = SaveManager.load_unlock_state(user_id)
-	var unlocked_ids: Array = unlock_state.get("unlocked_partners", [])
-	var unlocked: Array = []
-	for pid in unlocked_ids:
-		unlocked.append(str(pid))
-	
-	var all_ids: Array[String] = ConfigManager.get_all_partner_ids()
-	var result: Array[String] = []
-	for pid in all_ids:
-		var cfg: Dictionary = ConfigManager.get_partner_config(pid)
-		var is_default: bool = cfg.get("is_default_unlock", false)
-		var pid_str: String = str(cfg.get("id", ""))
-		if is_default or (pid_str in unlocked):
-			result.append(pid)
-	return result
+	## 使用 ConfigManager 的三态显示系统（OWNED / LOCKED_VISIBLE / HIDDEN）
+	return ConfigManager.get_displayable_partner_ids()
 
 # ========== UI 更新 ==========
 
@@ -815,13 +835,18 @@ func _play_entrance_animation() -> void:
 	_detail_panel.modulate.a = 0.0
 	detail_tween.tween_property(_detail_panel, "modulate:a", 1.0, 0.3)
 	
-	# 默认选中第一个伙伴
-	if not _partner_ids.is_empty() and _icon_cells.has(_partner_ids[0]):
-		var first_cell: PanelContainer = _icon_cells[_partner_ids[0]]
-		first_cell.set_meta("state", "selected")
-		first_cell.add_theme_stylebox_override("panel", _create_cell_style("selected"))
-		_selected_partner_id = _partner_ids[0]
-		_show_partner_detail(_selected_partner_id)
+	# 默认选中第一个【已拥有】的伙伴（跳过未拥有的）
+	for pid in _partner_ids:
+		if not _icon_cells.has(pid):
+			continue
+		var state: ConfigManager.PartnerDisplayState = ConfigManager.get_partner_display_state(pid)
+		if state == ConfigManager.PartnerDisplayState.OWNED:
+			var first_cell: PanelContainer = _icon_cells[pid]
+			first_cell.set_meta("state", "selected")
+			first_cell.add_theme_stylebox_override("panel", _create_cell_style("selected"))
+			_selected_partner_id = pid
+			_show_partner_detail(_selected_partner_id)
+			break
 
 # ========== 按钮回调 ==========
 

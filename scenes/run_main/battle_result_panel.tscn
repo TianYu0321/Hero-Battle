@@ -1,0 +1,93 @@
+[gd_scene format=3 uid="uid://brp3q0x1v2y8a"]
+
+[ext_resource type="Script" path="res://scenes/run_main/battle_result_panel.gd" id="1_brp"]
+
+[node name="BattleResultPanel" type="CanvasLayer"]
+layer = 20
+visible = false
+script = ExtResource("1_brp")
+
+[node name="Overlay" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.05, 0.05, 0.08, 0.6)
+
+[node name="MainPanel" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(420, 280)
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.0
+offset_top = -140.0
+offset_right = 210.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainPanel"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="OutcomeTitle" type="Label" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "胜利！"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Divider" type="ColorRect" parent="MainPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.75, 0.7, 0.65, 0.5)
+
+[node name="ContentContainer" type="MarginContainer" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 8
+
+[node name="Divider2" type="ColorRect" parent="MainPanel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+color = Color(0.75, 0.7, 0.65, 0.5)
+
+[node name="ButtonRow" type="HBoxContainer" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="PrimaryBtn" type="Button" parent="MainPanel/VBoxContainer/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 44)
+text = "继续"
+
+[node name="SecondaryBtn" type="Button" parent="MainPanel/VBoxContainer/ButtonRow"]
+visible = false
+layout_mode = 2
+custom_minimum_size = Vector2(140, 44)
+text = "返回主菜单"
+
+[node name="ParticleEffect" type="CPUParticles2D" parent="."]
+position = Vector2(960, 400)
+emitting = false
+amount = 80
+lifetime = 2.0
+one_shot = true
+explosiveness = 0.8
+direction = Vector2(0, -1)
+spread = 60.0
+gravity = Vector2(0, 200)
+initial_velocity_min = 150.0
+initial_velocity_max = 300.0
+scale_amount_min = 2.0
+scale_amount_max = 6.0
+color = Color(0.25, 0.6, 0.35, 1)

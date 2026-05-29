@@ -10,10 +10,12 @@ extends Control
 @onready var _clear_button: Button = $VBox/Header/ClearButton
 @onready var _btn_archives: Button = $VBox/TabButtons/BtnArchives
 @onready var _btn_leaderboard: Button = $VBox/TabButtons/BtnLeaderboard
+@onready var _btn_achievements: Button = $VBox/TabButtons/BtnAchievements
 @onready var _scroll: ScrollContainer = $VBox/Scroll
 @onready var _list_container: VBoxContainer = $VBox/Scroll/ListContainer
 @onready var _archive_detail: ArchiveDetail = $VBox/ArchiveDetail
 @onready var _leaderboard_panel: LeaderboardPanel = $VBox/LeaderboardPanel
+@onready var _achievement_panel: PanelContainer = $VBox/AchievementPanel
 
 var _item_scene: PackedScene = preload("res://scenes/archive_view/archive_list_item.tscn")
 
@@ -22,23 +24,32 @@ func _ready() -> void:
 	_clear_button.pressed.connect(_on_clear_pressed)
 	_btn_archives.pressed.connect(_on_show_archives)
 	_btn_leaderboard.pressed.connect(_on_show_leaderboard)
+	_btn_achievements.pressed.connect(_on_show_achievements)
 	_archive_detail.back_requested.connect(_on_detail_back)
+	if _achievement_panel != null:
+		_achievement_panel.closed.connect(_on_achievement_closed)
 	_show_archives()
 
 func _show_archives() -> void:
 	_scroll.visible = true
 	_leaderboard_panel.visible = false
 	_archive_detail.visible = false
+	if _achievement_panel != null:
+		_achievement_panel.visible = false
 	_btn_archives.disabled = true
 	_btn_leaderboard.disabled = false
+	_btn_achievements.disabled = false
 	_refresh_list()
 
 func _show_leaderboard() -> void:
 	_scroll.visible = false
 	_leaderboard_panel.visible = true
 	_archive_detail.visible = false
+	if _achievement_panel != null:
+		_achievement_panel.visible = false
 	_btn_archives.disabled = false
 	_btn_leaderboard.disabled = true
+	_btn_achievements.disabled = false
 	_leaderboard_panel.refresh()
 
 func _refresh_list() -> void:
@@ -62,11 +73,30 @@ func _on_detail_back() -> void:
 	_archive_detail.visible = false
 	_scroll.visible = true
 
+func _show_achievements() -> void:
+	_scroll.visible = false
+	_leaderboard_panel.visible = false
+	_archive_detail.visible = false
+	if _achievement_panel != null:
+		_achievement_panel.visible = true
+		_achievement_panel.modulate = Color.WHITE
+		_achievement_panel.scale = Vector2.ONE
+		_achievement_panel._update_total_label()
+	_btn_archives.disabled = false
+	_btn_leaderboard.disabled = false
+	_btn_achievements.disabled = true
+
+func _on_achievement_closed() -> void:
+	_show_archives()
+
 func _on_show_archives() -> void:
 	_show_archives()
 
 func _on_show_leaderboard() -> void:
 	_show_leaderboard()
+
+func _on_show_achievements() -> void:
+	_show_achievements()
 
 func _on_clear_pressed() -> void:
 	SaveManager.clear_all_archives()

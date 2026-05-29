@@ -227,7 +227,6 @@ func _populate_career_stats() -> void:
 func _populate_achievements(data: Dictionary) -> void:
 	if _achievements_container == null:
 		return
-	## 清空旧内容
 	for child in _achievements_container.get_children():
 		child.queue_free()
 	
@@ -244,12 +243,22 @@ func _populate_achievements(data: Dictionary) -> void:
 	_achievements_container.add_child(title)
 	
 	for ach_id in new_achievements:
-		var ach_name: String = _ACHIEVEMENT_NAMES.get(ach_id, ach_id)
+		var ach_name: String = _get_achievement_name(ach_id)
 		var lbl := Label.new()
 		lbl.text = "  ★ %s" % ach_name
 		lbl.add_theme_font_size_override("font_size", 16)
 		lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.7))
 		_achievements_container.add_child(lbl)
+
+
+func _get_achievement_name(ach_id: String) -> String:
+	if _ACHIEVEMENT_NAMES.has(ach_id):
+		return _ACHIEVEMENT_NAMES[ach_id]
+	if AchievementData != null:
+		var data: Dictionary = AchievementData.get_achievement(ach_id)
+		if not data.is_empty():
+			return data.get("name", ach_id)
+	return ach_id
 
 
 func _on_archive_button_pressed() -> void:

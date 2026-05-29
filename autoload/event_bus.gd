@@ -38,10 +38,7 @@ signal partner_skill_triggered(partner_id: String, skill_name: String, effect_de
 signal partner_charge_changed(partner_id: String, current: int, max_charge: int)
 signal enemy_encountered(enemy_data: Dictionary)
 
-## 局外商店信号 (Outgame Shop)
 signal mojo_coin_spent(amount: int, item_id: String)
-signal outgame_shop_opened
-signal outgame_shop_closed
 
 signal pvp_match_found(opponent_data: Dictionary)
 signal pvp_battle_started(allies: Array, enemies: Array, playback_mode: String)
@@ -132,3 +129,7 @@ signal leaderboard_updated(leaderboard: Array[Dictionary])
 signal error_occurred(error_code: String, error_message: String, source_module: String)
 signal warning_issued(warning_code: String, message: String, source_module: String)
 signal audio_play_requested(audio_type: String, audio_name: String, volume: float)
+
+# --- 成就系统信号 ---
+signal achievement_unlocked(achievement_id: String, achievement_data: Dictionary)
+signal achievement_progress_updated(achievement_id: String, current: int, target: int)
