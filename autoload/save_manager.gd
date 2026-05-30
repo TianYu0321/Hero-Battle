@@ -47,6 +47,9 @@ const MochengCoin_FILE := "mocheng_coin.save"
 const UNLOCK_STATE_FILE := "unlock_state.save"
 const DAILY_COUNTERS_FILE := "daily_counters.save"
 
+const MAX_SLOTS := 3
+const SLOTS_META_FILE := "save_slots.save"
+
 func _save_dict(file_name: String, data: Dictionary) -> bool:
 	## 通用加密保存入口：深拷贝后注入 schema_version，原子写入
 	var save_data: Dictionary = data.duplicate(true)
@@ -137,41 +140,48 @@ func _migrate_data(data: Dictionary, old_schema: int, file_name: String) -> Dict
 	data["schema_version"] = CURRENT_SCHEMA_VERSION
 	return data
 
-func save_run_state(run_data: Dictionary, is_auto: bool = true, _slot_id: int = 1, _user_id: String = current_user_id) -> bool:
-	## 新实现：加密 + 原子写入
-	var data: Dictionary = run_data.duplicate(true)
-	data["timestamp"] = Time.get_unix_time_from_system()
-	data["is_auto_save"] = is_auto
-	
-	var success := _save_dict(RUN_FILE, data)
-	if success:
-		print("[SaveManager] RUN存档已保存: %s" % RUN_FILE)
-		EventBus.game_saved.emit(1, data["timestamp"], data.get("current_floor", 0), is_auto)
-	else:
-		EventBus.save_failed.emit(5001, "Failed to save run state", {"slot": 1})
-	return success
+func save_run_state(run_data: Dictionary, is_auto: bool = true, slot_id: int = -1, _user_id: String = current_user_id) -> bool:
+	## 多槽位兼容：保存到活跃槽位（或指定槽位）
+	if slot_id < 1:
+		slot_id = get_active_slot() + 1
+		if slot_id < 1:
+			slot_id = 1
+	return save_to_slot(slot_id, run_data, is_auto)
 
 func has_active_run(_user_id: String = current_user_id) -> bool:
-	var data: Dictionary = _load_dict(RUN_FILE)
-	if data.is_empty():
-		## 尝试迁移旧版存档
+	var active: int = get_active_slot()
+	var slot_id: int = active + 1 if active >= 0 else 1
+	if not slot_has_data(slot_id):
+		## 尝试旧版迁移
 		var migrated: bool = _migrate_old_saves()
-		if migrated:
-			data = _load_dict(RUN_FILE)
-		if data.is_empty():
+		if migrated and slot_has_data(1):
+			slot_id = 1
+		else:
 			return false
+	
+	var file_name: String = _get_slot_file(slot_id)
+	var data: Dictionary = _load_dict(file_name)
 	return is_valid_save(data) and data.get("run_status", 1) == 1
 
 func load_latest_run(_user_id: String = current_user_id) -> Dictionary:
-	var data: Dictionary = _load_dict(RUN_FILE)
-	if data.is_empty():
+	var active: int = get_active_slot()
+	var slot_id: int = active + 1 if active >= 0 else 1
+	if not slot_has_data(slot_id):
+		## 尝试旧版迁移
 		var migrated: bool = _migrate_old_saves()
-		if migrated:
-			data = _load_dict(RUN_FILE)
-		if data.is_empty():
+		if migrated and slot_has_data(1):
+			slot_id = 1
+		else:
 			EventBus.load_failed.emit(4001, "No run save found", 1)
 			return {}
-
+	
+	## 先加载原始数据验证，通过后再更新活跃槽位 + 发射信号
+	var file_name: String = _get_slot_file(slot_id)
+	var data: Dictionary = _load_dict(file_name)
+	if data.is_empty():
+		EventBus.load_failed.emit(4001, "No run save found", 1)
+		return {}
+	
 	if not _validate_save_integrity(data):
 		EventBus.load_failed.emit(4001, "Save file missing required fields", 1)
 		return {}
@@ -180,7 +190,11 @@ func load_latest_run(_user_id: String = current_user_id) -> Dictionary:
 	if run_status != 1:
 		print("[SaveManager] 最新存档已完成(run_status=%d)，不可继续" % run_status)
 		return {}
-
+	
+	## 验证通过，更新活跃槽位并发射信号
+	var meta: Dictionary = _load_slots_meta()
+	meta["active_slot"] = slot_id - 1
+	_save_slots_meta(meta)
 	EventBus.game_loaded.emit(data)
 	return data
 
@@ -696,3 +710,156 @@ func _migrate_old_saves() -> bool:
 			file.close()
 	
 	return migrated
+
+
+## ========== 多槽位系统 ==========
+
+func _get_slot_file(slot_id: int) -> String:
+	return "run_%03d.save" % slot_id
+
+func _load_slots_meta() -> Dictionary:
+	var data: Dictionary = _load_dict(SLOTS_META_FILE)
+	if data.is_empty():
+		## 尝试迁移旧版单存档到槽位系统
+		if FileAccess.file_exists(ConfigManager.SAVE_DIR + RUN_FILE):
+			return _migrate_legacy_to_slots()
+		return {"slots": [{}, {}, {}], "active_slot": -1}
+	return data
+
+func _save_slots_meta(meta: Dictionary) -> bool:
+	return _save_dict(SLOTS_META_FILE, meta)
+
+func _migrate_legacy_to_slots() -> Dictionary:
+	## 旧版 run.save → Slot 1
+	var legacy_data: Dictionary = _load_dict(RUN_FILE)
+	var slot1_file: String = _get_slot_file(1)
+	var success := _write_encrypted(ConfigManager.SAVE_DIR + slot1_file, legacy_data)
+	if not success:
+		return {"slots": [{}, {}, {}], "active_slot": -1}
+	
+	var meta := {
+		"slots": [
+			_extract_slot_summary(legacy_data),
+			{},
+			{}
+		],
+		"active_slot": 0
+	}
+	_save_slots_meta(meta)
+	print("[SaveManager] 旧存档已迁移到 Slot 1")
+	return meta
+
+func _extract_slot_summary(run_data: Dictionary) -> Dictionary:
+	var hero: Dictionary = run_data.get("hero", {})
+	var config_id: int = hero.get("config_id", 0)
+	var hero_cfg: Dictionary = ConfigManager.get_hero_config(str(config_id))
+	var hero_name: String = hero_cfg.get("hero_name", "???")
+	var floor: int = run_data.get("current_floor", 1)
+	var is_auto: bool = run_data.get("is_auto_save", true)
+	var timestamp: int = run_data.get("timestamp", 0)
+	var play_time: int = run_data.get("play_time_seconds", 0)
+	return {
+		"has_data": true,
+		"hero_name": hero_name,
+		"floor": floor,
+		"timestamp": timestamp,
+		"is_auto_save": is_auto,
+		"play_time_seconds": play_time,
+	}
+
+func get_all_slots_info() -> Array[Dictionary]:
+	var meta: Dictionary = _load_slots_meta()
+	var slots: Array = meta.get("slots", [{}, {}, {}])
+	var result: Array[Dictionary] = []
+	for i in range(MAX_SLOTS):
+		var info: Dictionary = slots[i] if i < slots.size() else {}
+		info["slot_id"] = i + 1
+		info["is_active"] = (meta.get("active_slot", -1) == i)
+		if not info.has("has_data"):
+			info["has_data"] = false
+		result.append(info)
+	return result
+
+func get_active_slot() -> int:
+	var meta: Dictionary = _load_slots_meta()
+	return meta.get("active_slot", -1)
+
+func save_to_slot(slot_id: int, run_data: Dictionary, is_auto: bool = false) -> bool:
+	if slot_id < 1 or slot_id > MAX_SLOTS:
+		push_error("[SaveManager] 槽位ID越界: %d" % slot_id)
+		return false
+	
+	var file_name: String = _get_slot_file(slot_id)
+	var data: Dictionary = run_data.duplicate(true)
+	data["timestamp"] = Time.get_unix_time_from_system()
+	data["is_auto_save"] = is_auto
+	
+	var success := _save_dict(file_name, data)
+	if not success:
+		EventBus.save_failed.emit(5001, "Failed to save run state", {"slot": slot_id})
+		return false
+	
+	## 更新元数据
+	var meta: Dictionary = _load_slots_meta()
+	var slots: Array = meta.get("slots", [{}, {}, {}])
+	while slots.size() < MAX_SLOTS:
+		slots.append({})
+	slots[slot_id - 1] = _extract_slot_summary(data)
+	meta["slots"] = slots
+	meta["active_slot"] = slot_id - 1
+	_save_slots_meta(meta)
+	
+	EventBus.game_saved.emit(slot_id, data["timestamp"], data.get("current_floor", 0), is_auto)
+	print("[SaveManager] 已保存到槽位 %d" % slot_id)
+	return true
+
+func load_from_slot(slot_id: int) -> Dictionary:
+	if slot_id < 1 or slot_id > MAX_SLOTS:
+		return {}
+	
+	var file_name: String = _get_slot_file(slot_id)
+	var data: Dictionary = _load_dict(file_name)
+	if data.is_empty():
+		return {}
+	
+	## 更新活跃槽位标记
+	var meta: Dictionary = _load_slots_meta()
+	meta["active_slot"] = slot_id - 1
+	_save_slots_meta(meta)
+	
+	EventBus.game_loaded.emit(data)
+	return data
+
+func delete_slot(slot_id: int) -> bool:
+	if slot_id < 1 or slot_id > MAX_SLOTS:
+		return false
+	
+	var file_name: String = _get_slot_file(slot_id)
+	var file_path: String = ConfigManager.SAVE_DIR + file_name
+	if FileAccess.file_exists(file_path):
+		DirAccess.remove_absolute(file_path)
+	
+	## 清理备份
+	var backup_path: String = file_path + BACKUP_SUFFIX
+	if FileAccess.file_exists(backup_path):
+		DirAccess.remove_absolute(backup_path)
+	
+	## 更新元数据
+	var meta: Dictionary = _load_slots_meta()
+	var slots: Array = meta.get("slots", [{}, {}, {}])
+	while slots.size() < MAX_SLOTS:
+		slots.append({})
+	slots[slot_id - 1] = {}
+	meta["slots"] = slots
+	
+	## 如果删除的是活跃槽位，重置活跃标记
+	if meta.get("active_slot", -1) == slot_id - 1:
+		meta["active_slot"] = -1
+	
+	_save_slots_meta(meta)
+	print("[SaveManager] 已删除槽位 %d" % slot_id)
+	return true
+
+func slot_has_data(slot_id: int) -> bool:
+	var file_name: String = _get_slot_file(slot_id)
+	return FileAccess.file_exists(ConfigManager.SAVE_DIR + file_name)

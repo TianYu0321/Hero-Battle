@@ -71,7 +71,7 @@ custom_minimum_size = Vector2(140, 44)
 text = "继续"
 
 [node name="SecondaryBtn" type="Button" parent="MainPanel/VBoxContainer/ButtonRow"]
-visible = false
+visible = true
 layout_mode = 2
 custom_minimum_size = Vector2(140, 44)
 text = "返回主菜单"

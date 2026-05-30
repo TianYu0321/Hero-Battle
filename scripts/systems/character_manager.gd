@@ -76,7 +76,7 @@ func initialize_partners(partner_config_ids: Array[int]) -> Array[RuntimePartner
 	return _partners
 
 
-func add_partner(partner_config_id: int, position: int) -> RuntimePartner:
+func add_partner(partner_config_id: int, position: int, level: int = 1) -> RuntimePartner:
 	var config: Dictionary = ConfigManager.get_partner_config(str(partner_config_id))
 	if config.is_empty():
 		push_error("[CharacterManager] Partner config not found: %d" % partner_config_id)
@@ -84,7 +84,7 @@ func add_partner(partner_config_id: int, position: int) -> RuntimePartner:
 	var p := RuntimePartner.new()
 	p.partner_config_id = partner_config_id
 	p.position = position
-	p.current_level = 1
+	p.current_level = clampi(level, 1, 5)
 	p.is_active = true
 	p.skill_charge = 0
 	p.skill_charge_max = config.get("skill_charge_max", 3)
@@ -138,15 +138,18 @@ func modify_hero_stats(stat_changes: Dictionary) -> void:
 			4: _hero.current_tec = maxi(1, _hero.current_tec + delta)
 			5: _hero.current_mnd = maxi(1, _hero.current_mnd + delta)
 	_hero.max_hp = _calculate_max_hp(_hero.current_vit)
+	var max_hp_delta: int = _hero.max_hp - old_max_hp
+	if max_hp_delta > 0:
+		_hero.current_hp += max_hp_delta
 	_hero.current_hp = mini(_hero.current_hp, _hero.max_hp)
 	var changes: Dictionary = _compute_stat_changes(old_values, _get_hero_stats_dict())
-	# 如果max_hp发生变化，在每个变化条目中附加max_hp信息
+	# 如果max_hp发生变化，在每个变化条目中附加max_hp信息，并添加HP变化条目
 	if _hero.max_hp != old_max_hp:
 		for key in changes.keys():
 			changes[key]["max_hp"] = _hero.max_hp
-		# 如果属性变化为空但max_hp变了（如vit不变但计算方式改变），添加HP变化条目
-		if changes.is_empty():
-			changes[0] = {"old": old_hp, "new": _hero.current_hp, "delta": 0, "max_hp": _hero.max_hp, "attr_code": 0}
+		# 添加HP变化条目（current_hp 随 max_hp 同步增长）
+		var hp_delta: int = _hero.current_hp - old_hp
+		changes[0] = {"old": old_hp, "new": _hero.current_hp, "delta": hp_delta, "max_hp": _hero.max_hp, "attr_code": 0}
 	if not changes.is_empty():
 		EventBus.emit_signal("stats_changed", _hero.id, changes)
 

@@ -90,15 +90,21 @@ func generate_candidates() -> Array[Dictionary]:
 	return result
 
 
-func rescue_partner(partner_config_id: int, turn: int) -> RuntimePartner:
-	print("[RescueSystem] rescue_partner 被调用: partner_config_id=%d, turn=%d" % [partner_config_id, turn])
+func rescue_partner(partner_config_id: int, turn: int, floor: int = 1) -> RuntimePartner:
+	print("[RescueSystem] rescue_partner 被调用: partner_config_id=%d, turn=%d, floor=%d" % [partner_config_id, turn, floor])
 	var slot: int = get_rescue_slot(turn)
-	print("[RescueSystem] 计算 slot=%d" % slot)
-	var result = _character_manager.add_partner(partner_config_id, slot)
+	## 营救等级：1-10层Lv.1，11-20层Lv.2，21-30层Lv.3
+	var rescue_level: int = 1
+	if floor >= 21:
+		rescue_level = 3
+	elif floor >= 11:
+		rescue_level = 2
+	print("[RescueSystem] 计算 slot=%d, rescue_level=%d" % [slot, rescue_level])
+	var result = _character_manager.add_partner(partner_config_id, slot, rescue_level)
 	if result == null:
 		print("[RescueSystem] 警告: add_partner 返回 null")
 	else:
-		print("[RescueSystem] add_partner 成功: instance_id=%d, config_id=%d, is_active=%s" % [result.instance_id, result.partner_config_id, str(result.is_active)])
+		print("[RescueSystem] add_partner 成功: instance_id=%d, config_id=%d, level=%d, is_active=%s" % [result.instance_id, result.partner_config_id, result.current_level, str(result.is_active)])
 	return result
 
 

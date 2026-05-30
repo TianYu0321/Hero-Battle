@@ -5,11 +5,13 @@
 extends CanvasLayer
 
 signal primary_action_pressed
+signal secondary_action_pressed
 
 @onready var main_panel: PanelContainer = $MainPanel
 @onready var title_label: Label = $MainPanel/VBoxContainer/OutcomeTitle
 @onready var content_container: Control = $MainPanel/VBoxContainer/ContentContainer
 @onready var primary_btn: Button = $MainPanel/VBoxContainer/ButtonRow/PrimaryBtn
+@onready var secondary_btn: Button = $MainPanel/VBoxContainer/ButtonRow/SecondaryBtn
 @onready var overlay: ColorRect = $Overlay
 @onready var particles: CPUParticles2D = $ParticleEffect
 
@@ -18,6 +20,7 @@ var _font_cn: Font = preload(RunMainSettings.FONT_CN_PATH)
 func _ready() -> void:
 	_setup_styles()
 	primary_btn.pressed.connect(_on_primary)
+	secondary_btn.pressed.connect(_on_secondary)
 	
 	## 默认隐藏
 	visible = false
@@ -90,6 +93,7 @@ func _setup_victory(data: Dictionary) -> void:
 	
 	primary_btn.text = "继续"
 	primary_btn.visible = true
+	secondary_btn.visible = false
 	
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
@@ -124,32 +128,64 @@ func _setup_victory(data: Dictionary) -> void:
 		var enemy_row := _create_stat_row("击败对手", enemy_name, Color(0.55, 0.55, 0.58, 1))
 		vbox.add_child(enemy_row)
 
-## ========== 失败布局（预留扩展） ==========
+## ========== 失败布局 ==========
 
 func _setup_defeat(data: Dictionary) -> void:
 	title_label.text = "败北..."
-	title_label.add_theme_color_override("font_color", Color(0.8, 0.3, 0.3, 1.0))
+	title_label.add_theme_font_size_override("font_size", 32)
+	title_label.add_theme_color_override("font_color", Color(0.75, 0.25, 0.25, 1))
 	
 	var style: StyleBoxFlat = main_panel.get_theme_stylebox("panel").duplicate()
-	style.border_color = Color(0.8, 0.3, 0.3, 1.0)
-	style.shadow_color = Color(0.8, 0.3, 0.3, 0.25)
+	style.border_color = Color(0.75, 0.25, 0.25, 1)
+	style.shadow_color = Color(0.75, 0.25, 0.25, 0.25)
 	main_panel.add_theme_stylebox_override("panel", style)
 	
 	particles.emitting = false
 	
-	primary_btn.text = "返回主菜单"
+	## === 双按钮 ===
+	primary_btn.text = "重新开始"
 	primary_btn.visible = true
+	secondary_btn.text = "返回主菜单"
+	secondary_btn.visible = true
+	
+	## 按钮样式
+	_apply_button_style(primary_btn, true)    ## 蓝色主按钮
+	_apply_button_style(secondary_btn, false) ## 灰色次按钮
 	
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	content_container.add_child(vbox)
 	
+	## 统计标题
+	var stats_title := Label.new()
+	stats_title.text = "本次冒险统计"
+	stats_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats_title.add_theme_font_override("font", _font_cn)
+	stats_title.add_theme_font_size_override("font_size", 16)
+	stats_title.add_theme_color_override("font_color", Color(0.35, 0.35, 0.38, 1))
+	vbox.add_child(stats_title)
+	
+	## 统计行
+	var stats: Dictionary = data.get("battle_stats", {})
+	var stat_rows := [
+		["到达层数", "%d层" % stats.get("total_floors", 1)],
+		["击败敌人", "%d个" % stats.get("enemies_defeated", 0)],
+		["累计金币", "%d" % stats.get("total_gold_collected", 0)],
+		["战斗次数", "%d场" % stats.get("total_battles", 0)],
+		["冒险时长", stats.get("play_time", "00:00")],
+	]
+	
+	for row_data in stat_rows:
+		var row := _create_stat_row(row_data[0], row_data[1], Color(0.55, 0.55, 0.58, 1))
+		vbox.add_child(row)
+	
+	## 提示
 	var hint := Label.new()
 	hint.text = "胜败乃兵家常事，请大侠重新来过"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_font_override("font", _font_cn)
-	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_font_size_override("font_size", 13)
 	hint.add_theme_color_override("font_color", Color(0.65, 0.65, 0.68, 1))
 	vbox.add_child(hint)
 
@@ -177,29 +213,56 @@ func _create_stat_row(label_text: String, value_text: String, value_color: Color
 	
 	return row
 
-func _apply_button_style(btn: Button) -> void:
-	var normal := RunMainSettings.create_wood_flat_style(
-		RunMainSettings.COLOR_WOOD_PANEL,
-		RunMainSettings.COLOR_WOOD_MEDIUM, 2,
-		RunMainSettings.CORNER_WOOD
-	)
-	var hover := RunMainSettings.create_wood_flat_style(
-		RunMainSettings.COLOR_WOOD_LIGHT,
-		RunMainSettings.COLOR_GOLD, 2,
-		RunMainSettings.CORNER_WOOD
-	)
-	var pressed := RunMainSettings.create_wood_flat_style(
-		RunMainSettings.COLOR_WOOD_MEDIUM,
-		RunMainSettings.COLOR_WOOD_DARK, 3,
-		RunMainSettings.CORNER_WOOD
-	)
-	btn.add_theme_stylebox_override("normal", normal)
-	btn.add_theme_stylebox_override("hover", hover)
-	btn.add_theme_stylebox_override("pressed", pressed)
-	btn.add_theme_stylebox_override("focus", normal)
-	btn.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
-	btn.add_theme_color_override("font_hover_color", RunMainSettings.COLOR_INK)
-	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+func _apply_button_style(btn: Button, is_primary: bool = true) -> void:
+	if is_primary:
+		## 主按钮：蓝色调
+		var normal := RunMainSettings.create_wood_flat_style(
+			Color(0.25, 0.45, 0.75),
+			Color(0.35, 0.55, 0.85), 2,
+			RunMainSettings.CORNER_WOOD
+		)
+		var hover := RunMainSettings.create_wood_flat_style(
+			Color(0.3, 0.5, 0.8),
+			Color(0.45, 0.65, 0.95), 2,
+			RunMainSettings.CORNER_WOOD
+		)
+		var pressed := RunMainSettings.create_wood_flat_style(
+			Color(0.2, 0.4, 0.7),
+			Color(0.3, 0.5, 0.8), 3,
+			RunMainSettings.CORNER_WOOD
+		)
+		btn.add_theme_stylebox_override("normal", normal)
+		btn.add_theme_stylebox_override("hover", hover)
+		btn.add_theme_stylebox_override("pressed", pressed)
+		btn.add_theme_stylebox_override("focus", normal)
+		btn.add_theme_color_override("font_color", Color.WHITE)
+		btn.add_theme_color_override("font_hover_color", Color.WHITE)
+		btn.add_theme_color_override("font_pressed_color", Color(0.85, 0.9, 1.0))
+	else:
+		## 次按钮：灰色调
+		var normal := RunMainSettings.create_wood_flat_style(
+			Color(0.45, 0.45, 0.48),
+			Color(0.55, 0.55, 0.58), 2,
+			RunMainSettings.CORNER_WOOD
+		)
+		var hover := RunMainSettings.create_wood_flat_style(
+			Color(0.5, 0.5, 0.53),
+			Color(0.6, 0.6, 0.63), 2,
+			RunMainSettings.CORNER_WOOD
+		)
+		var pressed := RunMainSettings.create_wood_flat_style(
+			Color(0.4, 0.4, 0.43),
+			Color(0.5, 0.5, 0.53), 3,
+			RunMainSettings.CORNER_WOOD
+		)
+		btn.add_theme_stylebox_override("normal", normal)
+		btn.add_theme_stylebox_override("hover", hover)
+		btn.add_theme_stylebox_override("pressed", pressed)
+		btn.add_theme_stylebox_override("focus", normal)
+		btn.add_theme_color_override("font_color", Color(0.9, 0.9, 0.92))
+		btn.add_theme_color_override("font_hover_color", Color.WHITE)
+		btn.add_theme_color_override("font_pressed_color", Color(0.8, 0.8, 0.82))
+	
 	btn.add_theme_font_override("font", _font_cn)
 	btn.add_theme_font_size_override("font_size", 16)
 	btn.custom_minimum_size = Vector2(140, 44)
@@ -207,6 +270,10 @@ func _apply_button_style(btn: Button) -> void:
 func _on_primary() -> void:
 	_hide_panel()
 	primary_action_pressed.emit()
+
+func _on_secondary() -> void:
+	_hide_panel()
+	secondary_action_pressed.emit()
 
 func _hide_panel() -> void:
 	var tween := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)

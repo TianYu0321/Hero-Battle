@@ -1,0 +1,73 @@
+[gd_scene load_steps=2 format=3 uid="uid://savemgrui01"]
+
+[ext_resource type="Script" path="res://scenes/save_manager/save_manager_ui.gd" id="1_smui"]
+
+[node name="SaveManagerUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_smui")
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = 0
+
+[node name="ColorRect" type="ColorRect" parent="BackgroundLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="MainPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -480.0
+offset_top = -300.0
+offset_right = 480.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainPanel"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "存档管理"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.55, 0.55, 0.58, 1)
+text = "选择槽位进行保存或读取"
+horizontal_alignment = 1
+
+[node name="SlotGrid" type="HBoxContainer" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="BottomBar" type="HBoxContainer" parent="MainPanel/VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="BackButton" type="Button" parent="MainPanel/VBoxContainer/BottomBar"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 44)
+text = "返回"
+
+[node name="ConfirmDialog" type="AcceptDialog" parent="."]
+title = "确认"
+size = Vector2i(400, 150)

@@ -42,7 +42,7 @@ var _pending_pvp_result: Dictionary = {}
 var _virtual_pool: VirtualArchivePool = null
 
 func _ready() -> void:
-		_battle_summary_panel = $BattleSummaryPanel
+	_battle_summary_panel = $BattleSummaryPanel
 	_battle_animation_panel = $BattleAnimationPanel
 	_battle_summary_panel.visible = false
 	_battle_animation_panel.visible = false

@@ -48,12 +48,14 @@ func _ready() -> void:
 	var btn_leaderboard: BaseButton = get_node_or_null("UILayer/IconBar/BtnLeaderboardWrapper/BtnLeaderboard")
 	var btn_settings: BaseButton = get_node_or_null("UILayer/MenuButtons/BtnSettingsWrapper/BtnSettings")
 	var btn_achievement: BaseButton = get_node_or_null("UILayer/IconBar/BtnAchievementWrapper/BtnAchievement")
+	var btn_save_manager: BaseButton = get_node_or_null("UILayer/IconBar/BtnSaveManagerWrapper/BtnSaveManager")
 	if btn_archive != null: _menu_buttons.append(btn_archive)
 	if btn_pvp != null: _menu_buttons.append(btn_pvp)
 	if btn_shop != null: _menu_buttons.append(btn_shop)
 	if btn_leaderboard != null: _menu_buttons.append(btn_leaderboard)
 	if btn_settings != null: _menu_buttons.append(btn_settings)
 	if btn_achievement != null: _menu_buttons.append(btn_achievement)
+	if btn_save_manager != null: _menu_buttons.append(btn_save_manager)
 
 	# 判断存档，无存档时彻底移除继续游戏按钮，让下方按钮自动补上
 	var save_data = SaveManager.load_latest_run()
@@ -108,6 +110,15 @@ func _ready() -> void:
 		print("[MainMenu] 排行榜按钮已启用")
 	else:
 		push_warning("[MainMenu] BtnLeaderboard 未找到")
+	
+	# 启用存档管理按钮
+	if btn_save_manager != null:
+		btn_save_manager.visible = true
+		btn_save_manager.disabled = false
+		_connect_with_bounce(btn_save_manager, _on_save_manager_pressed)
+		print("[MainMenu] 存档管理按钮已启用")
+	else:
+		push_warning("[MainMenu] BtnSaveManager 未找到")
 	
 	# 连接设置按钮信号
 	if btn_settings != null:
@@ -400,12 +411,42 @@ func _on_shop_pressed() -> void:
 
 func _on_leaderboard_pressed() -> void:
 	print("[MainMenu] 【点击】排行榜")
-	var leaderboard_system := LeaderboardSystem.new()
-	var rankings := leaderboard_system.get_leaderboard(20)
+	var rankings: Array[Dictionary] = PVPManager.get_leaderboard()
 	if _leaderboard_panel != null:
+		if not _leaderboard_panel.closed.is_connected(_on_leaderboard_closed):
+			_leaderboard_panel.closed.connect(_on_leaderboard_closed)
 		_leaderboard_panel.show_rankings(rankings)
 	else:
 		push_warning("[MainMenu] LeaderboardPanel 未找到")
+
+func _on_leaderboard_closed() -> void:
+	print("[MainMenu] 排行榜关闭")
+
+func _on_save_manager_pressed() -> void:
+	print("[MainMenu] 【点击】存档管理")
+	AudioManager.play_ui("confirm")
+	
+	var save_ui_scene = load("res://scenes/save_manager/save_manager_ui.tscn")
+	if save_ui_scene == null:
+		push_warning("[MainMenu] 存档管理UI场景未找到")
+		return
+	
+	var save_ui = save_ui_scene.instantiate()
+	save_ui.back_requested.connect(func():
+		save_ui.queue_free()
+		_refresh_continue_button()
+	)
+	add_child(save_ui)
+
+func _refresh_continue_button() -> void:
+	## 存档管理返回后，检查继续游戏按钮状态
+	var has_active: bool = SaveManager.has_active_run()
+	if has_active and _btn_continue == null:
+		## 无存档时按钮已被移除，简化处理：重新加载场景或提示玩家
+		print("[MainMenu] 继续游戏按钮需要恢复，建议重新进入主菜单")
+	elif not has_active and _btn_continue != null:
+		## 有存档但按钮存在（正常情况）
+		pass
 
 func _on_save_loaded(_save_data: Dictionary) -> void:
 	if _btn_continue != null:
@@ -435,47 +476,6 @@ func _update_pvp_archive_display() -> void:
 	else:
 		hint_label.text = "PVP出战: 未选择档案"
 		hint_label.visible = true
-
-## v2.0: 排行榜系统（净胜场制）
-func show_leaderboard() -> void:
-	var leaderboard_data: Array[Dictionary] = _load_leaderboard_data()
-	## 排序：净胜场降序
-	leaderboard_data.sort_custom(func(a, b): return a.get("net_wins", 0) > b.get("net_wins", 0))
-	
-	## 前3名显示档案明细
-	for i in range(min(3, leaderboard_data.size())):
-		var entry: Dictionary = leaderboard_data[i]
-		print("[Leaderboard] #%d %s 净胜场:%d 角色:%s 属性:%s 伙伴:%s" % [
-			i + 1,
-			entry.get("player_name", "Unknown"),
-			entry.get("net_wins", 0),
-			entry.get("hero_name", ""),
-			entry.get("hero_attrs", ""),
-			entry.get("partners", ""),
-		])
-	
-	## 其余仅显示名字和净胜场
-	for i in range(3, leaderboard_data.size()):
-		var entry: Dictionary = leaderboard_data[i]
-		print("[Leaderboard] #%d %s 净胜场:%d" % [
-			i + 1,
-			entry.get("player_name", "Unknown"),
-			entry.get("net_wins", 0),
-		])
-	
-	## 显示自己
-	var my_data: Dictionary = _get_my_data()
-	print("[Leaderboard] 我的排名: %s 净胜场:%d" % [
-		my_data.get("player_name", "Me"),
-		my_data.get("net_wins", 0),
-	])
-
-func _load_leaderboard_data() -> Array[Dictionary]:
-	## 从服务器加载，此处为占位
-	return []
-
-func _get_my_data() -> Dictionary:
-	return {"player_name": "Player", "net_wins": 0}
 
 func _on_settings_pressed() -> void:
 	print("[MainMenu] 【点击】设置")

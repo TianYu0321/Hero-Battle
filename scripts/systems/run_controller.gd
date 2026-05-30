@@ -277,7 +277,7 @@ func get_current_shop_items() -> Array[Dictionary]:
 
 func select_rescue_partner(partner_config_id: int) -> void:
 	print("[RunController] select_rescue_partner 被调用: partner_config_id=%d, turn=%d, phase=%d" % [partner_config_id, _run.current_turn if _run != null else -1, _special_floor_phase])
-	var rescued: RuntimePartner = _rescue_system.rescue_partner(partner_config_id, _run.current_turn)
+	var rescued: RuntimePartner = _rescue_system.rescue_partner(partner_config_id, _run.current_turn, _run.current_floor)
 	if rescued != null:
 		var pcfg: Dictionary = ConfigManager.get_partner_config(str(partner_config_id))
 		EventBus.emit_signal("partner_unlocked", str(partner_config_id), pcfg.get("name", ""), _rescue_system.get_rescue_slot(_run.current_turn), _run.current_turn, pcfg.get("role", ""))
@@ -754,6 +754,9 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 	_change_state(RunState.SETTLEMENT)
 
 
+func cleanup_run() -> void:
+	_end_run()
+
 func _end_run() -> void:
 	# 立即保存结束状态（run_status = 3），确保 has_active_run() 正确识别
 	_save_at_floor_entrance()
@@ -914,26 +917,32 @@ func _check_achievements() -> Array[String]:
 	return new_unlocked
 
 
+func get_run_data() -> Dictionary:
+	## 返回当前RUN的完整数据（用于手动存档）
+	if _run == null or _hero == null:
+		push_warning("[RunController] get_run_data: run or hero is null")
+		return {}
+	var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+	var forecast_charges: int = 0
+	if forecast_system != null:
+		forecast_charges = forecast_system.get_charges()
+	return RunSaveData.from_runtime(
+		_run, _hero,
+		_character_manager.get_partners(),
+		_current_node_options,
+		forecast_charges,
+		_special_floor_phase
+	)
+
 func _save_at_floor_entrance() -> void:
 	## 层入口存档：使用独立数据层 RunSaveData，与 RuntimeRun/RuntimeHero 解耦
 	if SaveManager != null and _run != null and _hero != null:
-		var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
-		var forecast_charges: int = 0
-		if forecast_system != null:
-			forecast_charges = forecast_system.get_charges()
-		
-		var save_data: Dictionary = RunSaveData.from_runtime(
-			_run, _hero,
-			_character_manager.get_partners(),
-			_current_node_options,
-			forecast_charges,
-			_special_floor_phase
-		)
-		
-		SaveManager.save_run_state(save_data, true)
-		print("[RunController] 层入口存档: 第%d层, 选项数=%d, 版本=%d" % [
-			save_data.get("current_floor", 0), _current_node_options.size(), save_data.get("version", 0)
-		])
+		var save_data: Dictionary = get_run_data()
+		if not save_data.is_empty():
+			SaveManager.save_run_state(save_data, true)
+			print("[RunController] 层入口存档: 第%d层, 选项数=%d, 版本=%d" % [
+				save_data.get("current_floor", 0), _current_node_options.size(), save_data.get("version", 0)
+			])
 
 
 func _auto_save() -> void:

@@ -360,6 +360,24 @@ theme_override_styles/pressed = SubResource("StyleBoxTexture_x7peq")
 theme_override_styles/hover = SubResource("StyleBoxTexture_7qupa")
 text = "商店"
 
+[node name="BtnSaveManagerWrapper" type="Control" parent="UILayer/IconBar" unique_id=758523324]
+custom_minimum_size = Vector2(380, 72)
+layout_mode = 2
+
+[node name="BtnSaveManager" type="Button" parent="UILayer/IconBar/BtnSaveManagerWrapper" unique_id=1343501730]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_top = -22.0
+offset_right = 100.0
+offset_bottom = 22.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 18
+text = "存档管理"
+
 [node name="BtnLeaderboardWrapper" type="Control" parent="UILayer/IconBar" unique_id=758523323]
 custom_minimum_size = Vector2(380, 72)
 layout_mode = 2

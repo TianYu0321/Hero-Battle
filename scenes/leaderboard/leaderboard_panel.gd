@@ -16,15 +16,17 @@ func show_rankings(rankings: Array[Dictionary]) -> void:
 		child.queue_free()
 	
 	# 生成列表项
-	for i in range(rankings.size()):
-		var entry: Dictionary = rankings[i]
+	for entry in rankings:
 		var row = preload("res://scenes/leaderboard/ranking_row.tscn").instantiate()
-		row.setup(
-			entry.get("rank", i + 1),
-			entry.get("hero_name", entry.get("player_name", "???")),
-			entry.get("net_wins", 0),
-			entry.get("max_floor", entry.get("total_score", 0))
-		)
+		
+		var rank: int = entry.get("rank", 0)
+		var name: String = entry.get("name", entry.get("hero_name", entry.get("player_name", "???")))
+		var net_wins: int = entry.get("net_wins", 0)
+		var wins: int = entry.get("wins", 0)
+		var losses: int = entry.get("losses", 0)
+		var is_player: bool = entry.get("is_player", false)
+		
+		row.setup(rank, name, net_wins, wins, losses, is_player)
 		ranking_container.add_child(row)
 	
 	visible = true

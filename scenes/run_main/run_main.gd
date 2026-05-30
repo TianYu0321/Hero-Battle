@@ -74,7 +74,7 @@ var _cached_enemy_data: Dictionary = {}
 
 ## 伙伴 HUD
 var _partner_slots: Array[PanelContainer] = []
-var _max_partner_slots: int = 4
+var _max_partner_slots: int = 6
 const PARTNER_HUD_SLOT_SCENE: PackedScene = preload("res://scenes/run_main/partner_hud_slot.tscn")
 
 enum UISceneState {
@@ -178,8 +178,10 @@ func _ready() -> void:
 			if winner == "player" and _battle_result_panel != null:
 				## 胜利：弹出结算面板，等待玩家点击"继续"
 				_show_victory_panel(battle_result)
+			elif winner == "enemy" and _battle_result_panel != null:
+				## 失败：弹出失败结算面板
+				_show_defeat_panel(battle_result)
 			else:
-				## 失败：走现有 Settlement 流程
 				if _run_controller != null:
 					_run_controller.confirm_battle_result()
 		return
@@ -804,6 +806,54 @@ func _on_victory_panel_continued() -> void:
 	print("[RunMain] 胜利面板关闭，继续爬塔")
 	if _run_controller != null:
 		_run_controller.confirm_battle_result()
+
+func _show_defeat_panel(_battle_result: Dictionary) -> void:
+	## 从存档读取运行时数据（RuntimeRun.to_dict() 结构）
+	var run_data: Dictionary = SaveManager.load_latest_run() if SaveManager.has_active_run() else {}
+	var play_time_sec: int = 0
+	if run_data.has("started_at") and int(run_data.get("started_at", 0)) > 0:
+		play_time_sec = int(Time.get_unix_time_from_system()) - int(run_data.get("started_at", 0))
+	
+	var panel_data := {
+		"outcome": "defeat",
+		"battle_stats": {
+			"total_floors": run_data.get("current_floor", 1),
+			"enemies_defeated": run_data.get("total_enemies_killed", 0),
+			"total_gold_collected": run_data.get("gold_earned_total", 0),
+			"total_battles": int(run_data.get("battle_win_count", 0)) + int(run_data.get("battle_lose_count", 0)),
+			"play_time": _format_play_time(play_time_sec),
+		}
+	}
+	
+	_battle_result_panel.show_result(panel_data)
+	
+	## 连接信号：重新开始 或 返回主菜单
+	_battle_result_panel.primary_action_pressed.connect(
+		_on_defeat_restart, CONNECT_ONE_SHOT
+	)
+	_battle_result_panel.secondary_action_pressed.connect(
+		_on_defeat_return_to_menu, CONNECT_ONE_SHOT
+	)
+	print("[RunMain] 显示失败结算面板")
+
+func _on_defeat_restart() -> void:
+	print("[RunMain] 失败面板：重新开始")
+	## 清理旧 RUN 数据
+	if _run_controller != null:
+		_run_controller.cleanup_run()
+	## 返回选人界面
+	GameManager.change_scene("HERO_SELECT", "fade")
+
+func _on_defeat_return_to_menu() -> void:
+	print("[RunMain] 失败面板：返回主菜单")
+	if _run_controller != null:
+		_run_controller.cleanup_run()
+	GameManager.change_scene("MENU", "fade")
+
+func _format_play_time(seconds: int) -> String:
+	var mins: int = seconds / 60
+	var secs: int = seconds % 60
+	return "%02d:%02d" % [mins, secs]
 
 func _on_node_resolved(node_type: String, result: Dictionary) -> void:
 	if node_type == "OUTING":

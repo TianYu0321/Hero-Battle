@@ -79,7 +79,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(150.0, 0.0)
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "最高层"
+text = "胜/败"
 horizontal_alignment = 1
 
 [node name="ScrollContainer" type="ScrollContainer" parent="."]
@@ -113,4 +113,4 @@ offset_right = 90.0
 offset_bottom = 465.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "关闭"
+text = "返回"

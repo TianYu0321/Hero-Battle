@@ -12,6 +12,8 @@ signal main_menu_requested
 @onready var shake_toggle: CheckBox = $Panel/VBoxContainer/ShakeToggle
 @onready var damage_toggle: CheckBox = $Panel/VBoxContainer/DamageToggle
 @onready var resume_button: Button = $Panel/VBoxContainer/ResumeButton
+@onready var save_button: Button = $Panel/VBoxContainer/SaveButton
+@onready var save_and_quit_button: Button = $Panel/VBoxContainer/SaveAndQuitButton
 @onready var main_menu_button: Button = $Panel/VBoxContainer/MainMenuButton
 @onready var panel: Panel = $Panel
 
@@ -40,6 +42,8 @@ func _ready() -> void:
 	shake_toggle.toggled.connect(_on_shake_toggled)
 	damage_toggle.toggled.connect(_on_damage_toggled)
 	resume_button.pressed.connect(_on_resume)
+	save_button.pressed.connect(_on_save)
+	save_and_quit_button.pressed.connect(_on_save_and_quit)
 	main_menu_button.pressed.connect(_on_main_menu)
 	
 	# 加载设置
@@ -159,6 +163,38 @@ func _play_exit_animation(on_finished: Callable) -> void:
 func _on_resume() -> void:
 	hide_menu()
 	resume_requested.emit()
+
+func _on_save() -> void:
+	## 保存到当前活跃槽位
+	var active_slot: int = SaveManager.get_active_slot()
+	if active_slot < 0:
+		active_slot = 0  ## 默认 Slot 1
+	
+	## 获取RUN数据
+	var run_controller = get_tree().root.get_node_or_null("RunMain/RunController")
+	if run_controller == null:
+		push_warning("[PauseMenu] 无法找到 RunController，保存失败")
+		return
+	
+	var run_data: Dictionary = run_controller.get_run_data() if run_controller.has_method("get_run_data") else {}
+	if run_data.is_empty():
+		push_warning("[PauseMenu] 没有可保存的RUN数据")
+		return
+	
+	SaveManager.save_to_slot(active_slot + 1, run_data, false)
+	AudioManager.play_ui("success")
+	
+	## 显示保存成功提示
+	var original_text: String = save_button.text
+	save_button.text = "已保存 ✓"
+	await get_tree().create_timer(1.5).timeout
+	save_button.text = original_text
+
+func _on_save_and_quit() -> void:
+	## 先保存
+	_on_save()
+	## 再返回主菜单
+	_on_main_menu()
 
 func _on_main_menu() -> void:
 	hide_menu()

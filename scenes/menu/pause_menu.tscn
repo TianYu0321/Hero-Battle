@@ -169,6 +169,22 @@ theme_override_styles/pressed = SubResource("StyleBoxTexture_xkyws")
 theme_override_styles/hover = SubResource("StyleBoxTexture_rdkub")
 text = "返回游戏"
 
+[node name="SaveButton" type="Button" parent="Panel/VBoxContainer" unique_id=1831332801]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxTexture_mb26x")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_xkyws")
+theme_override_styles/hover = SubResource("StyleBoxTexture_rdkub")
+text = "保存进度"
+
+[node name="SaveAndQuitButton" type="Button" parent="Panel/VBoxContainer" unique_id=1224831079]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxTexture_5nn8h")
+theme_override_styles/pressed = SubResource("StyleBoxTexture_eb3yi")
+theme_override_styles/hover = SubResource("StyleBoxTexture_a7btn")
+text = "保存并退出"
+
 [node name="MainMenuButton" type="Button" parent="Panel/VBoxContainer" unique_id=1224831078]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18

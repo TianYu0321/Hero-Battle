@@ -9,6 +9,8 @@ signal abandoned
 @onready var title_label: Label = $TitleLabel
 @onready var candidates_container: HBoxContainer = $CandidatesContainer
 
+const RESCUE_CARD_SCENE: PackedScene = preload("res://scenes/rescue/rescue_card.tscn")
+
 func show_popup(candidates: Array) -> void:
 	visible = true
 	## 清空旧卡片
