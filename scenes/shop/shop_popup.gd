@@ -5,6 +5,9 @@ extends Control
 @onready var _coin_label: Label = $Content/VBoxContainer/HeaderHBox/CoinLabel
 @onready var _user_label: Label = $Content/VBoxContainer/HeaderHBox/UserLabel
 @onready var _close_button: Button = $Content/VBoxContainer/HeaderHBox/CloseButton
+@onready var _overlay: ColorRect = $Overlay
+@onready var _content: Panel = $Content
+@onready var _title_label: Label = $Content/VBoxContainer/HeaderHBox/TitleLabel
 
 var _unlocked_heroes: Array = []
 var _unlocked_partners: Array = []
@@ -15,6 +18,7 @@ signal closed
 
 func _ready() -> void:
 	visible = false
+	_apply_outgame_style()
 	_close_button.pressed.connect(hide_popup)
 	# 移除不存在的皮肤页
 	var skin_tab = _tab_container.get_node_or_null("皮肤")
@@ -45,7 +49,7 @@ func _load_unlock_state() -> void:
 	_current_coin = SaveManager.load_mocheng_coin(_current_user_id)
 
 func _update_coin_display() -> void:
-	_coin_label.text = "💰 %d" % _current_coin
+	_coin_label.text = "魔城币: %d" % _current_coin
 	_user_label.text = "用户: %s" % _current_user_id
 
 func _render_all_tabs() -> void:
@@ -86,15 +90,16 @@ func _create_hero_button(hero_key: String, cfg: Dictionary) -> Button:
 	var is_unlocked: bool = is_default or (hero_id in _unlocked_heroes)
 	
 	btn.text = "%s\n%s" % [hero_name, desc]
-	btn.custom_minimum_size = Vector2(100, 120)
+	btn.custom_minimum_size = Vector2(180, 132)
 	btn.tooltip_text = desc
+	OutgameUIStyle.apply_button(btn)
 	
 	if is_unlocked:
-		btn.text += "\n✅ 已拥有"
+		btn.text += "\n已拥有"
 		btn.modulate = Color(0.5, 0.5, 0.5)
 		btn.disabled = true
 	else:
-		btn.text += "\n🔒 条件解锁"
+		btn.text += "\n条件解锁"
 		btn.disabled = true
 	return btn
 
@@ -113,12 +118,13 @@ func _create_partner_button(partner_key: String, cfg: Dictionary) -> Button:
 	var is_unlocked: bool = is_default or (pid in unlocked_str)
 	var can_afford: bool = _current_coin >= price
 	
-	btn.text = "%s\n💰 %d" % [partner_name, price]
-	btn.custom_minimum_size = Vector2(100, 120)
+	btn.text = "%s\n魔城币 %d" % [partner_name, price]
+	btn.custom_minimum_size = Vector2(180, 132)
 	btn.tooltip_text = desc
+	OutgameUIStyle.apply_button(btn, can_afford and not is_unlocked)
 	
 	if is_unlocked:
-		btn.text += "\n✅ 已拥有"
+		btn.text += "\n已拥有"
 		btn.modulate = Color(0.5, 0.5, 0.5)
 		btn.disabled = true
 	elif not can_afford:
@@ -161,3 +167,12 @@ func _confirm_purchase(pid: String, cost: int) -> void:
 	SaveManager.save_unlock_state(_unlocked_heroes, unlocked, [], _current_user_id)
 	_update_coin_display()
 	_render_all_tabs()
+
+
+func _apply_outgame_style() -> void:
+	_overlay.color = Color(0, 0, 0, 0.72)
+	OutgameUIStyle.apply_panel(_content, true)
+	OutgameUIStyle.apply_label(_title_label, "title")
+	OutgameUIStyle.apply_label(_coin_label, "section")
+	OutgameUIStyle.apply_label(_user_label, "muted")
+	OutgameUIStyle.apply_button(_close_button)

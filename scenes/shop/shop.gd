@@ -6,7 +6,9 @@ extends Control
 @onready var _back_btn: Button = %BackButton
 @onready var _insufficient_label: Label = $InsufficientCoinLabel
 
-var _partner_cards: Array[PartnerCard] = []
+const PARTNER_CARD_SCENE: PackedScene = preload("res://scenes/shop/partner_card.tscn")
+
+var _partner_cards: Array[Node] = []
 var _player_data: Dictionary = {}
 var _shop_items: Array[Dictionary] = []
 
@@ -63,7 +65,7 @@ func _render_shop() -> void:
 	_partner_cards.clear()
 	
 	for item in _shop_items:
-		var card: PartnerCard = preload("res://scenes/shop/partner_card.tscn").instantiate()
+		var card = PARTNER_CARD_SCENE.instantiate()
 		_partner_grid.add_child(card)
 		_partner_cards.append(card)
 		

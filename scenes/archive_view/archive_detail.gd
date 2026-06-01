@@ -10,6 +10,7 @@ signal back_requested
 signal pvp_archive_set(archive_data: Dictionary)
 
 @onready var _close_button: Button = $VBox/TitleRow/CloseButton
+@onready var _title_label: Label = $VBox/TitleRow/TitleLabel
 @onready var _hero_name_label: Label = $VBox/HeroRow/HeroNameLabel
 @onready var _rating_label: Label = $VBox/HeroRow/RatingLabel
 @onready var _total_score_label: Label = $VBox/HeroRow/TotalScoreLabel
@@ -35,6 +36,7 @@ const _SCORE_ITEMS: Array[Dictionary] = [
 ]
 
 func _ready() -> void:
+	_apply_outgame_style()
 	_back_button.pressed.connect(func(): back_requested.emit())
 	_close_button.pressed.connect(func(): back_requested.emit())
 	_set_pvp_button.pressed.connect(_on_set_pvp_pressed)
@@ -169,3 +171,13 @@ func _get_rating_color(rating: String) -> Color:
 		"C": return Color("#888888")
 		"D": return Color("#555555")
 		_: return Color("#888888")
+
+
+func _apply_outgame_style() -> void:
+	OutgameUIStyle.apply_panel(self, true)
+	OutgameUIStyle.apply_label(_title_label, "title")
+	OutgameUIStyle.apply_label(_hero_name_label, "section")
+	OutgameUIStyle.apply_label(_total_score_label, "section")
+	OutgameUIStyle.apply_button(_close_button)
+	OutgameUIStyle.apply_button(_set_pvp_button, true)
+	OutgameUIStyle.apply_button(_back_button)

@@ -69,23 +69,71 @@ text = "排行榜"
 layout_mode = 2
 text = "成就"
 
-[node name="Scroll" type="ScrollContainer" parent="VBox"]
+[node name="Body" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="ArchiveListPanel" type="PanelContainer" parent="VBox/Body"]
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+
+[node name="ListVBox" type="VBoxContainer" parent="VBox/Body/ArchiveListPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ListTitle" type="Label" parent="VBox/Body/ArchiveListPanel/ListVBox"]
+layout_mode = 2
+text = "历史斗士"
+
+[node name="ListHint" type="Label" parent="VBox/Body/ArchiveListPanel/ListVBox"]
+layout_mode = 2
+text = "选择一名斗士查看详情，或设为竞技场出战档案。"
+autowrap_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="VBox/Body/ArchiveListPanel/ListVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ListContainer" type="VBoxContainer" parent="VBox/Scroll"]
+[node name="ListContainer" type="VBoxContainer" parent="VBox/Body/ArchiveListPanel/ListVBox/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 10
 
-[node name="ArchiveDetail" parent="VBox" instance=ExtResource("2_detail")]
+[node name="DetailPane" type="PanelContainer" parent="VBox/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DetailVBox" type="VBoxContainer" parent="VBox/Body/DetailPane"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="EmptyDetail" type="VBoxContainer" parent="VBox/Body/DetailPane/DetailVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+alignment = 1
+
+[node name="EmptyTitle" type="Label" parent="VBox/Body/DetailPane/DetailVBox/EmptyDetail"]
+layout_mode = 2
+text = "选择一个斗士档案"
+horizontal_alignment = 1
+
+[node name="EmptyHint" type="Label" parent="VBox/Body/DetailPane/DetailVBox/EmptyDetail"]
+layout_mode = 2
+text = "斗士档案记录一局冒险的最终队伍、评分、属性快照和竞技场表现。"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ArchiveDetail" parent="VBox/Body/DetailPane/DetailVBox" instance=ExtResource("2_detail")]
 visible = false
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="LeaderboardPanel" parent="VBox" instance=ExtResource("3_leaderboard")]
 visible = false
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="AchievementPanel" parent="VBox" instance=ExtResource("4_achievement")]
 visible = false

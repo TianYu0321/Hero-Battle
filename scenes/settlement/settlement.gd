@@ -66,6 +66,13 @@ func _ready() -> void:
 	
 	# 创建统计面板（无论数据是否缺失都创建，空数据时显示为0）
 	_setup_stats_panels()
+	if _archive_data.get("_already_saved", false):
+		_update_saved_ui()
+		return
+	if _archive_data.get("_save_failed", false):
+		_show_save_failed_ui()
+		return
+	_try_auto_save_archive()
 
 func populate(archive: Dictionary) -> void:
 	_archive_data = archive.duplicate()
@@ -265,7 +272,19 @@ func _on_archive_button_pressed() -> void:
 	if _archive_data.is_empty():
 		push_warning("[Settlement] No archive data available")
 		return
+	if _archive_saved:
+		return
 
+	_save_archive_or_prompt_overwrite()
+
+
+func _try_auto_save_archive() -> void:
+	if _archive_data.is_empty() or _archive_saved:
+		return
+	_save_archive_or_prompt_overwrite()
+
+
+func _save_archive_or_prompt_overwrite() -> void:
 	# 检查档案数量
 	var count: int = SaveManager.get_archive_count()
 	print("[Settlement] 当前档案数: %d" % count)
@@ -277,7 +296,10 @@ func _on_archive_button_pressed() -> void:
 			# 虽然get_archive_count返回<5，但实际保存时可能已满了（并发情况）， fallback到覆盖流程
 			var archives: Array[Dictionary] = SaveManager.get_archives_for_overwrite()
 			overwrite_dialog.show_dialog(archives, _archive_data)
+		elif saved.has("_save_failed"):
+			_show_save_failed_ui()
 		else:
+			_archive_data = saved.duplicate(true)
 			_update_saved_ui()
 	else:
 		# 已满5个，弹出覆盖选择窗口
@@ -293,12 +315,25 @@ func _on_overwrite_cancelled() -> void:
 
 func _update_saved_ui() -> void:
 	_archive_saved = true
+	_clear_pending_archive()
 	if saved_hint_label != null:
 		saved_hint_label.text = "档案已保存"
 		saved_hint_label.visible = true
 	if view_archive_button != null:
 		view_archive_button.visible = true
 	archive_button.disabled = true
+
+func _clear_pending_archive() -> void:
+	var gm = get_node_or_null("/root/GameManager")
+	if gm != null:
+		gm.pending_archive = {}
+
+func _show_save_failed_ui() -> void:
+	if saved_hint_label != null:
+		saved_hint_label.text = "档案保存失败，请重试"
+		saved_hint_label.visible = true
+	archive_button.disabled = false
+	archive_button.text = "重试保存档案"
 
 func _on_view_archive_button_pressed() -> void:
 	EventBus.archive_view_requested.emit("")

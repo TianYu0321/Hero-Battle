@@ -66,7 +66,7 @@ func _build_ui() -> void:
 	## 背景
 	var bg := ColorRect.new()
 	bg.name = "BgPanel"
-	bg.color = Color(0.12, 0.08, 0.08, 1.0)
+	bg.color = OutgameUIStyle.BG
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 	move_child(bg, 0)
@@ -312,50 +312,28 @@ func _build_opponent_preview() -> PanelContainer:
 
 
 func _setup_styles() -> void:
+	_apply_button_styles_recursive(self)
+
 	## 个人信息卡样式
 	if _player_card != null:
-		var card_style := StyleBoxFlat.new()
-		card_style.bg_color = Color(0.18, 0.14, 0.12, 1.0)
-		card_style.border_color = Color(0.6, 0.45, 0.15, 1.0)
-		card_style.border_width_left = 2
-		card_style.border_width_top = 2
-		card_style.border_width_right = 2
-		card_style.border_width_bottom = 3
-		card_style.corner_radius_top_left = 12
-		card_style.corner_radius_top_right = 12
-		card_style.corner_radius_bottom_left = 12
-		card_style.corner_radius_bottom_right = 12
-		card_style.shadow_color = Color(0.6, 0.45, 0.15, 0.15)
-		card_style.shadow_size = 10
-		card_style.shadow_offset = Vector2(0, 4)
-		_player_card.add_theme_stylebox_override("panel", card_style)
+		OutgameUIStyle.apply_panel(_player_card)
 
 	## 匹配按钮样式
 	if _match_btn != null:
-		var normal := StyleBoxFlat.new()
-		normal.bg_color = Color(0.8, 0.3, 0.3, 1.0)
-		normal.border_color = Color(0.7, 0.2, 0.2, 1.0)
-		normal.corner_radius_top_left = 8
-		normal.corner_radius_top_right = 8
-		normal.corner_radius_bottom_left = 8
-		normal.corner_radius_bottom_right = 8
-		_match_btn.add_theme_stylebox_override("normal", normal)
-		_match_btn.add_theme_color_override("font_color", Color.WHITE)
+		OutgameUIStyle.apply_button(_match_btn, true)
 
 	## 对手预览样式
 	if _opponent_preview != null:
-		var opp_style := StyleBoxFlat.new()
-		opp_style.bg_color = Color(0.22, 0.1, 0.1, 1.0)
-		opp_style.border_color = Color(0.8, 0.3, 0.3, 1.0)
-		opp_style.border_width_left = 2
-		opp_style.border_width_top = 2
-		opp_style.border_width_right = 2
-		opp_style.border_width_bottom = 2
-		opp_style.corner_radius_top_left = 12
-		opp_style.corner_radius_top_right = 12
-		opp_style.corner_radius_bottom_left = 12
-		opp_style.corner_radius_bottom_right = 12
-		_opponent_preview.add_theme_stylebox_override("panel", opp_style)
+		OutgameUIStyle.apply_panel(_opponent_preview, true)
+
+
+func _apply_button_styles_recursive(node: Node) -> void:
+	if node == _battle_summary_panel or node == _battle_animation_panel:
+		return
+	if node is Button:
+		OutgameUIStyle.apply_button(node as Button)
+	for child in node.get_children():
+		_apply_button_styles_recursive(child)
 
 
 ## ==================== 数据刷新 ====================

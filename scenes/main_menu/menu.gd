@@ -48,14 +48,12 @@ func _ready() -> void:
 	var btn_leaderboard: BaseButton = get_node_or_null("UILayer/IconBar/BtnLeaderboardWrapper/BtnLeaderboard")
 	var btn_settings: BaseButton = get_node_or_null("UILayer/MenuButtons/BtnSettingsWrapper/BtnSettings")
 	var btn_achievement: BaseButton = get_node_or_null("UILayer/IconBar/BtnAchievementWrapper/BtnAchievement")
-	var btn_save_manager: BaseButton = get_node_or_null("UILayer/IconBar/BtnSaveManagerWrapper/BtnSaveManager")
 	if btn_archive != null: _menu_buttons.append(btn_archive)
 	if btn_pvp != null: _menu_buttons.append(btn_pvp)
 	if btn_shop != null: _menu_buttons.append(btn_shop)
 	if btn_leaderboard != null: _menu_buttons.append(btn_leaderboard)
 	if btn_settings != null: _menu_buttons.append(btn_settings)
 	if btn_achievement != null: _menu_buttons.append(btn_achievement)
-	if btn_save_manager != null: _menu_buttons.append(btn_save_manager)
 
 	# 判断存档，无存档时彻底移除继续游戏按钮，让下方按钮自动补上
 	var save_data = SaveManager.load_latest_run()
@@ -111,15 +109,6 @@ func _ready() -> void:
 	else:
 		push_warning("[MainMenu] BtnLeaderboard 未找到")
 	
-	# 启用存档管理按钮
-	if btn_save_manager != null:
-		btn_save_manager.visible = true
-		btn_save_manager.disabled = false
-		_connect_with_bounce(btn_save_manager, _on_save_manager_pressed)
-		print("[MainMenu] 存档管理按钮已启用")
-	else:
-		push_warning("[MainMenu] BtnSaveManager 未找到")
-	
 	# 连接设置按钮信号
 	if btn_settings != null:
 		_connect_with_bounce(btn_settings, _on_settings_pressed)
@@ -143,17 +132,18 @@ func _ready() -> void:
 	
 	# 核心菜单按钮的业务信号（带弹跳）
 	_connect_with_bounce(_btn_new_game, _on_new_game_pressed)
-	_connect_with_bounce(_btn_continue, _on_continue_pressed)
+	if _btn_continue != null:
+		_connect_with_bounce(_btn_continue, _on_continue_pressed)
 	_connect_with_bounce(_btn_quit, _on_quit_pressed)
-	
-	# 入场动画
-	_play_entrance_animation()
 	
 	# 暗角
 	_setup_vignette()
 	
 	# 人物层级
 	_setup_character_layer()
+	
+	# 入场动画
+	_play_entrance_animation()
 	
 	# 氛围粒子
 	_setup_fireflies()
@@ -422,32 +412,6 @@ func _on_leaderboard_pressed() -> void:
 func _on_leaderboard_closed() -> void:
 	print("[MainMenu] 排行榜关闭")
 
-func _on_save_manager_pressed() -> void:
-	print("[MainMenu] 【点击】存档管理")
-	AudioManager.play_ui("confirm")
-	
-	var save_ui_scene = load("res://scenes/save_manager/save_manager_ui.tscn")
-	if save_ui_scene == null:
-		push_warning("[MainMenu] 存档管理UI场景未找到")
-		return
-	
-	var save_ui = save_ui_scene.instantiate()
-	save_ui.back_requested.connect(func():
-		save_ui.queue_free()
-		_refresh_continue_button()
-	)
-	add_child(save_ui)
-
-func _refresh_continue_button() -> void:
-	## 存档管理返回后，检查继续游戏按钮状态
-	var has_active: bool = SaveManager.has_active_run()
-	if has_active and _btn_continue == null:
-		## 无存档时按钮已被移除，简化处理：重新加载场景或提示玩家
-		print("[MainMenu] 继续游戏按钮需要恢复，建议重新进入主菜单")
-	elif not has_active and _btn_continue != null:
-		## 有存档但按钮存在（正常情况）
-		pass
-
 func _on_save_loaded(_save_data: Dictionary) -> void:
 	if _btn_continue != null:
 		_btn_continue.visible = true
@@ -468,13 +432,13 @@ func _update_pvp_archive_display() -> void:
 	if hint_label == null:
 		return
 	if not archive.is_empty():
-		hint_label.text = "PVP出战: %s (净胜场:%d)" % [
+		hint_label.text = "当前出战档案  %s  净胜场 %d" % [
 			archive.get("hero_name", "???"),
 			archive.get("net_wins", 0)
 		]
 		hint_label.visible = true
 	else:
-		hint_label.text = "PVP出战: 未选择档案"
+		hint_label.text = "尚未选择斗士档案"
 		hint_label.visible = true
 
 func _on_settings_pressed() -> void:
@@ -511,15 +475,6 @@ func _show_panel(panel: Control) -> void:
 func _setup_character_layer() -> void:
 	if _character_layer == null:
 		return
-	var sprite: Sprite2D = _character_layer.get_node_or_null("PersonSprite")
-	if sprite == null or sprite.texture == null:
-		return
-	
-	var viewport_size := get_viewport().get_visible_rect().size
-	var target_height := viewport_size.y * 0.28
-	var scale_needed := target_height / sprite.texture.get_height()
-	sprite.scale = Vector2(scale_needed, scale_needed)
-	sprite.position = Vector2(viewport_size.x * 0.5, viewport_size.y - target_height * 0.5)
 
 
 # ========== 氛围粒子（CPUParticles2D 预置节点）==========

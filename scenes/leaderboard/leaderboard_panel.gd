@@ -3,11 +3,13 @@ extends Panel
 @onready var ranking_container: VBoxContainer = $ScrollContainer/VBoxContainer
 @onready var close_button: Button = $CloseButton
 @onready var title_label: Label = $TitleLabel
+@onready var bg: ColorRect = $Bg
 
 signal closed
 
 func _ready() -> void:
 	visible = false
+	_apply_outgame_style()
 	close_button.pressed.connect(_on_close)
 
 func show_rankings(rankings: Array[Dictionary]) -> void:
@@ -34,3 +36,10 @@ func show_rankings(rankings: Array[Dictionary]) -> void:
 func _on_close() -> void:
 	visible = false
 	closed.emit()
+
+
+func _apply_outgame_style() -> void:
+	OutgameUIStyle.apply_panel(self, true)
+	bg.color = Color(0.02, 0.018, 0.02, 0.82)
+	OutgameUIStyle.apply_label(title_label, "title")
+	OutgameUIStyle.apply_button(close_button)

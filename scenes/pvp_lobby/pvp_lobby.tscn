@@ -1,10 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://pvp_lobby_scene01"]
+[gd_scene format=3 uid="uid://d4awk8lyid13e"]
 
-[ext_resource type="Script" path="res://scenes/pvp_lobby/pvp_lobby.gd" id="1_plg"]
+[ext_resource type="Script" uid="uid://yfiv0xs7oq4j" path="res://scenes/pvp_lobby/pvp_lobby.gd" id="1_plg"]
 [ext_resource type="PackedScene" uid="uid://vktho61lbwnk" path="res://scenes/run_main/battle_summary_panel.tscn" id="2_bsp"]
-[ext_resource type="PackedScene" uid="uid://battle_anim_panel01" path="res://scenes/run_main/battle_animation_panel.tscn" id="3_bap"]
+[ext_resource type="PackedScene" uid="uid://c5c25kbikw2a" path="res://scenes/run_main/battle_animation_panel.tscn" id="3_bap"]
 
-[node name="PvpLobby" type="Control"]
+[node name="PvpLobby" type="Control" unique_id=157728689]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,8 +13,9 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_plg")
 
-[node name="BattleSummaryPanel" parent="." instance=ExtResource("2_bsp")]
-visible = false
+[node name="BattleSummaryPanel" parent="." unique_id=449921801 instance=ExtResource("2_bsp")]
+layout_mode = 1
 
-[node name="BattleAnimationPanel" parent="." instance=ExtResource("3_bap")]
+[node name="BattleAnimationPanel" parent="." unique_id=504280531 instance=ExtResource("3_bap")]
 visible = false
+layout_mode = 1

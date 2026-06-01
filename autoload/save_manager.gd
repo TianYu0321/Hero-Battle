@@ -303,6 +303,7 @@ func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 		var success := _save_dict(ARCHIVES_FILE, existing)
 		if not success:
 			push_error("[SaveManager] Failed to write archive file")
+			return {"_save_failed": true, "archive_data": archive}
 
 		EventBus.archive_generated.emit(archive)
 		EventBus.archive_saved.emit(archive)

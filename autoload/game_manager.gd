@@ -197,8 +197,27 @@ func _on_team_confirmed(partner_ids: Array[String]) -> void:
 	change_scene("RUNNING", "fade")
 
 func _on_run_ended(_ending_type: String, _final_score: int, archive: Dictionary) -> void:
-	pending_archive = archive.duplicate()
+	pending_archive = _save_pending_archive_before_settlement(archive)
 	change_scene("SETTLEMENT", "fade")
+
+
+func _save_pending_archive_before_settlement(archive: Dictionary) -> Dictionary:
+	var archive_to_settle: Dictionary = archive.duplicate(true)
+	if archive_to_settle.is_empty():
+		return archive_to_settle
+
+	if SaveManager.get_archive_count() >= 5:
+		return archive_to_settle
+
+	var saved: Dictionary = SaveManager.generate_fighter_archive(archive_to_settle)
+	if saved.has("_needs_overwrite"):
+		return archive_to_settle
+	if saved.has("_save_failed"):
+		archive_to_settle["_save_failed"] = true
+		return archive_to_settle
+
+	saved["_already_saved"] = true
+	return saved
 
 func _on_back_to_menu_requested() -> void:
 	pending_save_data = {}

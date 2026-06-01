@@ -9,12 +9,15 @@ signal closed
 @onready var tab_container: TabContainer = $Content/TabContainer
 @onready var close_button: Button = $Content/TitleBar/CloseButton
 @onready var total_label: Label = $Content/TitleBar/TotalLabel
+@onready var title_label: Label = $Content/TitleBar/TitleLabel
 @onready var bg_dismiss: Button = $"Background/BgDismiss"
+@onready var background: ColorRect = $Background
 
 const ROW_HEIGHT := 72
 const ICON_SIZE := 48
 
 func _ready() -> void:
+	_apply_outgame_style()
 	close_button.pressed.connect(_on_close_pressed)
 	bg_dismiss.pressed.connect(_on_close_pressed)
 
@@ -61,27 +64,11 @@ func _create_achievement_row(id: String, data: Dictionary) -> PanelContainer:
 	var row := PanelContainer.new()
 	row.custom_minimum_size = Vector2(0, ROW_HEIGHT)
 	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	OutgameUIStyle.apply_card(row, is_unlocked)
 
 	# 背景样式
-	var style := StyleBoxFlat.new()
-	if is_unlocked:
-		style.bg_color = Color(0.98, 0.96, 0.88, 1.0)
-		style.border_color = Color(0.85, 0.65, 0.15, 0.6)
-	elif is_hidden:
-		style.bg_color = Color(0.88, 0.88, 0.90, 1.0)
-		style.border_color = Color(0.70, 0.70, 0.74, 0.4)
-	else:
-		style.bg_color = Color(0.96, 0.96, 0.96, 1.0)
-		style.border_color = Color(0.80, 0.80, 0.82, 0.5)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	row.add_theme_stylebox_override("panel", style)
+	if is_hidden:
+		row.add_theme_stylebox_override("panel", OutgameUIStyle.panel_style(OutgameUIStyle.PANEL_DARK, OutgameUIStyle.DIM, 12, 1))
 
 	var hbox := HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -121,27 +108,27 @@ func _create_achievement_row(id: String, data: Dictionary) -> PanelContainer:
 	name_label.add_theme_font_size_override("font_size", 15)
 	if is_hidden:
 		name_label.text = "???"
-		name_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.60, 1))
+		OutgameUIStyle.apply_label(name_label, "muted")
 	else:
 		name_label.text = data.get("name", "???")
 		if is_unlocked:
-			name_label.add_theme_color_override("font_color", Color(0.15, 0.12, 0.08, 1))
+			OutgameUIStyle.apply_label(name_label, "section")
 		else:
-			name_label.add_theme_color_override("font_color", Color(0.45, 0.45, 0.50, 1))
+			OutgameUIStyle.apply_label(name_label)
 	text_vbox.add_child(name_label)
 
 	var desc_label := Label.new()
 	desc_label.add_theme_font_size_override("font_size", 12)
 	if is_hidden:
 		desc_label.text = "达成条件未知"
-		desc_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.60, 0.7))
+		OutgameUIStyle.apply_label(desc_label, "muted")
 	else:
 		var condition_text: String = _get_condition_text(data)
 		desc_label.text = data.get("description", "") + "  (" + condition_text + ")"
 		if is_unlocked:
-			desc_label.add_theme_color_override("font_color", Color(0.45, 0.42, 0.35, 1))
+			OutgameUIStyle.apply_label(desc_label, "muted")
 		else:
-			desc_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.58, 0.8))
+			OutgameUIStyle.apply_label(desc_label, "muted")
 	text_vbox.add_child(desc_label)
 
 	# 进度条（仅未达成且非隐藏）
@@ -154,14 +141,14 @@ func _create_achievement_row(id: String, data: Dictionary) -> PanelContainer:
 			progress_bar.value = progress
 			progress_bar.show_percentage = false
 			var fg := StyleBoxFlat.new()
-			fg.bg_color = Color(0.85, 0.65, 0.15, 1.0)
+			fg.bg_color = OutgameUIStyle.GOLD
 			fg.corner_radius_top_left = 3
 			fg.corner_radius_top_right = 3
 			fg.corner_radius_bottom_left = 3
 			fg.corner_radius_bottom_right = 3
 			progress_bar.add_theme_stylebox_override("fill", fg)
 			var bg := StyleBoxFlat.new()
-			bg.bg_color = Color(0.88, 0.88, 0.90, 1.0)
+			bg.bg_color = OutgameUIStyle.PANEL_DARK
 			bg.corner_radius_top_left = 3
 			bg.corner_radius_top_right = 3
 			bg.corner_radius_bottom_left = 3
@@ -175,13 +162,13 @@ func _create_achievement_row(id: String, data: Dictionary) -> PanelContainer:
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if is_unlocked:
 		status_label.text = "已达成"
-		status_label.add_theme_color_override("font_color", Color(0.85, 0.55, 0.10, 1))
+		OutgameUIStyle.apply_label(status_label, "section")
 	elif is_hidden:
 		status_label.text = "???"
-		status_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.60, 0.5))
+		OutgameUIStyle.apply_label(status_label, "muted")
 	else:
 		status_label.text = "未达成"
-		status_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.58, 0.7))
+		OutgameUIStyle.apply_label(status_label, "muted")
 	hbox.add_child(status_label)
 
 	# 右侧留白
@@ -248,4 +235,13 @@ func _animate_out() -> void:
 
 	await tween.finished
 	closed.emit()
-	queue_free()
+	if get_parent() != null:
+		visible = false
+
+
+func _apply_outgame_style() -> void:
+	OutgameUIStyle.apply_panel(self, true)
+	OutgameUIStyle.apply_label(title_label, "title")
+	OutgameUIStyle.apply_label(total_label, "muted")
+	OutgameUIStyle.apply_button(close_button)
+	background.color = Color(0, 0, 0, 0.42)

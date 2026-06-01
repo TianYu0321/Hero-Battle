@@ -12,6 +12,7 @@ extends Control
 
 var _leaderboard_system: LeaderboardSystem = LeaderboardSystem.new()
 func _ready() -> void:
+	_apply_outgame_style()
 	_refresh_button.pressed.connect(refresh)
 	_filter_option.item_selected.connect(_on_filter_changed)
 	_setup_filter()
@@ -49,6 +50,7 @@ func refresh() -> void:
 		var empty: Label = Label.new()
 		empty.text = "暂无档案"
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		OutgameUIStyle.apply_label(empty, "muted")
 		_table_container.add_child(empty)
 
 func _on_filter_changed(_idx: int) -> void:
@@ -67,8 +69,10 @@ func _create_row(rank: String, hero: String, rating: String, score: String, date
 		label.custom_minimum_size = Vector2(widths[i], 0)
 		if is_header:
 			label.add_theme_font_size_override("font_size", 16)
+			OutgameUIStyle.apply_label(label, "section")
 		else:
 			label.add_theme_font_size_override("font_size", 14)
+			OutgameUIStyle.apply_label(label)
 			hbox.add_child(label)
 			continue
 		hbox.add_child(label)
@@ -101,3 +105,8 @@ func _get_rating_color(rating: String) -> Color:
 		"C": return Color("#888888")
 		"D": return Color("#555555")
 		_: return Color("#888888")
+
+
+func _apply_outgame_style() -> void:
+	OutgameUIStyle.apply_option_button(_filter_option)
+	OutgameUIStyle.apply_button(_refresh_button)
