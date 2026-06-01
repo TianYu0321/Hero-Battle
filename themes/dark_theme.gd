@@ -32,7 +32,7 @@ var purple_main = Color(0.65, 0.40, 0.80) # 紫罗兰（Chain/魔法）
 
 # --- 圆角参数 ---
 var corner_rounded  = corner_radius(12)    # 通用圆角
-nvar corner_soft    = corner_radius(8)     # 小圆角
+var corner_soft     = corner_radius(8)     # 小圆角
 var corner_pill     = corner_radius(20)    # 胶囊圆角（按钮、血条）
 
 var default_font_size = 16

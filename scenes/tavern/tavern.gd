@@ -8,6 +8,10 @@
 class_name TavernUI
 extends Control
 
+const ICON_CELL_SCENE: PackedScene = preload("res://scenes/tavern/icon_cell.tscn")
+const TEAM_SLOT_EMPTY_SCENE: PackedScene = preload("res://scenes/tavern/team_slot_empty.tscn")
+const TEAM_SLOT_FILLED_SCENE: PackedScene = preload("res://scenes/tavern/team_slot_filled.tscn")
+
 # --- 顶层引用 ---
 @onready var _top_bar: HBoxContainer = $UILayer/TopBar
 @onready var _back_btn: Button = $UILayer/TopBar/BackButton
@@ -225,28 +229,20 @@ func _setup_team_bar() -> void:
 	_team_count_label.add_theme_font_size_override("font_size", 24)
 	_team_count_label.add_theme_color_override("font_color", SETTINGS.COLOR_TEXT_MAIN)
 
+func _clear_slot_content(slot: PanelContainer) -> void:
+	for child in slot.get_children():
+		child.queue_free()
+
 func _reset_team_slot(index: int) -> void:
 	var slot: PanelContainer = _team_bar.get_child(index)
 	if slot == null:
 		return
 	
-	for child in slot.get_children():
-		child.queue_free()
-	
+	_clear_slot_content(slot)
 	slot.add_theme_stylebox_override("panel", _create_slot_style("empty"))
 	
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_child(vbox)
-	
-	var plus_label := Label.new()
-	plus_label.text = "+"
-	plus_label.add_theme_font_size_override("font_size", 36)
-	plus_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.78, 1))
-	plus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(plus_label)
+	var content: VBoxContainer = TEAM_SLOT_EMPTY_SCENE.instantiate()
+	slot.add_child(content)
 
 func _update_team_bar() -> void:
 	for i in range(SETTINGS.MAX_TEAM_SIZE):
@@ -254,52 +250,30 @@ func _update_team_bar() -> void:
 		if slot == null:
 			continue
 		
-		for child in slot.get_children():
-			child.queue_free()
+		_clear_slot_content(slot)
 		
 		if i < _selected_team.size():
 			var partner: Dictionary = _selected_team[i]
 			slot.add_theme_stylebox_override("panel", _create_slot_style("filled"))
-			var vbox := _build_team_slot_content(partner)
-			slot.add_child(vbox)
+			var content: VBoxContainer = TEAM_SLOT_FILLED_SCENE.instantiate()
+			var avatar: TextureRect = content.get_node("Avatar")
+			var icon_path: String = _get_icon_path_for_partner(partner)
+			if not icon_path.is_empty():
+				var tex: Texture2D = load(icon_path)
+				if tex != null:
+					avatar.texture = tex
+			var name_label: Label = content.get_node("NameLabel")
+			name_label.text = partner.get("name", "???")
+			name_label.add_theme_color_override("font_color", SETTINGS.COLOR_TEXT_MAIN)
+			slot.add_child(content)
 			# 淡入
-			vbox.modulate.a = 0.0
+			content.modulate.a = 0.0
 			var tw := create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-			tw.tween_property(vbox, "modulate:a", 1.0, 0.15)
+			tw.tween_property(content, "modulate:a", 1.0, 0.15)
 		else:
 			_reset_team_slot(i)
 	
 	_team_count_label.text = "%d/%d" % [_selected_team.size(), SETTINGS.MAX_TEAM_SIZE]
-
-func _build_team_slot_content(partner: Dictionary) -> VBoxContainer:
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_theme_constant_override("separation", 2)
-	
-	# 头像
-	var avatar := TextureRect.new()
-	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	avatar.custom_minimum_size = Vector2(56, 56)
-	avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var icon_path: String = _get_icon_path_for_partner(partner)
-	if not icon_path.is_empty():
-		var tex: Texture2D = load(icon_path)
-		if tex != null:
-			avatar.texture = tex
-	vbox.add_child(avatar)
-	
-	# 名字
-	var name_label := Label.new()
-	name_label.text = partner.get("name", "???")
-	name_label.add_theme_font_size_override("font_size", 10)
-	name_label.add_theme_color_override("font_color", SETTINGS.COLOR_TEXT_MAIN)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(name_label)
-	
-	return vbox
 
 # ========== 图标矩阵 ==========
 
@@ -329,7 +303,7 @@ func _create_icon_cell(partner_id: String, partner: Dictionary) -> PanelContaine
 	var display_state: ConfigManager.PartnerDisplayState = ConfigManager.get_partner_display_state(partner_id)
 	var is_locked: bool = (display_state == ConfigManager.PartnerDisplayState.LOCKED_VISIBLE)
 	
-	var cell := PanelContainer.new()
+	var cell: PanelContainer = ICON_CELL_SCENE.instantiate()
 	cell.custom_minimum_size = Vector2(SETTINGS.ICON_CELL_WIDTH, SETTINGS.ICON_CELL_HEIGHT + SETTINGS.ICON_NAME_HEIGHT)
 	cell.set_meta("partner_id", partner_id)
 	cell.set_meta("partner_data", partner)
@@ -337,39 +311,23 @@ func _create_icon_cell(partner_id: String, partner: Dictionary) -> PanelContaine
 	cell.set_meta("display_state", display_state)
 	cell.mouse_filter = Control.MOUSE_FILTER_STOP
 	cell.add_theme_stylebox_override("panel", _create_cell_style("normal"))
-	cell.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 	
-	# 用 Control 作为内容根，绕过 PanelContainer 的强制布局，anchors 才能生效
-	var content := Control.new()
-	content.name = "Content"
-	content.set_anchors_preset(Control.PRESET_FULL_RECT)
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cell.add_child(content)
+	var content: Control = cell.get_node("Content")
 	
-	# 头像占据 cell 上半部分（图片区域），保持比例不裁切
-	var avatar := TextureRect.new()
-	avatar.name = "Avatar"
-	avatar.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	# 头像
+	var avatar: TextureRect = content.get_node("Avatar")
 	avatar.offset_bottom = SETTINGS.ICON_CELL_HEIGHT
-	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var icon_path: String = _get_icon_path_for_partner(partner)
 	if not icon_path.is_empty():
 		var tex: Texture2D = load(icon_path)
 		if tex != null:
 			avatar.texture = tex
-	# 未拥有：头像变灰
 	if is_locked:
 		avatar.self_modulate = Color(0.5, 0.5, 0.5, 1)
-	content.add_child(avatar)
 	
-	# 名字底条固定在底部
-	var name_bar := PanelContainer.new()
-	name_bar.name = "NameBar"
-	name_bar.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	# 名字底条
+	var name_bar: PanelContainer = content.get_node("NameBar")
 	name_bar.offset_top = -SETTINGS.ICON_NAME_HEIGHT
-	name_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var name_bg := StyleBoxFlat.new()
 	name_bg.bg_color = Color(1, 1, 1, 0.9)
 	name_bg.corner_radius_bottom_left = SETTINGS.RADIUS_AVATAR
@@ -379,42 +337,19 @@ func _create_icon_cell(partner_id: String, partner: Dictionary) -> PanelContaine
 	name_bg.content_margin_right = 0
 	name_bg.content_margin_bottom = 2
 	name_bar.add_theme_stylebox_override("panel", name_bg)
-	content.add_child(name_bar)
 	
-	var name_label := Label.new()
+	var name_label: Label = name_bar.get_node("NameLabel")
 	name_label.text = partner.get("name", "???")
-	name_label.add_theme_font_size_override("font_size", 11)
 	var name_color: Color = SETTINGS.COLOR_TEXT_DISABLED if is_locked else SETTINGS.COLOR_TEXT_MAIN
 	name_label.add_theme_color_override("font_color", name_color)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_bar.add_child(name_label)
 	
-	# 锁定标记（未拥有时显示在名字条上）
-	if is_locked:
-		var lock_label := Label.new()
-		lock_label.name = "LockMark"
-		lock_label.text = "🔒"
-		lock_label.add_theme_font_size_override("font_size", 14)
-		lock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lock_label.set_anchors_preset(Control.PRESET_CENTER)
-		lock_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		content.add_child(lock_label)
+	# 锁定标记
+	var lock_label: Label = content.get_node("LockMark")
+	lock_label.visible = is_locked
 	
-	# 勾选标记（默认隐藏，固定在右上角）
-	var check_mark := Label.new()
-	check_mark.name = "CheckMark"
-	check_mark.text = "✓"
-	check_mark.add_theme_font_size_override("font_size", 20)
-	check_mark.add_theme_color_override("font_color", Color(0.25, 0.55, 0.95, 1))
-	check_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# 勾选标记（默认隐藏，由外部控制）
+	var check_mark: Label = content.get_node("CheckMark")
 	check_mark.visible = false
-	check_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	check_mark.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	check_mark.offset_right = -4
-	check_mark.offset_bottom = 24
-	content.add_child(check_mark)
 	
 	# 交互（已拥有的才响应点击）
 	if not is_locked:

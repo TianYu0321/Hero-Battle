@@ -154,7 +154,7 @@ func load_texture_safe(path: String) -> Texture2D:
 	## 缓存命中且不是占位图时直接返回（占位图键用特殊前缀避免误缓存）
 	if _texture_cache.has(path) and not _texture_cache[path] is ImageTexture:
 		return _texture_cache[path]
-	var tex: Texture2D = load(path)
+	var tex: Texture2D = resolve_texture_from_path(path)
 	if tex == null:
 		push_warning("[ResourcePaths] Failed to load texture: %s, returning placeholder" % path)
 		return _generate_placeholder_texture(Color.GRAY, 64, 64)
@@ -163,6 +163,26 @@ func load_texture_safe(path: String) -> Texture2D:
 
 func load_texture_cached(path: String) -> Texture2D:
 	return load_texture_safe(path)
+
+func resolve_texture_from_path(path: String) -> Texture2D:
+	if path.is_empty():
+		return null
+	if _texture_cache.has(path):
+		return _texture_cache[path]
+	var res: Resource = load(path)
+	if res == null:
+		return null
+	if res is Texture2D:
+		_texture_cache[path] = res as Texture2D
+		return _texture_cache[path]
+	if res is SpriteFrames:
+		var frames: SpriteFrames = res
+		for anim_name in frames.get_animation_names():
+			if frames.get_frame_count(anim_name) > 0:
+				var tex := frames.get_frame_texture(anim_name, 0)
+				_texture_cache[path] = tex
+				return tex
+	return null
 
 func clear_cache() -> void:
 	_texture_cache.clear()

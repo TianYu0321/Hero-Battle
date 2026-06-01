@@ -1,0 +1,66 @@
+[gd_scene load_steps=2 format=3 uid="uid://shop_partner_card"]
+
+[ext_resource type="Script" path="res://scenes/shop/partner_card.gd" id="1_card"]
+
+[node name="PartnerCard" type="PanelContainer"]
+custom_minimum_size = Vector2(430, 170)
+size_flags_horizontal = 3
+script = ExtResource("1_card")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="CardBg" type="TextureRect" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 136)
+layout_mode = 2
+expand_mode = 3
+stretch_mode = 5
+
+[node name="InfoBox" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="NameLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Partner"
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Role"
+
+[node name="DescriptionLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+autowrap_mode = 3
+text = "Description"
+
+[node name="BottomRow" type="HBoxContainer" parent="MarginContainer/HBoxContainer/InfoBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PriceLabel" type="Label" parent="MarginContainer/HBoxContainer/InfoBox/BottomRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "魔城币 0"
+
+[node name="BuyButton" type="Button" parent="MarginContainer/HBoxContainer/InfoBox/BottomRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 38)
+layout_mode = 2
+text = "购买"

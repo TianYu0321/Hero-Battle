@@ -9,6 +9,7 @@ signal popup_cancelled()
 const CARD_SIZE := Vector2(240, 320)
 const AVATAR_SIZE := Vector2(160, 160)
 const BORDER_COLOR := RunMainSettings.COLOR_WOOD_MEDIUM
+const PARTNER_CARD_SCENE: PackedScene = preload("res://scenes/partner/partner_card.tscn")
 const BORDER_HOVER := RunMainSettings.COLOR_GOLD
 const BG_SELECTED := RunMainSettings.COLOR_PARCHMENT_DARK
 
@@ -181,7 +182,7 @@ func _build_partner_cards(partner_options: Array[Dictionary]) -> void:
 
 
 func _create_partner_card(partner_data: Dictionary, index: int) -> PanelContainer:
-	var card := PanelContainer.new()
+	var card: PanelContainer = PARTNER_CARD_SCENE.instantiate()
 	card.custom_minimum_size = CARD_SIZE
 	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	card.set_meta("partner_id", str(partner_data.get("partner_id", "")))
@@ -200,60 +201,26 @@ func _create_partner_card(partner_data: Dictionary, index: int) -> PanelContaine
 	style.shadow_offset = Vector2(0, 2)
 	card.add_theme_stylebox_override("panel", style)
 
-	## 内部垂直布局
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 8)
-	card.add_child(vbox)
-
-	## 等级标签（顶部角标）
-	var level_badge := Label.new()
+	## 等级标签
+	var level_badge: Label = card.get_node("VBoxContainer/LevelBadge")
 	level_badge.text = "Lv.%d" % partner_data.get("level", 1)
-	level_badge.add_theme_font_override("font", _font_cn)
-	level_badge.add_theme_font_size_override("font_size", 12)
-	level_badge.add_theme_color_override("font_color", RunMainSettings.COLOR_GOLD)
-	level_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(level_badge)
 
-	## 正方形头像框
-	var avatar_container := PanelContainer.new()
-	avatar_container.custom_minimum_size = AVATAR_SIZE
-	var avatar_style := RunMainSettings.create_wood_flat_style(
-		RunMainSettings.COLOR_PARCHMENT_DARK,
-		RunMainSettings.COLOR_WOOD_MEDIUM, 1, 8
-	)
-	avatar_container.add_theme_stylebox_override("panel", avatar_style)
-	vbox.add_child(avatar_container)
-
-	var avatar := TextureRect.new()
-	avatar.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	avatar.custom_minimum_size = AVATAR_SIZE
+	## 头像
+	var avatar: TextureRect = card.get_node("VBoxContainer/AvatarContainer/Avatar")
 	var portrait_path: String = partner_data.get("portrait_path", "")
 	if portrait_path.is_empty():
 		portrait_path = ResourcePaths.get_partner_portrait(str(partner_data.get("partner_id", 0)))
 	var tex: Texture2D = _resolve_texture_from_path(portrait_path)
 	if tex != null:
 		avatar.texture = tex
-	avatar_container.add_child(avatar)
 
 	## 伙伴名字
-	var name_label := Label.new()
+	var name_label: Label = card.get_node("VBoxContainer/NameLabel")
 	name_label.text = partner_data.get("name", "???")
-	name_label.add_theme_font_override("font", _font_cn)
-	name_label.add_theme_font_size_override("font_size", 18)
-	name_label.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(name_label)
 
 	## 定位/职业
-	var class_label := Label.new()
+	var class_label: Label = card.get_node("VBoxContainer/ClassLabel")
 	class_label.text = partner_data.get("role", "伙伴")
-	class_label.add_theme_font_override("font", _font_cn)
-	class_label.add_theme_font_size_override("font_size", 12)
-	class_label.add_theme_color_override("font_color", RunMainSettings.COLOR_WOOD_MEDIUM)
-	class_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(class_label)
 
 	## 交互信号
 	card.gui_input.connect(func(event: InputEvent):
@@ -422,18 +389,4 @@ func _on_cancel_pressed() -> void:
 
 
 func _resolve_texture_from_path(path: String) -> Texture2D:
-	if path.is_empty():
-		return null
-	var res: Resource = load(path)
-	if res == null:
-		return null
-	if res is Texture2D:
-		return res as Texture2D
-	if res is SpriteFrames:
-		var frames: SpriteFrames = res
-		var anim_names: PackedStringArray = frames.get_animation_names()
-		for anim_name in anim_names:
-			var frame_count: int = frames.get_frame_count(anim_name)
-			if frame_count > 0:
-				return frames.get_frame_texture(anim_name, 0)
-	return null
+	return ResourcePaths.resolve_texture_from_path(path)

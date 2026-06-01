@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://dqj2vskwh1vb"]
+
+[node name="PartnerCard" type="PanelContainer"]
+custom_minimum_size = Vector2(240, 320)
+size_flags_horizontal = 4
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="LevelBadge" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.85, 0.65, 0.15, 1)
+
+[node name="AvatarContainer" type="PanelContainer" parent="VBoxContainer"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 160)
+
+[node name="Avatar" type="TextureRect" parent="VBoxContainer/AvatarContainer"]
+layout_mode = 2
+expand_mode = 3
+stretch_mode = 4
+
+[node name="NameLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.25, 0.18, 0.12, 1)
+
+[node name="ClassLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.55, 0.38, 0.25, 1)
