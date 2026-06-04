@@ -528,11 +528,13 @@ func _process_node_result(result: Dictionary) -> void:
 	if _pending_node_type == NodePoolSystem.NodeType.PVP_CHECK:
 		var pvp_director: PvpDirector = get_node_or_null("PvpDirector")
 		if pvp_director != null:
+			_normalize_hero_hp_before_pvp()
 			var pvp_config: Dictionary = {
 				"turn_number": _run.current_turn,
 				"player_gold": _run.gold_owned,
 				"player_hp": _hero.current_hp,
 				"player_hero": _hero_to_battle_dict(),
+				"player_partners": _partners_to_battle_units(),
 				"run_seed": _run.run_seed,
 				"use_archive": true,
 			}
@@ -748,10 +750,51 @@ func _settle(final_battle: RuntimeFinalBattle) -> void:
 				partner_ids.append(str(p.partner_config_id))
 		AchievementManager.on_run_ended(true, _run.current_turn, _run.total_score, _run.current_turn, partner_ids)
 	archive_dict["new_achievements_unlocked"] = new_achievements
+	archive_dict = _save_archive_immediately(archive_dict)
 	
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
 	EventBus.emit_signal("archive_generated", archive_dict)
 	_change_state(RunState.SETTLEMENT)
+
+
+func _build_archive_dict(final_battle: RuntimeFinalBattle, new_achievements: Array[String]) -> Dictionary:
+	if _run == null or _hero == null:
+		return {"new_achievements_unlocked": new_achievements}
+
+	var partners: Array[RuntimePartner] = _character_manager.get_partners()
+	var score: FighterArchiveScore = _settlement_system.calculate_score(_run, _hero, final_battle, partners)
+	_run.total_score = int(score.total_score)
+	var archive: FighterArchiveMain = _settlement_system.generate_fighter_archive(_run, _hero, partners, score)
+
+	var archive_dict: Dictionary = archive.to_dict()
+	var score_dict: Dictionary = score.to_dict()
+	for key in score_dict:
+		if not archive_dict.has(key):
+			archive_dict[key] = score_dict[key]
+	archive_dict["new_achievements_unlocked"] = new_achievements
+	return archive_dict
+
+
+func _save_archive_immediately(archive_dict: Dictionary) -> Dictionary:
+	var archive_to_emit: Dictionary = archive_dict.duplicate(true)
+	if archive_to_emit.is_empty() or archive_to_emit.get("_already_saved", false):
+		return archive_to_emit
+	if SaveManager == null:
+		return archive_to_emit
+	if SaveManager.get_archive_count() >= 5:
+		return archive_to_emit
+
+	var saved: Dictionary = SaveManager.generate_fighter_archive(archive_to_emit)
+	if saved.has("_needs_overwrite"):
+		archive_to_emit["_needs_overwrite"] = true
+		return archive_to_emit
+	if saved.has("_save_failed"):
+		archive_to_emit["_save_failed"] = true
+		return archive_to_emit
+
+	saved["_already_saved"] = true
+	print("[RunController] 档案已在结局阶段保存: %s" % saved.get("archive_id", "unknown"))
+	return saved
 
 
 func cleanup_run() -> void:
@@ -798,6 +841,16 @@ func _end_run() -> void:
 		archive_dict["run_status"] = _run.run_status
 		archive_dict["training_count"] = _hero.total_training_count if _hero != null else 0
 	archive_dict["new_achievements_unlocked"] = new_achievements
+	var final_battle := RuntimeFinalBattle.new()
+	if _run != null:
+		final_battle.run_id = _run.run_id
+		final_battle.result = 1 if _run.run_status == 2 else 2
+	if _hero != null:
+		final_battle.hero_max_hp = _hero.max_hp
+		final_battle.hero_remaining_hp = max(_hero.current_hp, 0)
+		final_battle.ultimate_triggered = _hero.ultimate_used
+	archive_dict = _build_archive_dict(final_battle, new_achievements)
+	archive_dict = _save_archive_immediately(archive_dict)
 	
 	EventBus.emit_signal("run_ended", _get_ending_type(), _run.total_score, archive_dict)
 
@@ -1059,7 +1112,39 @@ func _hero_to_battle_dict() -> Dictionary:
 	}
 
 
+func _normalize_hero_hp_before_pvp() -> void:
+	if _hero == null:
+		return
+	_hero.max_hp = maxi(1, _hero.max_hp)
+	if _hero.is_alive and _hero.current_hp <= 0:
+		_hero.current_hp = 1
+	_hero.current_hp = clampi(_hero.current_hp, 0, _hero.max_hp)
+
+
 ## 保存影子到虚拟档案池（PVP异步镜像）
+func _partners_to_battle_units() -> Array:
+	var battle_partners: Array = []
+	for p in _character_manager.get_partners():
+		if not p is RuntimePartner:
+			continue
+		var assist_cfg: Dictionary = ConfigManager.get_partner_assist_by_partner_id(str(p.partner_config_id))
+		var base_stats: Dictionary = {
+			"physique": assist_cfg.get("base_physique", 10),
+			"strength": assist_cfg.get("base_strength", 10),
+			"agility": assist_cfg.get("base_agility", 10),
+			"technique": assist_cfg.get("base_technique", 10),
+			"spirit": assist_cfg.get("base_spirit", 10),
+		}
+		var level_multiplier: float = 1.0 + (p.current_level - 1) * 0.2
+		for key in base_stats.keys():
+			base_stats[key] = int(base_stats[key] * level_multiplier)
+		var pid: String = ConfigManager._PARTNER_ID_MAP.get(str(p.partner_config_id), str(p.partner_config_id))
+		var pcfg: Dictionary = ConfigManager.get_partner_config(pid)
+		var p_name: String = pcfg.get("name", pid)
+		battle_partners.append(PartnerAssist.make_partner_battle_unit(pid, p_name, base_stats))
+	return battle_partners
+
+
 func _save_shadow_to_pool() -> void:
 	if _character_manager == null:
 		return

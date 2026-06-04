@@ -80,9 +80,13 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 		recorder.record_event("ultimate_triggered", {"hero_name": hero_name, "turn": trigger_turn, "log": ultimate_name})
 	EventBus.ultimate_triggered.connect(_on_ultimate_triggered)
 
+	var hero_start: Dictionary = battle_config.hero.duplicate(true)
+	var enemies_start: Array = battle_config.enemies.duplicate(true)
+	var opponent_unit: Dictionary = enemies_start[0] if enemies_start.size() > 0 else {}
+
 	EventBus.pvp_match_found.emit({
-		"opponent_name": battle_config.hero.name,
-		"opponent_hero_id": battle_config.hero.hero_id,
+		"opponent_name": opponent_unit.get("name", battle_config.get("opponent_name", "")),
+		"opponent_hero_id": opponent_unit.get("hero_id", ""),
 		"turn": turn_number,
 	})
 	EventBus.pvp_battle_started.emit([battle_config.hero], battle_config.enemies, "fast_forward")
@@ -120,21 +124,21 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 	var penalty_value: int = penalty_result.get("penalty_value", 0)
 
 	# 5. 组装PvpResult（penalty相关字段保留用于日志和UI展示，但不修改玩家状态）
-	var opponent_hp_ratio: float = 0.0
-	if battle_config.hero.max_hp > 0:
-		opponent_hp_ratio = float(battle_config.hero.hp) / battle_config.hero.max_hp
-
 	var player_hp_ratio: float = 0.0
+	if battle_config.hero.get("max_hp", 0) > 0:
+		player_hp_ratio = float(battle_config.hero.get("hp", 0)) / battle_config.hero.get("max_hp", 1)
+
+	var opponent_hp_ratio: float = 0.0
 	if battle_config.enemies.size() > 0:
-		var player_unit: Dictionary = battle_config.enemies[0]
-		if player_unit.get("max_hp", 0) > 0:
-			player_hp_ratio = float(player_unit.get("hp", 0)) / player_unit.get("max_hp", 1)
+		var final_opponent_unit: Dictionary = battle_config.enemies[0]
+		if final_opponent_unit.get("max_hp", 0) > 0:
+			opponent_hp_ratio = float(final_opponent_unit.get("hp", 0)) / final_opponent_unit.get("max_hp", 1)
 
 	var pvp_result_data: Dictionary = {
 		"won": player_won,
 		"pvp_turn": turn_number,
 		"opponent_name": battle_config.get("opponent_name", "AI挑战者"),
-		"opponent_hero_id": battle_config.hero.get("hero_id", ""),
+		"opponent_hero_id": opponent_unit.get("hero_id", ""),
 		"opponent_source": battle_config.get("opponent_source", "ai"),
 		"combat_summary": {
 			"turns": battle_result.get("turns_elapsed", 0),
@@ -150,10 +154,12 @@ func execute_pvp(pvp_config: Dictionary) -> Dictionary:
 		"rating_change": 0,
 		# 供 BattleAnimationPanel 使用的字段
 		"playback_recorder": recorder,
-		"hero": battle_config.hero,
-		"enemies": battle_config.enemies,
+		"hero": hero_start,
+		"enemies": enemies_start,
 		"winner": battle_result.get("winner", ""),
 		"turns_elapsed": battle_result.get("turns_elapsed", 0),
+		"hero_remaining_hp": battle_config.hero.get("hp", 0),
+		"hero_max_hp": battle_config.hero.get("max_hp", 100),
 	}
 
 	# 6. 发射信号

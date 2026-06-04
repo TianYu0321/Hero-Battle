@@ -68,19 +68,13 @@ func _load_dict(file_name: String) -> Dictionary:
 	return data
 
 func _write_encrypted(file_path: String, data: Dictionary) -> bool:
-	## 1. JSON 序列化
 	var json: String = JSON.stringify(data, "\t")
-	## 2. 计算 MD5 签名
-	var signature: String = json.md5_text()
-	var payload: Dictionary = {"signature": signature, "data": data}
-	var final_json: String = JSON.stringify(payload)
-	## 3. 写入临时文件
 	var temp_path: String = file_path + TEMP_SUFFIX
 	var file: FileAccess = FileAccess.open_encrypted_with_pass(temp_path, FileAccess.WRITE, ENCRYPTION_PASSWORD)
 	if file == null:
 		push_error("[SaveManager] Failed to open temp file for writing: %s" % temp_path)
 		return false
-	file.store_string(final_json)
+	file.store_string(json)
 	file.close()
 	## 4. 原子替换：旧文件 → 备份，临时文件 → 正式文件
 	if FileAccess.file_exists(file_path):
@@ -110,14 +104,10 @@ func _read_encrypted(file_path: String) -> Dictionary:
 	if parsed == null or not (parsed is Dictionary):
 		push_error("[SaveManager] Invalid save file format: %s" % file_path)
 		return _try_backup_recovery(file_path)
-	## 校验签名
-	var stored_sig: String = parsed.get("signature", "")
-	var data: Dictionary = parsed.get("data", {})
-	var expected_sig: String = JSON.stringify(data).md5_text()
-	if stored_sig != expected_sig:
-		push_warning("[SaveManager] Save file signature mismatch: %s" % file_path)
-		return _try_backup_recovery(file_path)
-	return data
+	## 兼容旧版 {signature, data} 格式
+	if parsed.has("signature") and parsed.has("data"):
+		return parsed.get("data", {})
+	return parsed
 
 func _try_backup_recovery(file_path: String) -> Dictionary:
 	var backup_path: String = file_path + BACKUP_SUFFIX
@@ -271,6 +261,10 @@ func clear_all_archives() -> void:
 
 func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 	var archive: Dictionary = archive_data.duplicate(true)
+	## 清理内部标记字段，避免持久化到档案
+	archive.erase("_already_saved")
+	archive.erase("_needs_overwrite")
+	archive.erase("_save_failed")
 	if not archive.has("archive_id") or archive.get("archive_id", "").is_empty():
 		archive["archive_id"] = _generate_archive_id()
 	if not archive.has("created_at"):
@@ -287,6 +281,28 @@ func generate_fighter_archive(archive_data: Dictionary) -> Dictionary:
 	var existing: Dictionary = _load_archive_data()
 
 	var archives: Array = existing["archives"]
+	var archive_id: String = archive.get("archive_id", "")
+	var run_id: String = archive.get("run_id", "")
+	for i in range(archives.size()):
+		var entry = archives[i]
+		if not (entry is Dictionary):
+			continue
+		var same_archive_id: bool = not archive_id.is_empty() and entry.get("archive_id", "") == archive_id
+		var same_run_id: bool = not run_id.is_empty() and entry.get("run_id", "") == run_id
+		if same_archive_id or same_run_id:
+			archive["archive_id"] = entry.get("archive_id", archive_id if not archive_id.is_empty() else _generate_archive_id())
+			archive["created_at"] = entry.get("created_at", archive.get("created_at", Time.get_unix_time_from_system()))
+			archive["is_fixed"] = true
+			archives[i] = archive
+			existing["last_updated"] = Time.get_unix_time_from_system()
+			existing["version"] = CURRENT_SCHEMA_VERSION
+			var update_success := _save_dict(ARCHIVES_FILE, existing)
+			if not update_success:
+				push_error("[SaveManager] Failed to update archive file")
+				return {"_save_failed": true, "archive_data": archive}
+			EventBus.archive_generated.emit(archive)
+			EventBus.archive_saved.emit(archive)
+			return archive
 
 	# 清理：如果超过5个（旧数据/异常），保留最新的5个
 	if archives.size() > 5:
@@ -342,9 +358,11 @@ func load_archives(sort_by: String = "date", limit: int = 100, filter_hero: Stri
 func is_valid_save(save_data: Dictionary) -> bool:
 	if save_data.is_empty():
 		return false
-	var required_fields = ["hero_config_id", "current_floor", "hero"]
-	for field in required_fields:
-		if not save_data.has(field):
+	if not save_data.has("current_floor") or not save_data.has("hero"):
+		return false
+	if not save_data.has("hero_config_id"):
+		var hero_data: Dictionary = save_data.get("hero", {})
+		if not hero_data.has("config_id"):
 			return false
 	var floor = save_data.get("current_floor", 0)
 	if floor < 1 or floor > 30:
@@ -356,6 +374,10 @@ func is_valid_save(save_data: Dictionary) -> bool:
 
 func _validate_save_integrity(save_data: Dictionary) -> bool:
 	for field in _REQUIRED_SAVE_FIELDS:
+		if field == "hero_config_id" and not save_data.has(field):
+			var hero_data: Dictionary = save_data.get("hero", {})
+			if hero_data.has("config_id"):
+				continue
 		if not save_data.has(field):
 			push_warning("[SaveManager] Save missing required field: %s" % field)
 			return false

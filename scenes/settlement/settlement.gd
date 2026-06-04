@@ -274,7 +274,9 @@ func _on_archive_button_pressed() -> void:
 		return
 	if _archive_saved:
 		return
-
+	if _archive_data.get("_already_saved", false):
+		_update_saved_ui()
+		return
 	_save_archive_or_prompt_overwrite()
 
 

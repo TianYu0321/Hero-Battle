@@ -1,6 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://shop_popup01"]
+[gd_scene load_steps=6 format=3 uid="uid://shop_popup01"]
 
 [ext_resource type="Script" path="res://scenes/shop/shop_popup.gd" id="1_sp"]
+[ext_resource type="Texture2D" path="res://assets/ui/shop/shop_UI.png" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/shop/shop_currency_plate.png" id="3_currency"]
+[ext_resource type="Texture2D" path="res://assets/ui/shop/mocheng_coin_icon.png" id="4_coin"]
+[ext_resource type="Texture2D" path="res://assets/ui/shop/shop_return_button.png" id="5_return"]
 
 [node name="ShopPopup" type="Control"]
 layout_mode = 3
@@ -9,97 +13,124 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+z_index = 100
 script = ExtResource("1_sp")
 
-[node name="Overlay" type="ColorRect" parent="."]
+[node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0, 0, 0, 0.8)
+texture = ExtResource("2_bg")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="Content" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -525.0
-offset_top = -390.0
-offset_right = 525.0
-offset_bottom = 390.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="CategoryButtons" type="HBoxContainer" parent="."]
+layout_mode = 0
+offset_left = 154.0
+offset_top = 164.0
+offset_right = 896.0
+offset_bottom = 258.0
+theme_override_constants/separation = 16
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Content"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+[node name="AllButton" type="Button" parent="CategoryButtons"]
+custom_minimum_size = Vector2(174, 88)
+layout_mode = 2
+text = "全部"
+
+[node name="AttackButton" type="Button" parent="CategoryButtons"]
+custom_minimum_size = Vector2(174, 88)
+layout_mode = 2
+text = "攻击"
+
+[node name="GuardButton" type="Button" parent="CategoryButtons"]
+custom_minimum_size = Vector2(174, 88)
+layout_mode = 2
+text = "守护"
+
+[node name="SupportButton" type="Button" parent="CategoryButtons"]
+custom_minimum_size = Vector2(174, 88)
+layout_mode = 2
+text = "支援"
+
+[node name="ItemScroll" type="ScrollContainer" parent="."]
+layout_mode = 0
+offset_left = 112.0
+offset_top = 342.0
+offset_right = 964.0
+offset_bottom = 904.0
+horizontal_scroll_mode = 0
+
+[node name="ItemGrid" type="GridContainer" parent="ItemScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 22
+columns = 3
+
+[node name="EmptyLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 238.0
+offset_top = 560.0
+offset_right = 840.0
+offset_bottom = 620.0
+theme_override_font_sizes/font_size = 26
+text = "暂无可展示伙伴"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CurrencyPlate" type="TextureRect" parent="."]
+layout_mode = 0
+offset_left = 1308.0
+offset_top = 878.0
+offset_right = 1728.0
+offset_bottom = 964.0
+texture = ExtResource("3_currency")
+expand_mode = 1
+stretch_mode = 0
+
+[node name="CoinIcon" type="TextureRect" parent="CurrencyPlate"]
+layout_mode = 0
 offset_left = 24.0
-offset_top = 24.0
-offset_right = -24.0
-offset_bottom = -24.0
+offset_top = 11.0
+offset_right = 80.0
+offset_bottom = 67.0
+texture = ExtResource("4_coin")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CoinLabel" type="Label" parent="CurrencyPlate"]
+layout_mode = 0
+offset_left = 92.0
+offset_top = 12.0
+offset_right = 392.0
+offset_bottom = 70.0
+theme_override_font_sizes/font_size = 30
+text = "魔城币 0"
+vertical_alignment = 1
+
+[node name="ReturnButton" type="TextureButton" parent="."]
+layout_mode = 0
+offset_left = 1438.0
+offset_top = 34.0
+offset_right = 1622.0
+offset_bottom = 104.0
+texture_normal = ExtResource("5_return")
+texture_hover = ExtResource("5_return")
+texture_pressed = ExtResource("5_return")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="ReturnLabel" type="Label" parent="ReturnButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="HeaderHBox" type="HBoxContainer" parent="Content/VBoxContainer"]
-layout_mode = 2
-
-[node name="TitleLabel" type="Label" parent="Content/VBoxContainer/HeaderHBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 20
-text = "局外商店"
-
-[node name="CoinLabel" type="Label" parent="Content/VBoxContainer/HeaderHBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "💰 0"
-
-[node name="UserLabel" type="Label" parent="Content/VBoxContainer/HeaderHBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 12
-theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
-text = "用户: local_default"
-
-[node name="CloseButton" type="Button" parent="Content/VBoxContainer/HeaderHBox"]
-layout_mode = 2
-text = "✕"
-
-[node name="TabContainer" type="TabContainer" parent="Content/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="英雄" type="ScrollContainer" parent="Content/VBoxContainer/TabContainer"]
-layout_mode = 2
-
-[node name="ItemGrid" type="GridContainer" parent="Content/VBoxContainer/TabContainer/英雄"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
-columns = 3
-
-[node name="伙伴" type="ScrollContainer" parent="Content/VBoxContainer/TabContainer"]
-layout_mode = 2
-
-[node name="ItemGrid" type="GridContainer" parent="Content/VBoxContainer/TabContainer/伙伴"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
-columns = 3
-
-[node name="皮肤" type="ScrollContainer" parent="Content/VBoxContainer/TabContainer"]
-layout_mode = 2
-
-[node name="ItemGrid" type="GridContainer" parent="Content/VBoxContainer/TabContainer/皮肤"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 12
-theme_override_constants/v_separation = 12
-columns = 3
+theme_override_font_sizes/font_size = 27
+text = "返回"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -14,6 +14,7 @@ static func from_runtime(run: RuntimeRun, hero: RuntimeHero, partners: Array, no
 	var data := {
 		"version": CURRENT_VERSION,
 		"saved_at": int(Time.get_unix_time_from_system()),
+		"hero_config_id": run.hero_config_id,
 		"current_floor": run.current_turn,
 		"hero": {
 			"config_id": run.hero_config_id,

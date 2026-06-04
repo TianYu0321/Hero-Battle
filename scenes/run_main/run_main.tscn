@@ -26,9 +26,9 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -60.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = 60.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 70.0
 grow_horizontal = 0
 
 [node name="HudContainer" type="PanelContainer" parent="." unique_id=1546845912]
@@ -56,10 +56,10 @@ text = "生命: 100/100"
 
 [node name="OptionContainer" type="VBoxContainer" parent="." unique_id=1063744575]
 layout_mode = 0
-offset_left = 360.0
-offset_top = 420.0
-offset_right = 960.0
-offset_bottom = 705.0
+offset_left = 104.0
+offset_top = 560.0
+offset_right = 764.0
+offset_bottom = 882.0
 
 [node name="TrainButton" type="Button" parent="OptionContainer" unique_id=1078626821]
 layout_mode = 2
@@ -80,10 +80,10 @@ text = "外出"
 [node name="TrainingPanel" type="VBoxContainer" parent="." unique_id=878883854]
 visible = false
 layout_mode = 0
-offset_left = 360.0
-offset_top = 420.0
-offset_right = 960.0
-offset_bottom = 795.0
+offset_left = 104.0
+offset_top = 500.0
+offset_right = 794.0
+offset_bottom = 920.0
 
 [node name="TitleLabel" type="Label" parent="TrainingPanel" unique_id=667698913]
 layout_mode = 2
@@ -192,10 +192,10 @@ text = "训练"
 
 [node name="EnemyInfoPanel" type="VBoxContainer" parent="." unique_id=31922599]
 layout_mode = 0
-offset_left = 1020.0
-offset_top = 240.0
-offset_right = 1320.0
-offset_bottom = 390.0
+offset_left = 1300.0
+offset_top = 318.0
+offset_right = 1720.0
+offset_bottom = 588.0
 
 [node name="EnemyNameLabel" type="Label" parent="EnemyInfoPanel" unique_id=146059949]
 layout_mode = 2
@@ -226,17 +226,11 @@ visible = false
 layer = 3
 
 [node name="PartnerPanel" type="PanelContainer" parent="PartnerHUDLayer" unique_id=242087836]
-anchors_preset = 12
-anchor_left = 0.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = -105.0
-offset_right = 0.0
-offset_bottom = 0.0
-grow_horizontal = 2
-grow_vertical = 0
+anchors_preset = 0
+offset_left = 625.0
+offset_top = 916.0
+offset_right = 1295.0
+offset_bottom = 1026.0
 
 [node name="PartnerList" type="HBoxContainer" parent="PartnerHUDLayer/PartnerPanel" unique_id=2039600500]
 layout_mode = 2
@@ -265,10 +259,10 @@ color = Color(0.08, 0.06, 0.04, 0.4)
 [node name="ShopPanel" type="Panel" parent="." unique_id=1867791983]
 visible = false
 layout_mode = 0
-offset_left = 660.0
-offset_top = 210.0
-offset_right = 1260.0
-offset_bottom = 810.0
+offset_left = 1088.0
+offset_top = 208.0
+offset_right = 1688.0
+offset_bottom = 818.0
 
 [node name="ContentVBox" type="VBoxContainer" parent="ShopPanel" unique_id=1563033253]
 layout_mode = 1
@@ -312,25 +306,25 @@ layout_mode = 1
 [node name="CombatConfirmPanel" type="Panel" parent="." unique_id=364554246]
 visible = false
 layout_mode = 0
-offset_left = 660.0
-offset_top = 420.0
-offset_right = 1260.0
-offset_bottom = 600.0
+offset_left = 1300.0
+offset_top = 612.0
+offset_right = 1720.0
+offset_bottom = 800.0
 
 [node name="EnterCombatButton" type="Button" parent="CombatConfirmPanel" unique_id=1143770516]
 layout_mode = 0
-offset_left = 30.0
-offset_top = 15.0
-offset_right = 570.0
-offset_bottom = 75.0
+offset_left = 24.0
+offset_top = 108.0
+offset_right = 208.0
+offset_bottom = 160.0
 text = "进入战斗"
 
 [node name="ReturnButton" type="Button" parent="CombatConfirmPanel" unique_id=1457341634]
 layout_mode = 0
-offset_left = 30.0
-offset_top = 90.0
-offset_right = 570.0
-offset_bottom = 150.0
+offset_left = 216.0
+offset_top = 108.0
+offset_right = 396.0
+offset_bottom = 160.0
 text = "返回"
 
 [node name="BattleResultPanel" parent="." instance=ExtResource("8_brp")]

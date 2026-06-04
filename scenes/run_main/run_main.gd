@@ -71,6 +71,18 @@ var _font_cn: Font = preload(RunMainSettings.FONT_CN_PATH)
 var _font_en: Font = preload(RunMainSettings.FONT_EN_PATH)
 var _cached_node_options: Array = []
 var _cached_enemy_data: Dictionary = {}
+var _hp_progress_bar: ProgressBar = null
+var _floor_progress_bar: ProgressBar = null
+var _hp_status_badge: PanelContainer = null
+var _action_preview_title: Label = null
+var _action_preview_desc: Label = null
+var _action_preview_tag: Label = null
+var _action_preview_accent: ColorRect = null
+
+const COLOR_ADVENTURE_BLUE := Color(0.31, 0.50, 0.78, 1.0)
+const COLOR_ADVENTURE_BLUE_DARK := Color(0.18, 0.32, 0.55, 1.0)
+const COLOR_PARCHMENT_GLOW := Color(1.0, 0.96, 0.84, 1.0)
+const MAX_RUN_FLOOR := 30
 
 ## 伙伴 HUD
 var _partner_slots: Array[PanelContainer] = []
@@ -275,9 +287,10 @@ func _update_hud() -> void:
 	var current_hp: int = hero_data.get("current_hp", 100)
 	var max_hp: int = hero_data.get("max_hp", 100)
 
-	floor_label.text = "%d / 30" % current_turn
+	floor_label.text = "%d / %d" % [current_turn, MAX_RUN_FLOOR]
 	gold_label.text = "%d" % gold
 	hp_label.text = "%d / %d" % [current_hp, max_hp]
+	_update_status_progress(current_turn, current_hp, max_hp)
 
 	_update_partner_hud()
 
@@ -330,6 +343,7 @@ func _on_node_button_pressed(index: int) -> void:
 
 func _show_combat_preview(opt: Dictionary, index: int) -> void:
 	_combat_selected_index = index
+	_current_ui_state = UISceneState.BATTLE_PREVIEW
 	
 	# 隐藏4选项
 	option_container.visible = false
@@ -339,6 +353,8 @@ func _show_combat_preview(opt: Dictionary, index: int) -> void:
 	if enemy_cfg.is_empty() and not _cached_enemy_data.is_empty():
 		enemy_cfg = _cached_enemy_data
 	
+	_show_action_preview_for_option(opt, not enemy_cfg.is_empty())
+
 	if not enemy_cfg.is_empty():
 		enemy_info_panel.visible = true
 		## 复用 update_enemy_info 显示基础信息
@@ -356,7 +372,7 @@ func _show_combat_preview(opt: Dictionary, index: int) -> void:
 		risk_label.text = DamagePredictor.get_risk_display_text(risk)
 		risk_label.modulate = DamagePredictor.get_risk_color(risk)
 	else:
-		enemy_info_panel.visible = false
+		_set_enemy_detail_visible(false)
 	
 	# 显示确认按钮（进入战斗 / 返回）
 	partner_panel.visible = false
@@ -381,9 +397,9 @@ func _on_combat_cancelled() -> void:
 	AudioManager.play_ui("cancel")
 	# 返回，恢复4选项
 	_animate_hide_panel(combat_confirm_panel)
-	enemy_info_panel.visible = false
 	option_container.visible = true
 	_update_partner_hud()
+	_show_default_action_preview()
 	_combat_selected_index = -1
 	_current_ui_state = UISceneState.OPTION_SELECT
 	print("[RunMain] 取消战斗，恢复选项")
@@ -411,6 +427,7 @@ func _on_run_started(run_config: Dictionary) -> void:
 func _on_node_options_presented(node_options: Array) -> void:
 	print("[RunMain] _on_node_options_presented: 选项数=%d, 当前blocker=%s" % [node_options.size(), ui_modal_blocker.visible])
 	
+	_cached_node_options = node_options.duplicate()
 	_transition_ui_state(UISceneState.OPTION_SELECT)
 	
 	# 获取事件透视系统
@@ -427,7 +444,6 @@ func _on_node_options_presented(node_options: Array) -> void:
 		
 		if i < node_options.size():
 			var opt = node_options[i]
-			var btn_text: String = opt.get("node_name", "???")
 			
 			# 检查透视标注
 			if forecast_system != null and forecast_system.is_active():
@@ -436,7 +452,7 @@ func _on_node_options_presented(node_options: Array) -> void:
 				if not tag["text"].is_empty():
 					_apply_event_tag_style(btn, tag)
 			
-			btn.text = btn_text
+			_apply_action_card_from_option(btn, opt, i)
 			btn.visible = true
 			btn.disabled = false
 		else:
@@ -449,7 +465,7 @@ func _on_node_options_presented(node_options: Array) -> void:
 	for i in range(option_buttons.size()):
 		if i < node_options.size():
 			var opt = node_options[i]
-			option_buttons[i].text = opt.get("node_name", "???")
+			_apply_action_card_from_option(option_buttons[i], opt, i)
 			option_buttons[i].visible = true
 			option_buttons[i].disabled = false
 	
@@ -462,7 +478,8 @@ func _on_node_options_presented(node_options: Array) -> void:
 	])
 	
 	# 默认界面不承载怪物信息，只有点击战斗后 _show_combat_preview 才显示剪影
-	enemy_info_panel.visible = false
+	_show_default_action_preview()
+	_play_action_cards_intro()
 
 func _apply_event_tag_style(btn: Button, tag: Dictionary) -> void:
 	# 删除已有的标注
@@ -563,7 +580,7 @@ func _show_training_panel_details(_panel_data: Dictionary) -> void:
 	for i in range(5):
 		var count: int = training_counts.get(attr_names[i], 0)
 		var level: int = (count / 5) + 1
-		training_lv_labels[i].text = "LV:%d" % level
+		training_lv_labels[i].text = "修炼 Lv.%d" % level
 
 
 func _on_rescue_partner_selected(partner_config_id: int) -> void:
@@ -886,7 +903,11 @@ func _on_stats_changed(_unit_id: String, stat_changes: Dictionary) -> void:
 					var summary = _run_controller.get_current_run_summary() if _run_controller != null else {}
 					var hero_data = summary.get("hero", {})
 					max_hp = hero_data.get("max_hp", 100)
-				hp_label.text = "生命: %d/%d" % [new_hp, max_hp]
+				hp_label.text = "%d / %d" % [new_hp, max_hp]
+				var current_floor := 1
+				if _run_controller != null:
+					current_floor = _run_controller.get_current_run_summary().get("current_turn", 1)
+				_update_status_progress(current_floor, new_hp, max_hp)
 
 
 
@@ -903,6 +924,9 @@ func _on_pvp_result(result: Dictionary) -> void:
 
 func _on_floor_changed(current_floor: int, max_floor: int, floor_type: String) -> void:
 	floor_label.text = "%d / %d" % [current_floor, max_floor]
+	var current_hp := _get_current_hero_hp()
+	var max_hp := _get_current_hero_max_hp()
+	_update_status_progress(current_floor, current_hp, max_hp)
 	print("[RunMain HUD] 楼层 %d/%d，类型: %s" % [current_floor, max_floor, floor_type])
 
 func _on_menu_button_pressed() -> void:
@@ -935,6 +959,7 @@ func _on_enemy_encountered(enemy_data: Dictionary) -> void:
 func update_enemy_info(enemy_data: Dictionary) -> void:
 	## 此函数保留供 CombatConfirmPanel / 战斗预览显式调用
 	enemy_info_panel.visible = true
+	_set_enemy_detail_visible(true)
 	enemy_name_label.text = "敌人: %s" % enemy_data.get("name", "???")
 	var max_hp: int = enemy_data.get("max_hp", 0)
 	var current_hp: int = enemy_data.get("current_hp", max_hp)
@@ -1208,6 +1233,19 @@ func _show_rest_feedback(heal_amount: int) -> void:
 		var hp_tween := create_tween()
 		hp_tween.tween_property(hp_label, "modulate", Color(0.35, 0.75, 0.45), 0.2)
 		hp_tween.tween_property(hp_label, "modulate", Color.WHITE, 0.3)
+	if _hp_status_badge != null:
+		var badge_tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		badge_tween.tween_property(_hp_status_badge, "scale", Vector2(1.08, 1.08), 0.16)
+		badge_tween.parallel().tween_property(_hp_status_badge, "modulate", Color(0.78, 1.0, 0.78, 1.0), 0.16)
+		badge_tween.tween_property(_hp_status_badge, "scale", Vector2.ONE, 0.22)
+		badge_tween.parallel().tween_property(_hp_status_badge, "modulate", Color.WHITE, 0.22)
+	if _action_preview_title != null:
+		_action_preview_title.text = "生命恢复"
+		_action_preview_desc.text = "勇者休息片刻，恢复了 %d 点生命。" % heal_amount
+		_action_preview_tag.text = "回复完成"
+		_action_preview_accent.color = Color(0.24, 0.70, 0.36, 1)
+		_set_enemy_detail_visible(false)
+		enemy_info_panel.visible = true
 
 
 # ============================================================
@@ -1220,13 +1258,679 @@ func _show_rest_feedback(heal_amount: int) -> void:
 # UI 样式初始化（勇者木调风格）
 # ============================================================
 
+func _setup_stage_layout() -> void:
+	_set_hud_top_bar_rect()
+	_set_control_rect(option_container, Vector2(104, 560), Vector2(660, 322))
+	_set_control_rect(training_panel, Vector2(104, 500), Vector2(690, 420))
+	_set_control_rect(enemy_info_panel, Vector2(1300, 318), Vector2(420, 270))
+	_set_control_rect(shop_panel, Vector2(1088, 208), Vector2(600, 610))
+	_set_control_rect(combat_confirm_panel, Vector2(1300, 612), Vector2(420, 188))
+	_set_control_rect(menu_button, Vector2(1848, 24), Vector2(46, 46))
+	_setup_partner_panel_layout()
+
+
+func _set_hud_top_bar_rect() -> void:
+	hud_container.set_anchors_preset(Control.PRESET_TOP_WIDE, false)
+	hud_container.offset_left = 0.0
+	hud_container.offset_top = 0.0
+	hud_container.offset_right = 0.0
+	hud_container.offset_bottom = RunMainSettings.HUD_HEIGHT
+	hud_container.custom_minimum_size = Vector2(0, RunMainSettings.HUD_HEIGHT)
+
+
+func _set_control_rect(control: Control, pos: Vector2, size: Vector2) -> void:
+	control.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
+	control.offset_left = pos.x
+	control.offset_top = pos.y
+	control.offset_right = pos.x + size.x
+	control.offset_bottom = pos.y + size.y
+	control.custom_minimum_size = size
+
+
+func _setup_partner_panel_layout() -> void:
+	partner_panel.set_anchors_preset(Control.PRESET_TOP_LEFT, false)
+	partner_panel.offset_left = 625
+	partner_panel.offset_top = 916
+	partner_panel.offset_right = 1295
+	partner_panel.offset_bottom = 1026
+	partner_panel.custom_minimum_size = Vector2(670, 110)
+	var style := RunMainSettings.create_wood_flat_style(
+		Color(0.28, 0.18, 0.11, 0.82),
+		RunMainSettings.COLOR_GOLD, 2,
+		12
+	)
+	style.content_margin_left = 16
+	style.content_margin_top = 8
+	style.content_margin_right = 16
+	style.content_margin_bottom = 8
+	partner_panel.add_theme_stylebox_override("panel", style)
+	var partner_list: HBoxContainer = partner_panel.get_node("PartnerList")
+	partner_list.add_theme_constant_override("separation", 10)
+	partner_list.alignment = BoxContainer.ALIGNMENT_CENTER
+	var title: Label = partner_list.get_node_or_null("PartnerTitle") as Label
+	if title != null:
+		title.text = "同行队伍"
+		title.custom_minimum_size = Vector2(72, 82)
+		title.add_theme_color_override("font_color", RunMainSettings.COLOR_GOLD)
+		title.add_theme_font_size_override("font_size", 16)
+		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+
+func _setup_hud_v2() -> void:
+	var hud_style := RunMainSettings.create_wood_flat_style(
+		Color(0.32, 0.20, 0.12, 0.90),
+		RunMainSettings.COLOR_GOLD, 2,
+		12
+	)
+	hud_style.content_margin_left = 10
+	hud_style.content_margin_top = 8
+	hud_style.content_margin_right = 10
+	hud_style.content_margin_bottom = 8
+	hud_container.add_theme_stylebox_override("panel", hud_style)
+
+	var hbox: HBoxContainer = hud_container.get_node("HBoxContainer")
+	_detach_node(floor_label)
+	_detach_node(gold_label)
+	_detach_node(hp_label)
+	for child in hbox.get_children():
+		hbox.remove_child(child)
+		child.queue_free()
+
+	var floor_badge := _create_status_badge(floor_label, "🏰", "层数", RunMainSettings.COLOR_INK, true)
+	var gold_badge := _create_status_badge(gold_label, "💰", "金币", RunMainSettings.COLOR_GOLD_DARK, false)
+	var hp_badge := _create_status_badge(hp_label, "❤", "生命", RunMainSettings.COLOR_HERO_RED_DARK, true)
+	_floor_progress_bar = floor_badge.get_node("Margin/VBox/ProgressBar")
+	_hp_progress_bar = hp_badge.get_node("Margin/VBox/ProgressBar")
+	_hp_status_badge = hp_badge
+
+	hbox.add_theme_constant_override("separation", 8)
+	hbox.alignment = BoxContainer.ALIGNMENT_BEGIN
+	hbox.add_child(floor_badge)
+	hbox.add_child(gold_badge)
+	hbox.add_child(hp_badge)
+
+
+func _create_status_badge(value_label: Label, icon: String, prefix: String, value_color: Color, with_progress: bool) -> PanelContainer:
+	var badge := PanelContainer.new()
+	badge.custom_minimum_size = Vector2(140, 58)
+	var wood_style := RunMainSettings.create_wood_flat_style(
+		COLOR_PARCHMENT_GLOW,
+		RunMainSettings.COLOR_WOOD_MEDIUM, 2,
+		RunMainSettings.CORNER_BADGE
+	)
+	wood_style.content_margin_left = 8
+	wood_style.content_margin_top = 5
+	wood_style.content_margin_right = 8
+	wood_style.content_margin_bottom = 5
+	badge.add_theme_stylebox_override("panel", wood_style)
+
+	var margin := MarginContainer.new()
+	margin.name = "Margin"
+	badge.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.name = "VBox"
+	vbox.add_theme_constant_override("separation", 2)
+	margin.add_child(vbox)
+
+	var top := HBoxContainer.new()
+	top.alignment = BoxContainer.ALIGNMENT_CENTER
+	top.add_theme_constant_override("separation", 6)
+	vbox.add_child(top)
+
+	var icon_label := Label.new()
+	icon_label.text = icon
+	icon_label.add_theme_font_size_override("font_size", 17)
+	top.add_child(icon_label)
+
+	var prefix_label := Label.new()
+	prefix_label.text = prefix
+	prefix_label.add_theme_font_size_override("font_size", 10)
+	prefix_label.add_theme_color_override("font_color", RunMainSettings.COLOR_WOOD_MEDIUM)
+	top.add_child(prefix_label)
+
+	value_label.add_theme_color_override("font_color", value_color)
+	value_label.add_theme_font_size_override("font_size", 15)
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(value_label)
+
+	if with_progress:
+		var bar := ProgressBar.new()
+		bar.name = "ProgressBar"
+		bar.custom_minimum_size = Vector2(0, 7)
+		bar.show_percentage = false
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_style_progress_bar(bar, value_color)
+		vbox.add_child(bar)
+
+	return badge
+
+
+func _detach_node(node: Node) -> void:
+	if node != null and node.get_parent() != null:
+		node.get_parent().remove_child(node)
+
+
+func _style_progress_bar(bar: ProgressBar, fill_color: Color) -> void:
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.20, 0.12, 0.07, 0.55)
+	bg.corner_radius_top_left = 4
+	bg.corner_radius_top_right = 4
+	bg.corner_radius_bottom_left = 4
+	bg.corner_radius_bottom_right = 4
+	bar.add_theme_stylebox_override("background", bg)
+
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = fill_color
+	fill.corner_radius_top_left = 4
+	fill.corner_radius_top_right = 4
+	fill.corner_radius_bottom_left = 4
+	fill.corner_radius_bottom_right = 4
+	bar.add_theme_stylebox_override("fill", fill)
+
+
+func _update_status_progress(current_floor: int, current_hp: int, max_hp: int) -> void:
+	if _floor_progress_bar != null:
+		_floor_progress_bar.max_value = MAX_RUN_FLOOR
+		_floor_progress_bar.value = clampi(current_floor, 0, MAX_RUN_FLOOR)
+		_style_progress_bar(_floor_progress_bar, COLOR_ADVENTURE_BLUE)
+	if _hp_progress_bar != null:
+		_hp_progress_bar.max_value = maxi(max_hp, 1)
+		_hp_progress_bar.value = clampi(current_hp, 0, maxi(max_hp, 1))
+		var ratio := float(current_hp) / float(maxi(max_hp, 1))
+		var hp_color := Color(0.24, 0.70, 0.36, 1.0)
+		if ratio < 0.34:
+			hp_color = RunMainSettings.COLOR_HERO_RED
+		elif ratio < 0.62:
+			hp_color = RunMainSettings.COLOR_GOLD
+		_style_progress_bar(_hp_progress_bar, hp_color)
+
+
+func _setup_enemy_info_panel_v2() -> void:
+	_add_parchment_background_v2(enemy_info_panel, 12)
+	enemy_info_panel.add_theme_constant_override("separation", 8)
+	enemy_info_panel.custom_minimum_size = Vector2(420, 270)
+
+	_action_preview_accent = enemy_info_panel.get_node_or_null("AccentBar") as ColorRect
+	if _action_preview_accent == null:
+		_action_preview_accent = ColorRect.new()
+		_action_preview_accent.name = "AccentBar"
+		_action_preview_accent.custom_minimum_size = Vector2(0, 5)
+		enemy_info_panel.add_child(_action_preview_accent)
+	enemy_info_panel.move_child(_action_preview_accent, 0)
+
+	_action_preview_title = _ensure_preview_label("PreviewTitle", "下一步行动", 24, RunMainSettings.COLOR_INK, false)
+	_action_preview_desc = _ensure_preview_label("PreviewDesc", "选择一张行动卡，查看旅途提示。", 15, RunMainSettings.COLOR_WOOD_MEDIUM, true)
+	_action_preview_tag = _ensure_preview_label("PreviewTag", "冒险", 14, COLOR_ADVENTURE_BLUE_DARK, false)
+	enemy_info_panel.move_child(_action_preview_title, 1)
+	enemy_info_panel.move_child(_action_preview_desc, 2)
+	enemy_info_panel.move_child(_action_preview_tag, 3)
+
+	for label in [enemy_name_label, enemy_hp_label, predicted_damage_label, risk_label]:
+		label.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
+		label.add_theme_font_size_override("font_size", 15)
+		label.add_theme_font_override("font", _font_cn)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_set_enemy_detail_visible(false)
+
+
+func _ensure_preview_label(name: String, text: String, font_size: int, color: Color, autowrap: bool) -> Label:
+	var label: Label = enemy_info_panel.get_node_or_null(name) as Label
+	if label == null:
+		label = Label.new()
+		label.name = name
+		enemy_info_panel.add_child(label)
+	label.text = text
+	label.add_theme_font_override("font", _font_cn)
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if autowrap else TextServer.AUTOWRAP_OFF
+	return label
+
+
+func _set_enemy_detail_visible(is_visible: bool) -> void:
+	for label in [enemy_name_label, enemy_hp_label, predicted_damage_label, risk_label]:
+		label.visible = is_visible
+	if not is_visible:
+		risk_label.modulate = Color.WHITE
+
+
+func _show_default_action_preview() -> void:
+	if _cached_node_options.is_empty():
+		enemy_info_panel.visible = false
+		return
+	_show_action_preview_for_option(_cached_node_options[0], false)
+
+
+func _show_action_preview_for_option(opt: Dictionary, show_enemy_detail: bool) -> void:
+	if _action_preview_title == null:
+		return
+	var meta := _get_action_meta(opt)
+	_action_preview_title.text = meta.get("title", "下一步行动")
+	_action_preview_desc.text = meta.get("desc", "选择行动，推进旅程。")
+	_action_preview_tag.text = meta.get("tag", "冒险")
+	_action_preview_accent.color = meta.get("accent", COLOR_ADVENTURE_BLUE)
+	_set_enemy_detail_visible(show_enemy_detail)
+	enemy_info_panel.visible = true
+
+
+func _get_action_meta(opt: Dictionary) -> Dictionary:
+	var node_type: int = opt.get("node_type", 0)
+	var title: String = opt.get("node_name", "???")
+	match node_type:
+		NodePoolSystem.NodeType.TRAINING:
+			return {"icon": "🏋", "title": "训练", "desc": "锤炼一项属性，把胜算攒进下一战。", "tag": "成长", "accent": Color(0.28, 0.68, 0.62, 1)}
+		NodePoolSystem.NodeType.BATTLE:
+			return {"icon": "⚔", "title": title, "desc": "侦察敌影，确认后进入战斗并争取金币。", "tag": "战斗", "accent": RunMainSettings.COLOR_HERO_RED}
+		NodePoolSystem.NodeType.REST:
+			return {"icon": "🛌", "title": "休息", "desc": "恢复生命，让勇者重新整理呼吸。", "tag": "回复", "accent": Color(0.24, 0.70, 0.36, 1)}
+		NodePoolSystem.NodeType.OUTING:
+			return {"icon": "🚶", "title": "外出", "desc": "离开营地，触发未知事件与旅途奇遇。", "tag": "事件", "accent": COLOR_ADVENTURE_BLUE}
+		NodePoolSystem.NodeType.RESCUE:
+			return {"icon": "🤝", "title": "救援", "desc": "在旅途中发现新的同伴，选择谁加入队伍。", "tag": "同伴", "accent": RunMainSettings.COLOR_GOLD}
+		NodePoolSystem.NodeType.SHOP:
+			return {"icon": "🛒", "title": "商店", "desc": "用金币强化同行伙伴，准备下一段冒险。", "tag": "补给", "accent": RunMainSettings.COLOR_GOLD_DARK}
+		NodePoolSystem.NodeType.PVP_CHECK:
+			return {"icon": "🏟", "title": "竞技检定", "desc": "与影子勇者交锋，检验当前队伍强度。", "tag": "试炼", "accent": Color(0.55, 0.38, 0.78, 1)}
+		NodePoolSystem.NodeType.FINAL_BOSS:
+			return {"icon": "👑", "title": "终局战", "desc": "终局之门已经打开，准备迎接最终敌人。", "tag": "决战", "accent": RunMainSettings.COLOR_HERO_RED_DARK}
+		_:
+			return {"icon": "✦", "title": title, "desc": "继续推进这段旅程。", "tag": "冒险", "accent": COLOR_ADVENTURE_BLUE}
+
+
+func _setup_option_buttons_v2() -> void:
+	_setup_action_board_layout()
+	for i in range(option_buttons.size()):
+		var btn: Button = option_buttons[i]
+		btn.custom_minimum_size = Vector2(292, 104)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn.add_theme_font_override("font", _font_cn)
+		btn.add_theme_font_size_override("font_size", 16)
+		_connect_action_card_feedback(btn, i)
+
+
+func _setup_action_board_layout() -> void:
+	option_container.add_theme_constant_override("separation", 0)
+	var board: PanelContainer = option_container.get_node_or_null("ActionBoard") as PanelContainer
+	if board == null:
+		for btn in option_buttons:
+			_detach_node(btn)
+		for child in option_container.get_children():
+			option_container.remove_child(child)
+			child.queue_free()
+
+		board = PanelContainer.new()
+		board.name = "ActionBoard"
+		board.custom_minimum_size = Vector2(660, 322)
+		var board_style := RunMainSettings.create_parchment_flat_style(12)
+		board_style.bg_color = Color(0.98, 0.91, 0.74, 0.94)
+		board_style.border_color = RunMainSettings.COLOR_GOLD
+		board_style.border_width_left = 3
+		board_style.border_width_top = 3
+		board_style.border_width_right = 3
+		board_style.border_width_bottom = 3
+		board.add_theme_stylebox_override("panel", board_style)
+		option_container.add_child(board)
+
+		var margin := MarginContainer.new()
+		margin.name = "Margin"
+		margin.add_theme_constant_override("margin_left", 18)
+		margin.add_theme_constant_override("margin_top", 14)
+		margin.add_theme_constant_override("margin_right", 18)
+		margin.add_theme_constant_override("margin_bottom", 16)
+		board.add_child(margin)
+
+		var vbox := VBoxContainer.new()
+		vbox.name = "ActionVBox"
+		vbox.add_theme_constant_override("separation", 8)
+		margin.add_child(vbox)
+
+		var title := Label.new()
+		title.name = "ActionTitle"
+		title.text = "下一步行动"
+		title.add_theme_font_override("font", _font_cn)
+		title.add_theme_font_size_override("font_size", 26)
+		title.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(title)
+
+		var subtitle := Label.new()
+		subtitle.name = "ActionSubtitle"
+		subtitle.text = "选择勇者旅途中的下一段篇章"
+		subtitle.add_theme_font_override("font", _font_cn)
+		subtitle.add_theme_font_size_override("font_size", 14)
+		subtitle.add_theme_color_override("font_color", RunMainSettings.COLOR_WOOD_MEDIUM)
+		subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(subtitle)
+
+		var grid := GridContainer.new()
+		grid.name = "ActionGrid"
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 12)
+		grid.add_theme_constant_override("v_separation", 10)
+		grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		vbox.add_child(grid)
+
+	var grid := _get_action_grid()
+	if grid != null:
+		for btn in option_buttons:
+			if btn.get_parent() != grid:
+				_detach_node(btn)
+				grid.add_child(btn)
+
+
+func _get_action_grid() -> GridContainer:
+	return option_container.get_node_or_null("ActionBoard/Margin/ActionVBox/ActionGrid") as GridContainer
+
+
+func _connect_action_card_feedback(btn: Button, index: int) -> void:
+	if btn.has_meta("action_card_feedback_connected"):
+		return
+	btn.mouse_entered.connect(_on_action_card_hovered.bind(index))
+	btn.button_down.connect(_play_card_press.bind(btn))
+	btn.button_up.connect(_play_card_release.bind(btn))
+	btn.mouse_exited.connect(_play_card_release.bind(btn))
+	btn.set_meta("action_card_feedback_connected", true)
+
+
+func _on_action_card_hovered(index: int) -> void:
+	if _current_ui_state != UISceneState.OPTION_SELECT:
+		return
+	if index >= 0 and index < _cached_node_options.size():
+		_show_action_preview_for_option(_cached_node_options[index], false)
+
+
+func _play_card_press(btn: Button) -> void:
+	btn.pivot_offset = btn.custom_minimum_size / 2.0
+	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(btn, "scale", Vector2(0.97, 0.97), 0.08)
+
+
+func _play_card_release(btn: Button) -> void:
+	btn.pivot_offset = btn.custom_minimum_size / 2.0
+	var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(btn, "scale", Vector2.ONE, 0.16)
+
+
+func _play_action_cards_intro() -> void:
+	if _current_ui_state != UISceneState.OPTION_SELECT:
+		return
+	for i in range(option_buttons.size()):
+		var btn := option_buttons[i]
+		if not btn.visible:
+			continue
+		btn.pivot_offset = btn.custom_minimum_size / 2.0
+		btn.modulate.a = 0.0
+		btn.scale = Vector2(0.96, 0.96)
+		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_interval(i * 0.045)
+		tween.tween_property(btn, "scale", Vector2.ONE, 0.22)
+		tween.parallel().tween_property(btn, "modulate:a", 1.0, 0.18)
+
+
+func _apply_action_card_from_option(btn: Button, opt: Dictionary, _index: int) -> void:
+	var meta: Dictionary = _get_action_meta(opt)
+	var tag: String = str(meta.get("tag", "冒险"))
+	btn.text = "%s  %s\n%s\n【%s】" % [
+		str(meta.get("icon", "✦")),
+		str(meta.get("title", opt.get("node_name", "???"))),
+		str(meta.get("desc", "继续推进这段旅程。")),
+		tag,
+	]
+	btn.tooltip_text = str(meta.get("desc", ""))
+	_apply_action_card_style(btn, meta.get("accent", COLOR_ADVENTURE_BLUE))
+
+
+func _apply_action_card_style(btn: Button, accent: Color) -> void:
+	var normal := RunMainSettings.create_parchment_flat_style(10)
+	normal.bg_color = Color(0.99, 0.94, 0.80, 0.98)
+	normal.border_color = RunMainSettings.COLOR_WOOD_MEDIUM
+	normal.border_width_left = 2
+	normal.border_width_top = 2
+	normal.border_width_right = 2
+	normal.border_width_bottom = 2
+	normal.content_margin_left = 16
+	normal.content_margin_top = 10
+	normal.content_margin_right = 16
+	normal.content_margin_bottom = 10
+
+	var hover := RunMainSettings.create_wood_flat_style(
+		Color(1.0, 0.96, 0.84, 1.0),
+		accent, 3,
+		10
+	)
+	hover.content_margin_left = 16
+	hover.content_margin_top = 10
+	hover.content_margin_right = 16
+	hover.content_margin_bottom = 10
+
+	var pressed := RunMainSettings.create_wood_flat_style(
+		RunMainSettings.COLOR_WOOD_PANEL,
+		RunMainSettings.COLOR_WOOD_DARK, 3,
+		10
+	)
+	pressed.content_margin_left = 16
+	pressed.content_margin_top = 10
+	pressed.content_margin_right = 16
+	pressed.content_margin_bottom = 10
+
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("focus", hover)
+	btn.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
+	btn.add_theme_color_override("font_hover_color", RunMainSettings.COLOR_INK)
+	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+
+
+func _setup_menu_button_v2() -> void:
+	menu_button.text = "☰"
+	menu_button.add_theme_font_size_override("font_size", 22)
+	menu_button.custom_minimum_size = Vector2(46, 46)
+	var normal := RunMainSettings.create_wood_flat_style(
+		COLOR_PARCHMENT_GLOW,
+		RunMainSettings.COLOR_GOLD, 2,
+		23
+	)
+	var hover := RunMainSettings.create_wood_flat_style(
+		Color(1.0, 0.97, 0.88, 1.0),
+		COLOR_ADVENTURE_BLUE, 3,
+		23
+	)
+	menu_button.add_theme_stylebox_override("normal", normal)
+	menu_button.add_theme_stylebox_override("hover", hover)
+	menu_button.add_theme_stylebox_override("pressed", hover)
+	menu_button.add_theme_stylebox_override("focus", hover)
+	menu_button.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
+	menu_button.add_theme_color_override("font_hover_color", COLOR_ADVENTURE_BLUE_DARK)
+
+
+func _setup_combat_buttons_v2() -> void:
+	var parchment := RunMainSettings.create_parchment_flat_style(12)
+	parchment.bg_color = Color(0.98, 0.91, 0.74, 0.96)
+	parchment.border_color = RunMainSettings.COLOR_HERO_RED
+	parchment.border_width_left = 3
+	parchment.border_width_top = 3
+	parchment.border_width_right = 3
+	parchment.border_width_bottom = 3
+	combat_confirm_panel.add_theme_stylebox_override("panel", parchment)
+
+	var title := _ensure_panel_label(combat_confirm_panel, "CombatTitleLabel", "敌影已现", Vector2(24, 18), Vector2(372, 28), 22, RunMainSettings.COLOR_INK)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var hint := _ensure_panel_label(combat_confirm_panel, "CombatHintLabel", "确认后进入战斗；也可以返回重新考虑。", Vector2(24, 50), Vector2(372, 44), 14, RunMainSettings.COLOR_WOOD_MEDIUM)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+	_set_control_rect(enter_combat_button, Vector2(24, 108), Vector2(184, 52))
+	_set_control_rect(return_button, Vector2(216, 108), Vector2(180, 52))
+	enter_combat_button.text = "拔剑迎战"
+	return_button.text = "再观察"
+	_apply_blue_button_style(enter_combat_button)
+	_apply_parchment_button_style(return_button)
+
+
+func _ensure_panel_label(parent: Control, name: String, text: String, pos: Vector2, size: Vector2, font_size: int, color: Color) -> Label:
+	var label: Label = parent.get_node_or_null(name) as Label
+	if label == null:
+		label = Label.new()
+		label.name = name
+		parent.add_child(label)
+	label.text = text
+	label.position = pos
+	label.size = size
+	label.add_theme_font_override("font", _font_cn)
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	return label
+
+
+func _setup_shop_and_training_v2() -> void:
+	var shop_style := RunMainSettings.create_parchment_flat_style(12)
+	shop_style.bg_color = Color(0.98, 0.91, 0.74, 0.97)
+	shop_style.border_color = RunMainSettings.COLOR_GOLD
+	shop_style.border_width_left = 3
+	shop_style.border_width_top = 3
+	shop_style.border_width_right = 3
+	shop_style.border_width_bottom = 3
+	shop_panel.add_theme_stylebox_override("panel", shop_style)
+
+	var shop_title: Label = $ShopPanel/ContentVBox/TitleLabel
+	shop_title.text = "旅途商店"
+	shop_title.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
+	shop_title.add_theme_font_size_override("font_size", 28)
+	shop_title.add_theme_font_override("font", _font_cn)
+
+	var shop_gold: Label = $ShopPanel/ContentVBox/GoldDisplayLabel
+	shop_gold.add_theme_color_override("font_color", RunMainSettings.COLOR_GOLD_DARK)
+	shop_gold.add_theme_font_size_override("font_size", 16)
+	shop_gold.add_theme_font_override("font", _font_cn)
+
+	var content: VBoxContainer = $ShopPanel/ContentVBox
+	content.add_theme_constant_override("separation", 12)
+	shop_item_container.add_theme_constant_override("separation", 10)
+
+	var shop_close_btn: Button = $ShopPanel/ContentVBox/CloseButton
+	shop_close_btn.text = "返回旅程"
+	_apply_parchment_button_style(shop_close_btn)
+
+	_setup_training_panel_v2()
+
+
+func _setup_training_panel_v2() -> void:
+	_add_parchment_background_v2(training_panel, 12)
+	training_panel.add_theme_constant_override("separation", 12)
+
+	var title: Label = $TrainingPanel/TitleLabel
+	title.text = "修炼之章"
+	title.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)
+	title.add_theme_font_size_override("font_size", 30)
+	title.add_theme_font_override("font", _font_cn)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	var hint: Label = training_panel.get_node_or_null("TrainingHint") as Label
+	if hint == null:
+		hint = Label.new()
+		hint.name = "TrainingHint"
+		training_panel.add_child(hint)
+	hint.text = "选择一项属性进行锻炼，积累通向终局的勇气。"
+	hint.add_theme_font_override("font", _font_cn)
+	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_color_override("font_color", RunMainSettings.COLOR_WOOD_MEDIUM)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	training_panel.move_child(hint, title.get_index() + 1)
+
+	var attr_names := ["💪 体魄", "⚔ 力量", "🏹 敏捷", "🎯 技巧", "🔮 精神"]
+	var attr_colors: Array[Color] = [
+		Color(0.28, 0.68, 0.62, 1),
+		RunMainSettings.COLOR_HERO_RED,
+		RunMainSettings.COLOR_GOLD,
+		COLOR_ADVENTURE_BLUE,
+		Color(0.55, 0.38, 0.78, 1),
+	]
+	for i in range(training_select_buttons.size()):
+		var row: HBoxContainer = training_select_buttons[i].get_parent()
+		row.custom_minimum_size.y = 58
+		row.add_theme_constant_override("separation", 14)
+		var name_label: Label = row.get_node("AttrName")
+		name_label.text = attr_names[i]
+		name_label.add_theme_color_override("font_color", attr_colors[i])
+		name_label.add_theme_font_size_override("font_size", 18)
+		var lv_label: Label = row.get_node("LvLabel")
+		lv_label.add_theme_color_override("font_color", RunMainSettings.COLOR_WOOD_MEDIUM)
+		lv_label.add_theme_font_size_override("font_size", 14)
+		var btn: Button = training_select_buttons[i]
+		btn.text = "修炼"
+		btn.custom_minimum_size = Vector2(92, 42)
+		_apply_blue_button_style(btn)
+
+
+func _add_parchment_background_v2(container: Control, corner_radius: int) -> void:
+	var parent := container.get_parent()
+	if parent == null:
+		return
+	var bg_name := "%sParchmentBg" % container.name
+	var bg: Panel = parent.get_node_or_null(bg_name) as Panel
+	if bg == null:
+		bg = Panel.new()
+		bg.name = bg_name
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		parent.add_child(bg)
+	var style := RunMainSettings.create_parchment_flat_style(corner_radius)
+	style.bg_color = Color(0.98, 0.91, 0.74, 0.95)
+	style.border_color = RunMainSettings.COLOR_GOLD
+	bg.add_theme_stylebox_override("panel", style)
+	parent.move_child(bg, container.get_index())
+	var sync = func():
+		bg.position = container.position
+		bg.size = container.size
+		bg.modulate = container.modulate
+		bg.visible = container.visible
+	if not container.has_meta("parchment_bg_connected"):
+		container.resized.connect(sync)
+		container.item_rect_changed.connect(sync)
+		container.visibility_changed.connect(sync)
+		container.set_meta("parchment_bg_connected", true)
+	sync.call()
+
+
+func _apply_blue_button_style(btn: Button) -> void:
+	var normal := RunMainSettings.create_wood_flat_style(
+		COLOR_ADVENTURE_BLUE,
+		COLOR_ADVENTURE_BLUE_DARK, 2,
+		RunMainSettings.CORNER_WOOD
+	)
+	var hover := RunMainSettings.create_wood_flat_style(
+		Color(0.42, 0.62, 0.88, 1.0),
+		RunMainSettings.COLOR_GOLD, 2,
+		RunMainSettings.CORNER_WOOD
+	)
+	var pressed := RunMainSettings.create_wood_flat_style(
+		COLOR_ADVENTURE_BLUE_DARK,
+		RunMainSettings.COLOR_WOOD_DARK, 3,
+		RunMainSettings.CORNER_WOOD
+	)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover)
+	btn.add_theme_stylebox_override("pressed", pressed)
+	btn.add_theme_stylebox_override("focus", hover)
+	btn.add_theme_color_override("font_color", Color.WHITE)
+	btn.add_theme_color_override("font_hover_color", Color.WHITE)
+	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+	btn.add_theme_font_override("font", _font_cn)
+	btn.add_theme_font_size_override("font_size", 16)
+
+
 func _init_ui_styles() -> void:
+	_setup_stage_layout()
 	_setup_hud()
-	_setup_enemy_info_panel()
-	_setup_option_buttons()
-	_setup_menu_button()
-	_setup_combat_buttons()
-	_setup_shop_and_training()
+	_setup_enemy_info_panel_v2()
+	_setup_option_buttons_v2()
+	_setup_menu_button_v2()
+	_setup_combat_buttons_v2()
+	_setup_shop_and_training_v2()
 	_apply_font_recursive(self)
 
 
@@ -1238,13 +1942,20 @@ func _setup_hud() -> void:
 	
 	## 获取 HBoxContainer 并清空
 	var hbox: HBoxContainer = hud_container.get_node("HBoxContainer")
+	_detach_node(floor_label)
+	_detach_node(gold_label)
+	_detach_node(hp_label)
+	_floor_progress_bar = null
+	_hp_progress_bar = null
 	for child in hbox.get_children():
 		hbox.remove_child(child)
+		child.queue_free()
 	
 	## 重新创建木牌信息项
 	var floor_badge := _create_wood_badge(floor_label, "🏰", "层数")
 	var gold_badge := _create_wood_badge(gold_label, "💰", "金币")
 	var hp_badge := _create_wood_badge(hp_label, "❤️", "生命")
+	_hp_status_badge = hp_badge
 	
 	## 调整标签文字颜色
 	floor_label.add_theme_color_override("font_color", RunMainSettings.COLOR_INK)

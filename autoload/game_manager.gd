@@ -205,6 +205,8 @@ func _save_pending_archive_before_settlement(archive: Dictionary) -> Dictionary:
 	var archive_to_settle: Dictionary = archive.duplicate(true)
 	if archive_to_settle.is_empty():
 		return archive_to_settle
+	if archive_to_settle.get("_already_saved", false):
+		return archive_to_settle
 
 	if SaveManager.get_archive_count() >= 5:
 		return archive_to_settle

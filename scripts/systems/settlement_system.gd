@@ -97,6 +97,13 @@ func generate_fighter_archive(run: RuntimeRun, hero: RuntimeHero, partners: Arra
 	archive.final_score = int(score.total_score)
 	archive.final_grade = score.grade
 	archive.is_fixed = true
+	
+	## 补填主角名（from_runtime 遗留为空）
+	var hero_id: String = ConfigManager.get_hero_id_by_config_id(run.hero_config_id)
+	if not hero_id.is_empty():
+		var hero_cfg: Dictionary = ConfigManager.get_hero_config(hero_id)
+		archive.hero_name = hero_cfg.get("hero_name", "未知")
+	
 	return archive
 
 

@@ -48,13 +48,13 @@ func generate_opponent(player_state: Dictionary, turn_number: int, use_archive: 
 	else:
 		player_hero = raw_hero
 	var ai_hero: Dictionary = _generate_ai_hero(player_hero, template, rng)
-	var ai_partners: Array = _generate_ai_partners(template, rng)
-	var player_battle_unit: Dictionary = _generate_player_enemy(player_hero)
+	var player_partners: Array = player_state.get("player_partners", [])
+	var player_battle_unit: Dictionary = _generate_player_hero(player_hero)
 
 	return {
-		"hero": ai_hero,
-		"enemies": [player_battle_unit],
-		"partners": ai_partners,
+		"hero": player_battle_unit,
+		"enemies": [_hero_unit_to_enemy(ai_hero)],
+		"partners": player_partners,
 		"battle_seed": player_state.get("run_seed", 0) + turn_number,
 		"playback_mode": "fast_forward",
 		"opponent_name": ai_hero.get("name", "AI挑战者"),
@@ -138,12 +138,13 @@ func generate_opponent_from_archive(archive_data: Dictionary, turn_number: int, 
 		}
 	else:
 		player_hero = raw_hero
-	var player_battle_unit: Dictionary = _generate_player_enemy(player_hero)
+	var player_partners: Array = player_state.get("player_partners", [])
+	var player_battle_unit: Dictionary = _generate_player_hero(player_hero)
 
 	return {
-		"hero": ai_hero,
-		"enemies": [player_battle_unit],
-		"partners": ai_partners,
+		"hero": player_battle_unit,
+		"enemies": [_hero_unit_to_enemy(ai_hero)],
+		"partners": player_partners,
 		"battle_seed": rng.seed,
 		"playback_mode": "fast_forward",
 		"opponent_name": archive_data.get("hero_name", "影子斗士"),
@@ -220,6 +221,32 @@ func _generate_ai_partners(template: Dictionary, rng: RandomNumberGenerator) -> 
 		var p_name: String = pcfg.get("name", pid)
 		partners.append(PartnerAssist.make_partner_battle_unit(pid, p_name, stats))
 	return partners
+
+
+func _generate_player_hero(player_hero: Dictionary) -> Dictionary:
+	var hero_id: String = player_hero.get("hero_id", "hero_warrior")
+	var stats: Dictionary = player_hero.get("stats", {})
+	var unit: Dictionary = DamageCalculator.spawn_hero(hero_id, stats)
+	unit["max_hp"] = maxi(1, int(player_hero.get("max_hp", unit.get("max_hp", 1))))
+	unit["hp"] = clampi(int(player_hero.get("hp", unit.get("max_hp", 1))), 1, unit["max_hp"])
+	unit["name"] = player_hero.get("name", unit.get("name", "玩家"))
+	unit["is_alive"] = true
+	if player_hero.has("buff_list"):
+		unit["buff_list"] = player_hero.get("buff_list", []).duplicate(true)
+	if not unit.has("buffs"):
+		unit["buffs"] = []
+	return unit
+
+
+func _hero_unit_to_enemy(hero_unit: Dictionary) -> Dictionary:
+	var unit: Dictionary = hero_unit.duplicate(true)
+	unit["unit_id"] = "enemy_pvp_%s" % unit.get("hero_id", "hero")
+	unit["unit_type"] = "ENEMY"
+	unit["special_mechanic"] = ""
+	unit["is_alive"] = true
+	if not unit.has("buffs"):
+		unit["buffs"] = []
+	return unit
 
 
 func _generate_player_enemy(player_hero: Dictionary) -> Dictionary:

@@ -1,9 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://shop_scene01"]
+[gd_scene format=3 uid="uid://claf3ywupkdsv"]
 
-[ext_resource type="Script" path="res://scenes/shop/shop.gd" id="1_shop"]
-[ext_resource type="PackedScene" path="res://scenes/shop/partner_card.tscn" id="2_pcard"]
+[ext_resource type="Script" uid="uid://c8pvuuknjlvku" path="res://scenes/shop/shop.gd" id="1_shop"]
 
-[node name="ShopScene" type="Control"]
+[node name="ShopScene" type="Control" unique_id=1472513505]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -12,8 +11,8 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_shop")
 
-[node name="Overlay" type="ColorRect" parent="."]
-layout_mode = 3
+[node name="Overlay" type="ColorRect" parent="." unique_id=1080553603]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -21,7 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.05, 0.1, 0.92)
 
-[node name="MainPanel" type="Panel" parent="."]
+[node name="MainPanel" type="Panel" parent="." unique_id=629179880]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -35,7 +34,7 @@ offset_bottom = 390.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainMargin" type="MarginContainer" parent="MainPanel"]
+[node name="MainMargin" type="MarginContainer" parent="MainPanel" unique_id=1385015261]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -47,17 +46,17 @@ theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 16
 
-[node name="MainVBox" type="VBoxContainer" parent="MainPanel/MainMargin"]
+[node name="MainVBox" type="VBoxContainer" parent="MainPanel/MainMargin" unique_id=1395631905]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="HeaderHBox" type="HBoxContainer" parent="MainPanel/MainMargin/MainVBox"]
+[node name="HeaderHBox" type="HBoxContainer" parent="MainPanel/MainMargin/MainVBox" unique_id=478980520]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="TitleLabel" type="Label" parent="MainPanel/MainMargin/MainVBox/HeaderHBox"]
+[node name="TitleLabel" type="Label" parent="MainPanel/MainMargin/MainVBox/HeaderHBox" unique_id=2108094088]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0.0, 54.0)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 22
@@ -65,23 +64,23 @@ text = "局外商店"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="MojoCoinLabel" type="Label" parent="MainPanel/MainMargin/MainVBox/HeaderHBox"]
+[node name="MojoCoinLabel" type="Label" parent="MainPanel/MainMargin/MainVBox/HeaderHBox" unique_id=119346427]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(210.0, 54.0)
+custom_minimum_size = Vector2(210, 54)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "魔城币: 0"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="MainPanel/MainMargin/MainVBox"]
+[node name="HSeparator" type="HSeparator" parent="MainPanel/MainMargin/MainVBox" unique_id=425828886]
 layout_mode = 2
 
-[node name="ScrollContainer" type="ScrollContainer" parent="MainPanel/MainMargin/MainVBox"]
+[node name="ScrollContainer" type="ScrollContainer" parent="MainPanel/MainMargin/MainVBox" unique_id=209039734]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="PartnerGrid" type="GridContainer" parent="MainPanel/MainMargin/MainVBox/ScrollContainer"]
+[node name="PartnerGrid" type="GridContainer" parent="MainPanel/MainMargin/MainVBox/ScrollContainer" unique_id=778555447]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -89,21 +88,22 @@ theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 12
 columns = 2
 
-[node name="HSeparator2" type="HSeparator" parent="MainPanel/MainMargin/MainVBox"]
+[node name="HSeparator2" type="HSeparator" parent="MainPanel/MainMargin/MainVBox" unique_id=1963366087]
 layout_mode = 2
 
-[node name="FooterHBox" type="HBoxContainer" parent="MainPanel/MainMargin/MainVBox"]
+[node name="FooterHBox" type="HBoxContainer" parent="MainPanel/MainMargin/MainVBox" unique_id=719606189]
 layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
-[node name="BackButton" type="Button" parent="MainPanel/MainMargin/MainVBox/FooterHBox"]
+[node name="BackButton" type="Button" parent="MainPanel/MainMargin/MainVBox/FooterHBox" unique_id=2032153938]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180.0, 60.0)
+custom_minimum_size = Vector2(180, 60)
 layout_mode = 2
 text = "返回主菜单"
 
-[node name="InsufficientCoinLabel" type="Label" parent="."]
+[node name="InsufficientCoinLabel" type="Label" parent="." unique_id=660380816]
+visible = false
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -116,8 +116,7 @@ offset_right = 225.0
 offset_bottom = -30.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.9, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
 text = "魔城币不足"
 horizontal_alignment = 1
-visible = false
