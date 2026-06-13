@@ -1,6 +1,8 @@
 class_name PvpLobby
 extends Control
 
+const PolishedOutgameUI := preload("res://scenes/ui/polished_outgame_ui.gd")
+
 ## ========== 子节点引用（运行时查找）==========
 var _battle_summary_panel: BattleSummaryPanel = null
 var _battle_animation_panel: BattleAnimationPanel = null
@@ -19,6 +21,7 @@ var _net_wins_badge: Label = null
 var _wins_label: Label = null
 var _losses_label: Label = null
 var _streak_label: Label = null
+var _deck_frame: PanelContainer = null
 var _deck_preview: VBoxContainer = null
 var _update_deck_btn: Button = null
 
@@ -40,8 +43,10 @@ var _history_popup: PanelContainer = null
 var _current_opponent: Dictionary = {}
 var _pending_pvp_result: Dictionary = {}
 var _virtual_pool: VirtualArchivePool = null
+var _font_cn: Font = null
 
 func _ready() -> void:
+	_font_cn = _load_font("res://assets/fonts/SourceHanSerifSC-Bold.otf")
 	_battle_summary_panel = $BattleSummaryPanel
 	_battle_animation_panel = $BattleAnimationPanel
 	_battle_summary_panel.visible = false
@@ -64,9 +69,11 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	## 背景
-	var bg := ColorRect.new()
+	var bg := TextureRect.new()
 	bg.name = "BgPanel"
-	bg.color = OutgameUIStyle.BG
+	bg.texture = load("res://assets/ui/arena/arena_gate_bg.png")
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 	move_child(bg, 0)
@@ -74,11 +81,11 @@ func _build_ui() -> void:
 	## 主布局 VBox
 	var root_vbox := VBoxContainer.new()
 	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root_vbox.offset_left = 20
-	root_vbox.offset_top = 20
-	root_vbox.offset_right = -20
-	root_vbox.offset_bottom = -20
-	root_vbox.add_theme_constant_override("separation", 12)
+	root_vbox.offset_left = 86
+	root_vbox.offset_top = 54
+	root_vbox.offset_right = -86
+	root_vbox.offset_bottom = -64
+	root_vbox.add_theme_constant_override("separation", 18)
 	add_child(root_vbox)
 
 	## 顶部栏
@@ -110,26 +117,34 @@ func _build_ui() -> void:
 	## 主内容区（三栏）
 	_main_content = HBoxContainer.new()
 	_main_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_main_content.add_theme_constant_override("separation", 16)
+	_main_content.add_theme_constant_override("separation", 44)
 	root_vbox.add_child(_main_content)
 
 	## 左侧面板
 	_left_panel = VBoxContainer.new()
-	_left_panel.custom_minimum_size = Vector2(280, 0)
-	_left_panel.add_theme_constant_override("separation", 12)
+	_left_panel.custom_minimum_size = Vector2(360, 0)
+	_left_panel.add_theme_constant_override("separation", 14)
 	_main_content.add_child(_left_panel)
 
 	_player_card = _build_player_card()
 	_left_panel.add_child(_player_card)
 
+	_deck_frame = PanelContainer.new()
+	_deck_frame.custom_minimum_size = Vector2(0, 245)
+	_deck_frame.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_left_panel.add_child(_deck_frame)
+
 	_deck_preview = VBoxContainer.new()
 	_deck_preview.add_theme_constant_override("separation", 6)
+	_deck_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_deck_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var deck_title := Label.new()
 	deck_title.text = "出战队伍"
-	deck_title.add_theme_font_size_override("font_size", 14)
-	deck_title.add_theme_color_override("font_color", Color(0.8, 0.78, 0.75, 1))
+	deck_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	PolishedOutgameUI.apply_label(deck_title, "section")
+	deck_title.add_theme_font_size_override("font_size", 22)
 	_deck_preview.add_child(deck_title)
-	_left_panel.add_child(_deck_preview)
+	_deck_frame.add_child(_deck_preview)
 
 	_update_deck_btn = Button.new()
 	_update_deck_btn.text = "更新队伍快照"
@@ -146,11 +161,17 @@ func _build_ui() -> void:
 	_daily_reward_dots = HBoxContainer.new()
 	_daily_reward_dots.alignment = BoxContainer.ALIGNMENT_CENTER
 	_daily_reward_dots.add_theme_constant_override("separation", 8)
+	_daily_reward_dots.visible = false
 	_center_panel.add_child(_daily_reward_dots)
+
+	var vs_gap := Control.new()
+	vs_gap.custom_minimum_size = Vector2(0, 480)
+	_center_panel.add_child(vs_gap)
 
 	_match_btn = Button.new()
 	_match_btn.text = "寻找对手"
-	_match_btn.custom_minimum_size = Vector2(240, 64)
+	_match_btn.custom_minimum_size = Vector2(360, 82)
+	_match_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_match_btn.pressed.connect(_on_match_pressed)
 	_center_panel.add_child(_match_btn)
 
@@ -164,8 +185,8 @@ func _build_ui() -> void:
 
 	## 右侧面板
 	_right_panel = VBoxContainer.new()
-	_right_panel.custom_minimum_size = Vector2(300, 0)
-	_right_panel.add_theme_constant_override("separation", 8)
+	_right_panel.custom_minimum_size = Vector2(360, 0)
+	_right_panel.add_theme_constant_override("separation", 10)
 	_main_content.add_child(_right_panel)
 
 	var lb_title := Label.new()
@@ -173,6 +194,10 @@ func _build_ui() -> void:
 	lb_title.add_theme_font_size_override("font_size", 18)
 	lb_title.add_theme_color_override("font_color", Color(0.95, 0.75, 0.25, 1))
 	_right_panel.add_child(lb_title)
+
+	var reward_to_list_gap := Control.new()
+	reward_to_list_gap.custom_minimum_size = Vector2(0, 300)
+	_right_panel.add_child(reward_to_list_gap)
 
 	_leaderboard_scroll = ScrollContainer.new()
 	_leaderboard_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -313,27 +338,81 @@ func _build_opponent_preview() -> PanelContainer:
 
 func _setup_styles() -> void:
 	_apply_button_styles_recursive(self)
+	PolishedOutgameUI.apply_recursive(self)
 
 	## 个人信息卡样式
 	if _player_card != null:
-		OutgameUIStyle.apply_panel(_player_card)
+		PolishedOutgameUI.apply_panel(_player_card, "panel_wood.png", 34, 18)
+	if _deck_frame != null:
+		PolishedOutgameUI.apply_panel(_deck_frame, "panel_parchment.png", 34, 18)
 
 	## 匹配按钮样式
 	if _match_btn != null:
-		OutgameUIStyle.apply_button(_match_btn, true)
+		PolishedOutgameUI.apply_button(_match_btn, false, true)
+		_match_btn.add_theme_font_size_override("font_size", 24)
 
 	## 对手预览样式
 	if _opponent_preview != null:
-		OutgameUIStyle.apply_panel(_opponent_preview, true)
+		PolishedOutgameUI.apply_panel(_opponent_preview, "arena_contract.png", 38, 20)
 
 
 func _apply_button_styles_recursive(node: Node) -> void:
 	if node == _battle_summary_panel or node == _battle_animation_panel:
 		return
 	if node is Button:
-		OutgameUIStyle.apply_button(node as Button)
+		PolishedOutgameUI.apply_button(node as Button)
 	for child in node.get_children():
 		_apply_button_styles_recursive(child)
+
+
+func _make_arena_panel_style(strong: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.18, 0.10, 0.075, 0.55) if strong else Color(0.16, 0.09, 0.065, 0.46)
+	style.border_color = Color("#d8a35f")
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 18
+	style.corner_radius_top_right = 18
+	style.corner_radius_bottom_left = 18
+	style.corner_radius_bottom_right = 18
+	style.content_margin_left = 18
+	style.content_margin_top = 16
+	style.content_margin_right = 18
+	style.content_margin_bottom = 16
+	style.shadow_color = Color(0, 0, 0, 0.38)
+	style.shadow_size = 12
+	style.shadow_offset = Vector2(0, 4)
+	return style
+
+
+func _apply_font_recursive(node: Node) -> void:
+	if _font_cn == null:
+		return
+	if node is Label:
+		node.add_theme_font_override("font", _font_cn)
+	elif node is Button:
+		node.add_theme_font_override("font", _font_cn)
+	for child in node.get_children():
+		_apply_font_recursive(child)
+
+
+func _apply_readability_recursive(node: Node) -> void:
+	if node is Label:
+		node.add_theme_constant_override("outline_size", 2)
+		node.add_theme_color_override("font_outline_color", Color(0.08, 0.04, 0.02, 0.85))
+	elif node is Button:
+		node.add_theme_constant_override("outline_size", 2)
+		node.add_theme_color_override("font_outline_color", Color(0.08, 0.04, 0.02, 0.8))
+	for child in node.get_children():
+		_apply_readability_recursive(child)
+
+
+func _load_font(path: String) -> Font:
+	if ResourceLoader.exists(path):
+		return load(path)
+	return null
 
 
 ## ==================== 数据刷新 ====================
@@ -399,10 +478,14 @@ func _update_leaderboard() -> void:
 		_leaderboard_vbox.add_child(row)
 
 
-func _create_leaderboard_row(entry: Dictionary) -> HBoxContainer:
+func _create_leaderboard_row(entry: Dictionary) -> Control:
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(0, 46)
+	PolishedOutgameUI.apply_panel(frame, "leaderboard_row_top.png" if entry.get("is_player", false) else "leaderboard_row.png", 24, 8)
+
 	var row := HBoxContainer.new()
-	row.custom_minimum_size = Vector2(0, 36)
 	row.add_theme_constant_override("separation", 8)
+	frame.add_child(row)
 
 	var rank_label := Label.new()
 	rank_label.text = "#%d" % entry["rank"]
@@ -438,16 +521,28 @@ func _create_leaderboard_row(entry: Dictionary) -> HBoxContainer:
 	net_value.add_theme_color_override("font_color", Color(0.3, 0.8, 0.4, 1))
 	row.add_child(net_value)
 
-	if entry.get("is_player", false):
-		var bg := StyleBoxFlat.new()
-		bg.bg_color = Color(0.25, 0.2, 0.15, 0.5)
-		bg.corner_radius_top_left = 6
-		bg.corner_radius_top_right = 6
-		bg.corner_radius_bottom_left = 6
-		bg.corner_radius_bottom_right = 6
-		row.add_theme_stylebox_override("panel", bg)
+	PolishedOutgameUI.apply_recursive(frame)
+	return frame
 
-	return row
+
+func _make_deck_line(text: String, strong: bool = false) -> PanelContainer:
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(0, 48)
+	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	PolishedOutgameUI.apply_panel(frame, "detail_section.png" if strong else "archive_row.png", 24, 8)
+
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	PolishedOutgameUI.apply_label(label, "dark")
+	label.add_theme_color_override("font_color", Color("#3a2114"))
+	label.add_theme_constant_override("outline_size", 0)
+	label.add_theme_font_size_override("font_size", 18 if strong else 16)
+	frame.add_child(label)
+	return frame
 
 
 func _update_deck_preview() -> void:
@@ -459,33 +554,28 @@ func _update_deck_preview() -> void:
 
 	var deck: Dictionary = PVPManager.get_deck_snapshot()
 	if deck.is_empty():
-		var warn := Label.new()
-		warn.text = "未设置队伍"
-		warn.add_theme_color_override("font_color", Color(0.8, 0.3, 0.3, 1))
-		warn.add_theme_font_size_override("font_size", 12)
-		_deck_preview.add_child(warn)
+		_deck_preview.add_child(_make_deck_line("英雄：未设置", true))
+		_deck_preview.add_child(_make_deck_line("伙伴：等待编队"))
+		_deck_preview.add_child(_make_deck_line("提示：点击下方按钮记录当前队伍"))
+		_deck_preview.add_child(_make_deck_line("状态：尚未登记出战快照"))
 		return
 
 	var hero_name: String = deck.get("hero_name", "???")
-	var hero_label := Label.new()
-	hero_label.text = "英雄: %s" % hero_name
-	hero_label.add_theme_font_size_override("font_size", 12)
-	hero_label.add_theme_color_override("font_color", Color(0.85, 0.8, 0.75, 1))
-	_deck_preview.add_child(hero_label)
+	_deck_preview.add_child(_make_deck_line("英雄：%s" % hero_name, true))
 
 	var partners: Array = deck.get("partner_ids", [])
 	if partners.size() > 0:
-		var partner_label := Label.new()
 		var partner_names: Array[String] = []
 		for pid in partners:
 			var pid_str: String = str(pid)
 			var cfg: Dictionary = ConfigManager.get_partner_config(pid_str)
 			var display_name: String = cfg.get("name", pid_str)
 			partner_names.append(display_name)
-		partner_label.text = "伙伴: %s" % ", ".join(partner_names)
-		partner_label.add_theme_font_size_override("font_size", 11)
-		partner_label.add_theme_color_override("font_color", Color(0.7, 0.68, 0.65, 1))
-		_deck_preview.add_child(partner_label)
+		_deck_preview.add_child(_make_deck_line("伙伴：%s" % ", ".join(partner_names)))
+	else:
+		_deck_preview.add_child(_make_deck_line("伙伴：暂无同行伙伴"))
+	_deck_preview.add_child(_make_deck_line("战术：当前队伍快照"))
+	_deck_preview.add_child(_make_deck_line("状态：准备寻找对手"))
 
 
 ## ==================== 交互回调 ====================

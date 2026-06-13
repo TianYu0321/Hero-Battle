@@ -68,6 +68,20 @@ func compute_damage(attacker: Dictionary, defender: Dictionary, skill_scale: flo
 	var str_val: int = atk_stats.get("strength", 0)
 	var tec_val: int = atk_stats.get("technique", 0)
 	var attr_coeff: float = str_val * power_coeff + tec_val * tech_coeff
+	
+	# 攻击增益 Buff（支持旧 effects 格式和运行时 buff_effect 格式）
+	var atk_buff_list: Array = attacker.get("buff_list", [])
+	for buff in atk_buff_list:
+		var atk_effects: Dictionary = buff.get("effects", {})
+		if atk_effects.has("damage_bonus"):
+			attr_coeff *= (1.0 + atk_effects.damage_bonus)
+			break
+		# 运行时 Buff：buff_effect 3 = 攻防提升
+		if buff.get("buff_effect", 0) == 3:
+			var atk_bonus: float = buff.get("effect_value", 0.0)
+			if atk_bonus > 0.0:
+				attr_coeff *= (1.0 + atk_bonus)
+				break
 
 	# ---- 阶段2: 技能倍率 (已传入) ----
 	# ---- 阶段3: 随机波动 ----
@@ -111,13 +125,36 @@ func compute_damage(attacker: Dictionary, defender: Dictionary, skill_scale: flo
 	var final_damage: float = max(raw_damage - def_value, min_damage)
 	final_damage = max(final_damage, 1.0)
 
-	# 检查 defender 的 buff 中是否有 damage_reduction（铁卫不动如山等）
+	# 检查 defender 的 buff 中是否有伤害减免 / 防御提升
 	var buff_list: Array = defender.get("buff_list", [])
 	for buff in buff_list:
 		var effects: Dictionary = buff.get("effects", {})
 		if effects.has("damage_reduction"):
 			final_damage *= (1.0 - effects.damage_reduction)
-			break
+		if effects.has("defense_bonus"):
+			def_value *= (1.0 + effects.defense_bonus)
+			final_damage = max(raw_damage - def_value, min_damage)
+			final_damage = max(final_damage, 1.0)
+		# 运行时 Buff 格式
+		match buff.get("buff_effect", 0):
+			1:
+				# 伤害减免
+				var reduction: float = buff.get("effect_value", 0.0)
+				if reduction > 0.0:
+					final_damage *= (1.0 - reduction)
+			2:
+				# 受到伤害加深（减益）；仅对 damage_taken_up 生效，避免训练减半减益影响战斗
+				if buff.get("debuff_type", "") == "damage_taken_up":
+					var damage_taken_mult: float = buff.get("effect_value", 0.0)
+					if damage_taken_mult > 0.0:
+						final_damage *= damage_taken_mult
+			3:
+				# 防御提升
+				var def_bonus: float = buff.get("effect_value", 0.0)
+				if def_bonus > 0.0:
+					def_value *= (1.0 + def_bonus)
+					final_damage = max(raw_damage - def_value, min_damage)
+					final_damage = max(final_damage, 1.0)
 
 	# 重甲守卫减伤25%
 	if defender.get("special_mechanic", "").begins_with("坚甲"):
@@ -207,14 +244,14 @@ static func spawn_enemy(enemy_config: Dictionary, hero_stats: Dictionary) -> Dic
 			scaled = int(hero_stats.get(hero_attr_keys[hero_attr_idx], 0) * coeff)
 		stats[attr] = base + scaled
 	enemy.stats = stats
-	var dc: DamageCalculator = DamageCalculator.new(randi())
+	var dc: DamageCalculator = DamageCalculator.new(0)
 	enemy.max_hp = dc.calc_max_hp(stats.get("physique", 10))
 	enemy.hp = enemy.max_hp
 	return enemy
 
 ## 生成主角战斗实例
 static func spawn_hero(hero_id: String, hero_stats: Dictionary) -> Dictionary:
-	var dc: DamageCalculator = DamageCalculator.new(randi())
+	var dc: DamageCalculator = DamageCalculator.new(0)
 	var hero_cfg: Dictionary = ConfigManager.get_hero_config(hero_id)
 	var hero: Dictionary = {
 		"unit_id": "hero",

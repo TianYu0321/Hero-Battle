@@ -6,6 +6,8 @@
 class_name ArchiveListItem
 extends Control
 
+const PolishedOutgameUI := preload("res://scenes/ui/polished_outgame_ui.gd")
+
 signal item_clicked(archive_data: Dictionary)
 
 @onready var _color_rect: ColorRect = $HBox/ColorRect
@@ -20,11 +22,12 @@ var _archive_data: Dictionary = {}
 
 func _ready() -> void:
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	OutgameUIStyle.apply_card(_bg_panel)
-	OutgameUIStyle.apply_label(_name_label, "section")
-	OutgameUIStyle.apply_label(_score_label)
-	OutgameUIStyle.apply_label(_result_label, "muted")
-	OutgameUIStyle.apply_label(_date_label, "muted")
+	PolishedOutgameUI.apply_panel(_bg_panel, "archive_row.png", 24, 12)
+	PolishedOutgameUI.apply_label(_name_label, "section")
+	PolishedOutgameUI.apply_label(_rating_label, "dark")
+	PolishedOutgameUI.apply_label(_score_label, "dark")
+	PolishedOutgameUI.apply_label(_result_label, "muted")
+	PolishedOutgameUI.apply_label(_date_label, "muted")
 
 
 func setup(data: Dictionary) -> void:

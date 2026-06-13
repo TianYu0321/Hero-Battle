@@ -4,13 +4,13 @@
 
 [node name="RankingRow" type="HBoxContainer"]
 script = ExtResource("1_rrg")
-custom_minimum_size = Vector2(900.0, 60.0)
-theme_override_constants/separation = 20
+custom_minimum_size = Vector2(760.0, 44.0)
+theme_override_constants/separation = 14
 alignment = 1
 
 [node name="RankLabel" type="Label" parent="."]
 layout_mode = 2
-custom_minimum_size = Vector2(90.0, 0.0)
+custom_minimum_size = Vector2(70.0, 0.0)
 theme_override_font_sizes/font_size = 16
 text = "1"
 horizontal_alignment = 1
@@ -19,7 +19,7 @@ vertical_alignment = 1
 [node name="PlayerNameLabel" type="Label" parent="."]
 layout_mode = 2
 size_flags_horizontal = 3
-custom_minimum_size = Vector2(300.0, 0.0)
+custom_minimum_size = Vector2(260.0, 0.0)
 theme_override_font_sizes/font_size = 16
 text = "Player"
 horizontal_alignment = 1
@@ -27,7 +27,7 @@ vertical_alignment = 1
 
 [node name="NetWinsLabel" type="Label" parent="."]
 layout_mode = 2
-custom_minimum_size = Vector2(150.0, 0.0)
+custom_minimum_size = Vector2(120.0, 0.0)
 theme_override_font_sizes/font_size = 16
 text = "10"
 horizontal_alignment = 1
@@ -35,7 +35,7 @@ vertical_alignment = 1
 
 [node name="MaxFloorLabel" type="Label" parent="."]
 layout_mode = 2
-custom_minimum_size = Vector2(150.0, 0.0)
+custom_minimum_size = Vector2(120.0, 0.0)
 theme_override_font_sizes/font_size = 16
 text = "25"
 horizontal_alignment = 1

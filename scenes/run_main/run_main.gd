@@ -38,6 +38,7 @@ extends Control
 @onready var return_button: Button = $CombatConfirmPanel/ReturnButton
 
 @onready var outing_popup: OutingPopup = $OutingPopup
+@onready var elite_reward_popup: EliteRewardPopup = get_node_or_null("EliteRewardPopup") as EliteRewardPopup
 
 @onready var partner_panel: PanelContainer = $PartnerHUDLayer/PartnerPanel
 
@@ -86,7 +87,7 @@ const MAX_RUN_FLOOR := 30
 
 ## 伙伴 HUD
 var _partner_slots: Array[PanelContainer] = []
-var _max_partner_slots: int = 6
+var _max_partner_slots: int = PartyAssembleSettings.MAX_TEAM_SIZE
 const PARTNER_HUD_SLOT_SCENE: PackedScene = preload("res://scenes/run_main/partner_hud_slot.tscn")
 
 enum UISceneState {
@@ -101,11 +102,19 @@ enum UISceneState {
 
 var _current_ui_state: UISceneState = UISceneState.LOADING
 
+## 伙伴选择弹窗的当前用途（救援 / 精英奖励指定伙伴）
+enum PartnerSelectMode {
+	RESCUE,
+	ELITE_REWARD_TARGET,
+}
+var _partner_select_mode: PartnerSelectMode = PartnerSelectMode.RESCUE
+var _pending_elite_reward_index: int = -1
+
 
 func _process(_delta: float) -> void:
 	# 安全检测：UIModalBlocker 不应该在没有任何面板打开时保持 visible
 	if ui_modal_blocker.visible:
-		var any_modal_visible: bool = shop_panel.visible or rescue_popup.visible or partner_select_popup.visible or training_panel.visible or combat_confirm_panel.visible or outing_popup.visible
+		var any_modal_visible: bool = shop_panel.visible or rescue_popup.visible or partner_select_popup.visible or training_panel.visible or combat_confirm_panel.visible or outing_popup.visible or (elite_reward_popup != null and elite_reward_popup.visible) or (_battle_result_panel != null and _battle_result_panel.visible)
 		if not any_modal_visible:
 			print("[RunMain] 安全检测：UIModalBlocker 异常可见，自动隐藏")
 			ui_modal_blocker.visible = false
@@ -166,6 +175,14 @@ func _ready() -> void:
 	
 	# --- 外出事件弹窗信号 ---
 	outing_popup.confirmed.connect(_on_outing_confirmed)
+	
+	# --- 精英战奖励弹窗（若场景中不存在则动态创建）---
+	if elite_reward_popup == null:
+		var popup := preload("res://scenes/run_main/elite_reward_popup.tscn").instantiate() as EliteRewardPopup
+		popup.name = "EliteRewardPopup"
+		add_child(popup)
+		elite_reward_popup = popup
+	elite_reward_popup.reward_selected.connect(_on_elite_reward_selected)
 
 	# --- 伙伴 HUD 初始化 ---
 	_init_partner_slots()
@@ -187,9 +204,16 @@ func _ready() -> void:
 			var battle_result: Dictionary = GameManager.pending_battle_result.duplicate()
 			var winner: String = battle_result.get("winner", "")
 			GameManager.pending_battle_result = {}
-			if winner == "player" and _battle_result_panel != null:
-				## 胜利：弹出结算面板，等待玩家点击"继续"
-				_show_victory_panel(battle_result)
+			_pending_battle_result = battle_result
+			if winner == "player":
+				## 精英战胜利：先弹出 3 选 1 奖励
+				if battle_result.get("is_elite", false) and battle_result.has("pending_elite_rewards"):
+					_show_elite_reward_panel(battle_result.get("pending_elite_rewards", []))
+				elif _battle_result_panel != null:
+					_show_victory_panel(battle_result)
+				else:
+					if _run_controller != null:
+						_run_controller.confirm_battle_result()
 			elif winner == "enemy" and _battle_result_panel != null:
 				## 失败：弹出失败结算面板
 				_show_defeat_panel(battle_result)
@@ -248,6 +272,8 @@ func _transition_ui_state(new_state: UISceneState) -> void:
 	shop_panel.visible = false
 	enemy_info_panel.visible = false
 	outing_popup.visible = false
+	if elite_reward_popup != null:
+		elite_reward_popup.visible = false
 	
 	# 再按需显示
 	match new_state:
@@ -595,12 +621,35 @@ func _on_rescue_partner_selected(partner_config_id: int) -> void:
 
 
 func _on_partner_select_popup_selected(partner_id: String, _partner_data: Dictionary) -> void:
+	if _partner_select_mode == PartnerSelectMode.ELITE_REWARD_TARGET:
+		var instance_id: int = int(partner_id) if partner_id.is_valid_int() else 0
+		print("[RunMain] 精英奖励指定伙伴: instance_id=%d" % instance_id)
+		if _run_controller != null:
+			_run_controller.select_elite_reward_with_target(_pending_elite_reward_index, instance_id)
+		_partner_select_mode = PartnerSelectMode.RESCUE
+		_restore_partner_select_popup_texts()
+		partner_select_popup.hide_popup()
+		if not _pending_battle_result.is_empty():
+			_show_victory_panel(_pending_battle_result)
+		return
+	
 	var partner_config_id: int = int(partner_id)
 	print("[RunMain] PartnerSelectPopup 确认选择: partner_config_id=%d" % partner_config_id)
 	_on_rescue_partner_selected(partner_config_id)
 
 
 func _on_partner_select_popup_cancelled() -> void:
+	if _partner_select_mode == PartnerSelectMode.ELITE_REWARD_TARGET:
+		print("[RunMain] 精英奖励伙伴选择取消，使用随机目标")
+		if _run_controller != null:
+			_run_controller.select_elite_reward(_pending_elite_reward_index)
+		_partner_select_mode = PartnerSelectMode.RESCUE
+		_restore_partner_select_popup_texts()
+		partner_select_popup.hide_popup()
+		if not _pending_battle_result.is_empty():
+			_show_victory_panel(_pending_battle_result)
+		return
+	
 	print("[RunMain] PartnerSelectPopup 取消选择")
 	if _run_controller != null:
 		_run_controller.select_rescue_partner(-1)
@@ -623,10 +672,8 @@ func _show_shop_panel(items: Array) -> void:
 	var gold = summary.get("gold", 0)
 	shop_gold_label.text = "持有金币: %d" % gold
 	
-	# 只生成伙伴升级按钮
+	# 生成所有商品按钮（伙伴升级 + 主角升级）
 	for item in items:
-		if item.get("item_type", "") != "partner_upgrade":
-			continue
 		var btn = preload("res://scenes/run_main/shop_item_button.tscn").instantiate()
 		shop_item_container.add_child(btn)
 		btn.setup(item)
@@ -653,6 +700,9 @@ func _on_shop_item_purchased(item_data: Dictionary) -> void:
 		# 刷新整个商店面板，允许继续升级
 		var fresh_items = _run_controller.get_current_shop_items()
 		_show_shop_panel(fresh_items)
+		
+		# 购买后立即存档，防止 SL 回溯
+		_run_controller.save_run_state()
 		
 		print("[RunMain] 商店已刷新，当前金币=%d" % new_gold)
 	else:
@@ -802,6 +852,70 @@ func _on_battle_ended(battle_result: Dictionary) -> void:
 		}
 		GameManager.pending_battle_result = battle_result
 		GameManager.change_scene("BATTLE", "fade")
+
+func _show_elite_reward_panel(rewards: Array) -> void:
+	if elite_reward_popup == null:
+		push_error("[RunMain] EliteRewardPopup 未初始化")
+		return
+	elite_reward_popup.setup(rewards)
+	_show_modal_panel(elite_reward_popup, true)
+
+
+func _on_elite_reward_selected(reward_index: int) -> void:
+	print("[RunMain] 选择精英奖励: index=%d" % reward_index)
+	
+	var rewards: Array = _pending_battle_result.get("pending_elite_rewards", [])
+	if reward_index < 0 or reward_index >= rewards.size():
+		push_error("[RunMain] 无效精英奖励索引: %d" % reward_index)
+		return
+	var reward: Dictionary = rewards[reward_index]
+	
+	## “指定伙伴升级”需要二次选择目标
+	if reward.get("type", "") == "target_partner_level_up":
+		var partners: Array = _run_controller.get_partners() if _run_controller != null else []
+		if partners.size() > 1:
+			_pending_elite_reward_index = reward_index
+			_partner_select_mode = PartnerSelectMode.ELITE_REWARD_TARGET
+			elite_reward_popup.visible = false
+			ui_modal_blocker.visible = false
+			_show_partner_select_for_elite_reward(partners)
+			return
+		## 只有 0/1 个伙伴时直接随机升级
+	
+	if _run_controller != null:
+		_run_controller.select_elite_reward(reward_index)
+	## 关闭精英奖励弹窗，显示胜利结算面板
+	elite_reward_popup.visible = false
+	ui_modal_blocker.visible = false
+	if not _pending_battle_result.is_empty():
+		_show_victory_panel(_pending_battle_result)
+
+
+func _show_partner_select_for_elite_reward(partners: Array) -> void:
+	var options: Array[Dictionary] = []
+	for p in partners:
+		if p is Dictionary:
+			options.append(p)
+		else:
+			var pcfg: Dictionary = ConfigManager.get_partner_config(str(p.partner_config_id))
+			var p_dict: Dictionary = {
+				"partner_id": str(p.instance_id),
+				"name": pcfg.get("name", "???"),
+				"role": pcfg.get("role", "伙伴"),
+				"level": p.current_level,
+				"portrait_path": ResourcePaths.get_partner_portrait(str(p.partner_config_id)),
+				"skill_desc": pcfg.get("skill_desc", ""),
+			}
+			options.append(p_dict)
+	partner_select_popup.title_label.text = "选择要升级的伙伴"
+	partner_select_popup.confirm_btn.text = "确认升级"
+	partner_select_popup.show_popup(options)
+
+
+func _restore_partner_select_popup_texts() -> void:
+	partner_select_popup.title_label.text = "选择你的伙伴"
+	partner_select_popup.confirm_btn.text = "确认招募"
+
 
 func _show_victory_panel(battle_result: Dictionary) -> void:
 	var summary: Dictionary = _run_controller.get_current_run_summary()

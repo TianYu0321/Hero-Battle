@@ -6,10 +6,13 @@
 class_name ArchiveView
 extends Control
 
+const PolishedOutgameUI := preload("res://scenes/ui/polished_outgame_ui.gd")
+
 @onready var _back_button: Button = $VBox/Header/BackButton
 @onready var _clear_button: Button = $VBox/Header/ClearButton
-@onready var _bg_panel: ColorRect = $BgPanel
-@onready var _title_label: Label = $VBox/Header/TitleLabel
+@onready var _bg_panel: TextureRect = $BgPanel
+@onready var _header_title_spacer: Label = $VBox/Header/TitleLabel
+@onready var _title_label: Label = $TitlePlate/TitleText
 @onready var _btn_archives: Button = $VBox/TabButtons/BtnArchives
 @onready var _btn_leaderboard: Button = $VBox/TabButtons/BtnLeaderboard
 @onready var _btn_achievements: Button = $VBox/TabButtons/BtnAchievements
@@ -28,8 +31,11 @@ extends Control
 @onready var _achievement_panel: PanelContainer = $VBox/AchievementPanel
 
 var _item_scene: PackedScene = preload("res://scenes/archive_view/archive_list_item.tscn")
+var _font_cn: Font = null
 
 func _ready() -> void:
+	_font_cn = _load_font("res://assets/fonts/SourceHanSerifSC-Bold.otf")
+	_header_title_spacer.text = ""
 	_apply_outgame_style()
 	_back_button.pressed.connect(_on_back_pressed)
 	_clear_button.pressed.connect(_on_clear_pressed)
@@ -51,6 +57,7 @@ func _show_archives() -> void:
 	_btn_archives.disabled = true
 	_btn_leaderboard.disabled = false
 	_btn_achievements.disabled = false
+	_update_tab_styles("archives")
 	_refresh_list()
 
 func _show_leaderboard() -> void:
@@ -62,6 +69,7 @@ func _show_leaderboard() -> void:
 	_btn_archives.disabled = false
 	_btn_leaderboard.disabled = true
 	_btn_achievements.disabled = false
+	_update_tab_styles("leaderboard")
 	_leaderboard_panel.refresh()
 
 func _refresh_list() -> void:
@@ -105,6 +113,7 @@ func _show_achievements() -> void:
 	_btn_archives.disabled = false
 	_btn_leaderboard.disabled = false
 	_btn_achievements.disabled = true
+	_update_tab_styles("achievements")
 
 func _on_achievement_closed() -> void:
 	_show_archives()
@@ -129,16 +138,76 @@ func _on_back_pressed() -> void:
 
 
 func _apply_outgame_style() -> void:
-	OutgameUIStyle.apply_background(_bg_panel)
-	OutgameUIStyle.apply_label(_title_label, "title")
-	OutgameUIStyle.apply_button(_back_button)
-	OutgameUIStyle.apply_button(_clear_button, false, true)
-	OutgameUIStyle.apply_button(_btn_archives, true)
-	OutgameUIStyle.apply_button(_btn_leaderboard)
-	OutgameUIStyle.apply_button(_btn_achievements)
-	OutgameUIStyle.apply_panel(_archive_list_panel)
-	OutgameUIStyle.apply_panel(_detail_pane, true)
-	OutgameUIStyle.apply_label(_list_title, "section")
-	OutgameUIStyle.apply_label(_list_hint, "muted")
-	OutgameUIStyle.apply_label(_empty_title, "title")
-	OutgameUIStyle.apply_label(_empty_hint, "muted")
+	PolishedOutgameUI.apply_label(_title_label, "title")
+	PolishedOutgameUI.apply_button(_back_button)
+	PolishedOutgameUI.apply_button(_clear_button, false, true)
+	PolishedOutgameUI.apply_tab(_btn_archives, true)
+	PolishedOutgameUI.apply_tab(_btn_leaderboard, false)
+	PolishedOutgameUI.apply_tab(_btn_achievements, false)
+	_btn_leaderboard.visible = false
+	PolishedOutgameUI.apply_panel(_archive_list_panel, "panel_parchment.png", 34, 18)
+	PolishedOutgameUI.apply_panel(_detail_pane, "panel_parchment.png", 34, 20)
+	PolishedOutgameUI.apply_label(_list_title, "section")
+	PolishedOutgameUI.apply_label(_list_hint, "muted")
+	PolishedOutgameUI.apply_label(_empty_title, "title")
+	PolishedOutgameUI.apply_label(_empty_hint, "muted")
+	PolishedOutgameUI.apply_recursive(self)
+	_title_label.add_theme_font_size_override("font_size", 30)
+	_list_title.add_theme_font_size_override("font_size", 22)
+	_empty_title.add_theme_font_size_override("font_size", 28)
+
+
+func _update_tab_styles(active_tab: String) -> void:
+	PolishedOutgameUI.apply_tab(_btn_archives, active_tab == "archives")
+	PolishedOutgameUI.apply_tab(_btn_leaderboard, active_tab == "leaderboard")
+	PolishedOutgameUI.apply_tab(_btn_achievements, active_tab == "achievements")
+
+
+func _make_archive_panel_style(strong: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.17, 0.095, 0.055, 0.36) if strong else Color(0.12, 0.075, 0.045, 0.28)
+	style.border_color = Color("#d5a66a")
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 18
+	style.corner_radius_top_right = 18
+	style.corner_radius_bottom_left = 18
+	style.corner_radius_bottom_right = 18
+	style.content_margin_left = 18
+	style.content_margin_top = 16
+	style.content_margin_right = 18
+	style.content_margin_bottom = 16
+	style.shadow_color = Color(0, 0, 0, 0.35)
+	style.shadow_size = 10
+	style.shadow_offset = Vector2(0, 4)
+	return style
+
+
+func _apply_font_recursive(node: Node) -> void:
+	if _font_cn == null:
+		return
+	if node is Label:
+		node.add_theme_font_override("font", _font_cn)
+	elif node is Button:
+		node.add_theme_font_override("font", _font_cn)
+	for child in node.get_children():
+		_apply_font_recursive(child)
+
+
+func _apply_readability_recursive(node: Node) -> void:
+	if node is Label:
+		node.add_theme_constant_override("outline_size", 2)
+		node.add_theme_color_override("font_outline_color", Color(0.10, 0.055, 0.025, 0.85))
+	elif node is Button:
+		node.add_theme_constant_override("outline_size", 2)
+		node.add_theme_color_override("font_outline_color", Color(0.10, 0.055, 0.025, 0.80))
+	for child in node.get_children():
+		_apply_readability_recursive(child)
+
+
+func _load_font(path: String) -> Font:
+	if ResourceLoader.exists(path):
+		return load(path)
+	return null

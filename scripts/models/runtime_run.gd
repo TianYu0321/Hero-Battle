@@ -44,6 +44,11 @@ var initial_attr_sum: int = 0
 var created_at: int = 0
 var updated_at: int = 0
 
+## 外出事件运行时状态
+var damage_reduction_next_battle: float = 0.0
+var bet_win_amount: int = 0
+var training_bonus_charges: int = 0
+
 
 func to_dict() -> Dictionary:
 	return {
@@ -83,6 +88,9 @@ func to_dict() -> Dictionary:
 		"initial_attr_sum": initial_attr_sum,
 		"created_at": created_at,
 		"updated_at": updated_at,
+		"damage_reduction_next_battle": damage_reduction_next_battle,
+		"bet_win_amount": bet_win_amount,
+		"training_bonus_charges": training_bonus_charges,
 	}
 
 
@@ -131,4 +139,7 @@ static func from_dict(data: Dictionary) -> RuntimeRun:
 	run.initial_attr_sum = data.get("initial_attr_sum", 0)
 	run.created_at = data.get("created_at", 0)
 	run.updated_at = data.get("updated_at", 0)
+	run.damage_reduction_next_battle = data.get("damage_reduction_next_battle", 0.0)
+	run.bet_win_amount = data.get("bet_win_amount", 0)
+	run.training_bonus_charges = data.get("training_bonus_charges", 0)
 	return run

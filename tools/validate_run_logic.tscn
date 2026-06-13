@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c3q4x8y7v2w1p"]
+
+[ext_resource type="Script" path="res://tools/validate_run_logic.gd" id="1_abc123"]
+
+[node name="ValidateRunLogic" type="Node"]
+script = ExtResource("1_abc123")

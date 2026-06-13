@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c3q4x8y7v2w1r"]
+
+[ext_resource type="Script" path="res://tools/validate_tavern_ready.gd" id="1_ghi789"]
+
+[node name="ValidateTavernReady" type="Node"]
+script = ExtResource("1_ghi789")

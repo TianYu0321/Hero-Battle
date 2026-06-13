@@ -15,7 +15,7 @@ func _setup_combat_text_layer() -> void:
 	_combat_text_layer = CanvasLayer.new()
 	_combat_text_layer.layer = 50
 	_combat_text_layer.name = "CombatTextLayer"
-	get_tree().root.add_child(_combat_text_layer)
+	get_tree().root.call_deferred("add_child", _combat_text_layer)
 
 ## ========== 主要API ==========
 

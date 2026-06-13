@@ -26,6 +26,7 @@ static func from_runtime(run: RuntimeRun, hero: RuntimeHero, partners: Array, no
 			"tec": hero.current_tec,
 			"mnd": hero.current_mnd,
 			"training_counts": hero.training_counts.duplicate(),
+			"buff_list": hero.buff_list.duplicate(true),
 		},
 		"gold": run.gold_owned,
 		"battle_win_count": run.battle_win_count,
@@ -40,6 +41,9 @@ static func from_runtime(run: RuntimeRun, hero: RuntimeHero, partners: Array, no
 		"run_seed": run.run_seed,
 		"run_status": run.run_status,
 		"special_floor_phase": special_floor_phase,
+		"damage_reduction_next_battle": run.damage_reduction_next_battle,
+		"bet_win_amount": run.bet_win_amount,
+		"training_bonus_charges": run.training_bonus_charges,
 	}
 	return data
 
@@ -64,6 +68,7 @@ static func to_runtime(data: Dictionary) -> Dictionary:
 	hero.current_tec = hero_data.get("tec", 10)
 	hero.current_mnd = hero_data.get("mnd", 10)
 	hero.training_counts = hero_data.get("training_counts", {}).duplicate()
+	hero.buff_list = hero_data.get("buff_list", []).duplicate(true)
 	
 	var run := RuntimeRun.new()
 	run.hero_config_id = hero.hero_config_id
@@ -77,6 +82,9 @@ static func to_runtime(data: Dictionary) -> Dictionary:
 	run.node_history = data.get("node_history", [])
 	run.run_seed = data.get("run_seed", randi())
 	run.run_status = data.get("run_status", 1)
+	run.damage_reduction_next_battle = data.get("damage_reduction_next_battle", 0.0)
+	run.bet_win_amount = data.get("bet_win_amount", 0)
+	run.training_bonus_charges = data.get("training_bonus_charges", 0)
 	
 	var partners: Array = []
 	var partner_dicts: Array = data.get("partners", [])
@@ -116,6 +124,7 @@ static func _migrate_v0_to_v1(data: Dictionary) -> Dictionary:
 		new_hero["tec"] = old_hero.get("current_tec", old_hero.get("tec", 10))
 		new_hero["mnd"] = old_hero.get("current_mnd", old_hero.get("mnd", 10))
 		new_hero["training_counts"] = old_hero.get("training_counts", {})
+		new_hero["buff_list"] = old_hero.get("buff_list", [])
 		migrated["hero"] = new_hero
 	
 	# 兼容旧版 special_floor_phase（可能存于根或不存在）

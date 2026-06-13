@@ -231,14 +231,31 @@ func _process_state() -> void:
 			_state = BattleState.STATUS_TICK
 
 		BattleState.STATUS_TICK:
-			# Buff/DOT/HOT 结算（简化）
+			# Buff/DOT/HOT 结算
 			for e in _enemies:
 				for i in range(e.buffs.size() - 1, -1, -1):
 					var buff = e.buffs[i]
 					buff.duration -= 1
 					if buff.duration <= 0:
 						e.buffs.remove_at(i)
-			EventBus.status_ticked.emit(_hero.unit_id, "HOT", 0, 0)
+			
+			# 处理主角 HOT Buff（生命回流等）
+			var hero_buff_list: Array = _hero.get("buff_list", [])
+			var hot_heal: int = 0
+			for i in range(hero_buff_list.size() - 1, -1, -1):
+				var buff = hero_buff_list[i]
+				if buff.get("buff_effect", 0) == 6:
+					var heal_ratio: float = buff.get("effect_value", 0.0)
+					hot_heal += max(1, int(_hero.get("max_hp", 100) * heal_ratio))
+					buff.duration -= 1
+					if buff.duration <= 0:
+						hero_buff_list.remove_at(i)
+			_hero.buff_list = hero_buff_list
+			if hot_heal > 0:
+				_dc.apply_heal(_hero, hot_heal)
+				_result.add_log("生命回流恢复 %d 点生命" % hot_heal)
+			
+			EventBus.status_ticked.emit(_hero.unit_id, "HOT", hot_heal, _hero.get("hp", 0))
 			_state = BattleState.ULTIMATE_CHECK
 
 		BattleState.ULTIMATE_CHECK:

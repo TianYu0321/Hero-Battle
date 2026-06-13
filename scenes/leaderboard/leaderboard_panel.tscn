@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scenes/leaderboard/leaderboard_panel.gd" id="1_lbp"]
 [ext_resource type="PackedScene" path="res://scenes/leaderboard/ranking_row.tscn" id="2_row"]
+[ext_resource type="Texture2D" path="res://assets/ui/leaderboard/leaderboard_hall_bg.png" id="3_bg"]
 
 [node name="LeaderboardPanel" type="Panel"]
 layout_mode = 3
@@ -12,14 +13,16 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_lbp")
 
-[node name="Bg" type="ColorRect" parent="."]
+[node name="Bg" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.08, 0.08, 0.12, 0.85)
+texture = ExtResource("3_bg")
+expand_mode = 1
+stretch_mode = 6
 mouse_filter = 2
 
 [node name="TitleLabel" type="Label" parent="."]
@@ -28,9 +31,9 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -150.0
-offset_top = 60.0
+offset_top = 42.0
 offset_right = 150.0
-offset_bottom = 120.0
+offset_bottom = 104.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 28
 text = "排行榜"
@@ -41,10 +44,10 @@ vertical_alignment = 1
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 330.0
-offset_top = 150.0
-offset_right = -330.0
-offset_bottom = 195.0
+offset_left = 315.0
+offset_top = 392.0
+offset_right = -760.0
+offset_bottom = 432.0
 grow_horizontal = 2
 theme_override_constants/separation = 20
 alignment = 1
@@ -88,9 +91,9 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 330.0
-offset_top = 210.0
-offset_right = -330.0
-offset_bottom = -120.0
+offset_top = 438.0
+offset_right = -760.0
+offset_bottom = -128.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -100,17 +103,60 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
+[node name="SummaryPanel" type="PanelContainer" parent="."]
+layout_mode = 0
+offset_left = 1248.0
+offset_top = 234.0
+offset_right = 1718.0
+offset_bottom = 536.0
+
+[node name="SummaryVBox" type="VBoxContainer" parent="SummaryPanel"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="SummaryTitle" type="Label" parent="SummaryPanel/SummaryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "荣耀摘要"
+horizontal_alignment = 1
+
+[node name="ChampionLabel" type="Label" parent="SummaryPanel/SummaryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "冠军：暂无"
+autowrap_mode = 2
+
+[node name="ChampionRecordLabel" type="Label" parent="SummaryPanel/SummaryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "净胜场：0"
+autowrap_mode = 2
+
+[node name="PlayerRankLabel" type="Label" parent="SummaryPanel/SummaryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "我的排名：尚未上榜"
+autowrap_mode = 2
+
+[node name="SummaryHintLabel" type="Label" parent="SummaryPanel/SummaryVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 16
+text = "前三名会被刻入左侧荣耀榜，当前玩家会以金色行高亮。"
+autowrap_mode = 2
+vertical_alignment = 2
+
 [node name="CloseButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -90.0
-offset_top = 405.0
-offset_right = 90.0
-offset_bottom = 465.0
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -260.0
+offset_top = 48.0
+offset_right = -86.0
+offset_bottom = 106.0
 grow_horizontal = 2
 grow_vertical = 2
 text = "返回"

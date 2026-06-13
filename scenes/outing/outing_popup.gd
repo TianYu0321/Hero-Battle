@@ -117,6 +117,14 @@ func setup(event_data: Dictionary, current_gold: int = 99999, current_hp: int = 
 		_apply_primary_button_style(btn)
 		choices_container.add_child(btn)
 	
+	## 若无有效选择（如事件为空），自动补一个“继续”
+	if choices.is_empty():
+		var continue_btn := Button.new()
+		continue_btn.text = "继续"
+		continue_btn.pressed.connect(_on_choice_selected.bind(0))
+		_apply_primary_button_style(continue_btn)
+		choices_container.add_child(continue_btn)
+	
 	visible = true
 	_play_entrance_animation()
 
@@ -168,6 +176,20 @@ func _on_choice_selected(index: int) -> void:
 			effect_parts.append("HP +%d" % (-cost_hp))
 		
 		var effect: Dictionary = choice.get("effect", {})
+		if effect.has("gold"):
+			effect_parts.append("金币+%d" % effect.get("gold", 0))
+		if effect.has("level"):
+			effect_parts.append("伙伴等级+%d" % effect.get("level", 1))
+		if effect.has("heal_ratio"):
+			effect_parts.append("恢复%d%%生命" % int(effect.get("heal_ratio", 0.4) * 100))
+		if effect.has("training_level"):
+			effect_parts.append("LV%d训练" % effect.get("training_level", 5))
+		if effect.has("damage_ratio"):
+			effect_parts.append("受到伤害%d%%" % int(effect.get("damage_ratio", 0.15) * 100))
+		if effect.has("steal_gold_ratio"):
+			effect_parts.append("损失%d%%金币" % int(effect.get("steal_gold_ratio", 0.2) * 100))
+		if effect.has("debuff_type"):
+			effect_parts.append("获得减益[%s]" % effect.get("debuff_type", ""))
 		if effect.has("damage_reduction"):
 			effect_parts.append("获得伤害减免")
 		if effect.has("forecast_charge"):

@@ -2,26 +2,14 @@ class_name NodeResolver
 extends Node
 
 ## NodeResolver — 节点解析器
-## v2.0: 职责单一，只负责根据节点类型生成解析结果，不依赖任何上层模块
-## 所有需要的数据通过 context Dictionary 传入，实现与 RunController 的解耦
+## v3.0: 外出事件改为读取 event_config.json；支持注入 RNG 保证可复现
 
 signal node_resolved(node_type: int, result_data: Dictionary)
 
-## v2.0 外出事件池：3大类 4:3:3 比例
-const _OUTING_EVENTS: Array[Dictionary] = [
-	## 奖励类 40%
-	{"event": "gold_bonus",       "weight": 10, "category": "reward", "desc": "大量金币"},
-	{"event": "random_level_up",  "weight": 10, "category": "reward", "desc": "随机角色等级+1"},
-	{"event": "full_heal",        "weight": 10, "category": "reward", "desc": "生命完全恢复"},
-	{"event": "lv5_training",     "weight": 10, "category": "reward", "desc": "LV5训练机会"},
-	## 惩罚类 30%
-	{"event": "trap",             "weight": 7.5, "category": "penalty", "desc": "遭遇陷阱"},
-	{"event": "weakness",         "weight": 7.5, "category": "penalty", "desc": "训练效果减半(3层)"},
-	{"event": "thief",            "weight": 7.5, "category": "penalty", "desc": "偷走20%金币"},
-	{"event": "weaken_potion",    "weight": 7.5, "category": "penalty", "desc": "受到伤害+20%(3层)"},
-	## 精英类 30%
-	{"event": "elite_battle",     "weight": 30, "category": "elite", "desc": "精英战斗"},
-]
+var _rng: RandomNumberGenerator = null
+
+func set_rng(rng: RandomNumberGenerator) -> void:
+	_rng = rng
 
 
 ## 解析节点
@@ -40,7 +28,7 @@ func resolve(node_option: Dictionary, context: Dictionary) -> Dictionary:
 		NodePoolSystem.NodeType.TRAINING:
 			result = _resolve_training()
 		NodePoolSystem.NodeType.BATTLE:
-			result = _resolve_battle(context)
+			result = _resolve_battle(context, node_option)
 		NodePoolSystem.NodeType.REST:
 			result = _resolve_rest(context)
 		NodePoolSystem.NodeType.OUTING:
@@ -104,7 +92,7 @@ func generate_enemy_for_floor(_floor: int) -> Dictionary:
 			"enemy_config_id": 2001,
 		}
 	else:
-		var cfg: Dictionary = candidates[randi() % candidates.size()]
+		var cfg: Dictionary = candidates[_rng_rand_int() % candidates.size()]
 		var base_hp: int = 50 + _floor * 3
 		var base_atk: int = 5 + _floor * 2
 		return {
@@ -118,12 +106,14 @@ func generate_enemy_for_floor(_floor: int) -> Dictionary:
 		}
 
 
-func _resolve_battle(context: Dictionary) -> Dictionary:
+func _resolve_battle(context: Dictionary, node_option: Dictionary = {}) -> Dictionary:
 	var turn: int = context.get("turn", 1)
 	var hero = context.get("hero")
 
-	## 生成敌人
-	var enemy: Dictionary = generate_enemy_for_floor(turn)
+	## 优先使用预生成敌人配置，保证 preview 与实战一致
+	var enemy: Dictionary = node_option.get("enemy_config", {})
+	if enemy.is_empty():
+		enemy = generate_enemy_for_floor(turn)
 	EventBus.emit_signal("enemy_encountered", enemy)
 
 	var result: Dictionary = {
@@ -160,67 +150,144 @@ func _resolve_rest(context: Dictionary) -> Dictionary:
 
 
 func _resolve_outing(context: Dictionary) -> Dictionary:
-	## 外出 — 触发随机事件池（4:3:3 比例）
-	## 奖励/惩罚事件改为弹窗交互，精英保持战斗
+	## 外出 — 触发 event_config.json 配置的事件池（4:3:3 比例）
 	var hero = context.get("hero")
 	var run = context.get("run")
 	var turn: int = context.get("turn", 1)
-	
+
 	## 使用预生成的事件类型（事件透视一致性）
 	var node_option: Dictionary = context.get("node_option", {})
 	var preset_type: String = node_option.get("pool_type", "")
-	
-	var roll: int
-	if preset_type.is_empty():
-		roll = randi() % 10
-	else:
-		match preset_type:
-			"reward": roll = 0
-			"penalty": roll = 4
-			"elite": roll = 7
-			_: roll = randi() % 10
 
-	## 精英战斗（30%）保持原有逻辑
-	if roll >= 7:
-		var enemy_id: int = _select_enemy_for_turn(turn)
+	var event_cfg: Dictionary = ConfigManager.get_event_config()
+	var category_key: String = preset_type
+	if category_key.is_empty():
+		## 无预设时按 4:3:3 随机大类
+		var roll: int = _rng_rand_int() % 10
+		if roll < 4:
+			category_key = "reward"
+		elif roll < 7:
+			category_key = "penalty"
+		else:
+			category_key = "elite"
+
+	var category: Dictionary = event_cfg.get(category_key, {})
+	var items: Array = category.get("items", [])
+
+	## 精英战斗保持原有战斗逻辑
+	if category_key == "elite":
+		var enemy_id: int = 2001
+		var precomputed_enemy: Dictionary = node_option.get("enemy_config", {})
+		if not precomputed_enemy.is_empty():
+			enemy_id = precomputed_enemy.get("enemy_config_id", 2001)
+		else:
+			enemy_id = _select_enemy_for_turn(turn)
 		return {
 			"success": true,
 			"node_type": NodePoolSystem.NodeType.OUTING,
 			"requires_battle": true,
 			"is_elite": true,
 			"enemy_config_id": enemy_id,
+			"enemy_config": precomputed_enemy if not precomputed_enemy.is_empty() else null,
 			"logs": ["遭遇精英怪物！"],
 		}
 
-	## 奖励/惩罚事件改为弹窗交互
-	var templates: Array[Dictionary] = [
-		{
-			"title": "神秘商人",
-			"description": "一个裹着斗篷的商人拦住了你。他展示了三件物品，低声说：\"只收现金，概不赊账。\"",
-			"choices": [
-				{"text": "购买护身符 (金币-30, 下次战斗伤害-20%)", "cost_gold": 30, "effect": {"damage_reduction": 0.2, "turns": 1}},
-				{"text": "购买情报 (金币-15, 透视下次节点)", "cost_gold": 15, "effect": {"forecast_charge": 1}},
-				{"text": "拒绝并离开", "cost_gold": 0, "effect": {}},
-			]
-		},
-		{
-			"title": "竞技场外围赌局",
-			"description": "观众席有人在开盘口，赌下一场战斗的胜负。赔率看起来颇为诱人...",
-			"choices": [
-				{"text": "押自己赢 (金币-20, 胜利后返还50)", "cost_gold": 20, "effect": {"bet_win": 50}},
-				{"text": "小额试水 (金币-5, 胜利后返还15)", "cost_gold": 5, "effect": {"bet_win": 15}},
-				{"text": "不参与", "cost_gold": 0, "effect": {}},
-			]
-		},
-	]
+	## 奖励/惩罚事件：按权重选具体事件
+	var selected_event: Dictionary = _pick_event_by_weight(items)
+	var title: String = selected_event.get("desc", "外出遭遇")
+	var description: String = _build_event_description(selected_event)
+	var effect: Dictionary = _build_event_effect(selected_event, hero)
 
-	var template_idx: int = 0 if roll < 4 else 1
-	var tpl: Dictionary = templates[template_idx].duplicate(true)
-	tpl["node_type"] = NodePoolSystem.NodeType.OUTING
-	tpl["requires_ui_selection"] = true
-	tpl["success"] = true
-	tpl["logs"] = []
-	return tpl
+	return {
+		"success": true,
+		"node_type": NodePoolSystem.NodeType.OUTING,
+		"requires_ui_selection": true,
+		"title": title,
+		"description": description,
+		"category": category_key,
+		"event_type": selected_event.get("type", ""),
+		"choices": [
+			{"text": "接受", "effect": effect},
+			{"text": "放弃", "effect": {}},
+		],
+		"logs": [],
+	}
+
+
+func _pick_event_by_weight(items: Array) -> Dictionary:
+	if items.is_empty():
+		return {}
+	var total_weight: float = 0.0
+	for item in items:
+		total_weight += float(item.get("weight", 0))
+	if total_weight <= 0:
+		return items[0] if items.size() > 0 else {}
+	var roll: float = _rng_randf() * total_weight
+	var cumulative: float = 0.0
+	for item in items:
+		cumulative += float(item.get("weight", 0))
+		if roll <= cumulative:
+			return item
+	return items[items.size() - 1]
+
+
+func _build_event_description(event_data: Dictionary) -> String:
+	var effect: String = event_data.get("effect", "")
+	match effect:
+		"gold":
+			var value_range: Array = event_data.get("value_range", [30, 80])
+			return "你发现了一处遗失的财宝箱，里面可能装有 %d~%d 金币。" % [value_range[0], value_range[1]]
+		"level":
+			return "一位路过的老兵愿意指点你的同伴，随机一名伙伴等级 +%d。" % event_data.get("value", 1)
+		"heal_and_buff":
+			var heal_ratio: float = event_data.get("heal_ratio", 0.4)
+			var buff: Dictionary = event_data.get("buff", {})
+			var bonus_percent: int = int(buff.get("effect_value", 0.4) * 100)
+			var duration: int = buff.get("duration", 5)
+			return "神圣的泉水让你精神一振：恢复 %d%% 生命，并获得攻防 +%d%% 的鼓舞（%d 层）。" % [int(heal_ratio * 100), bonus_percent, duration]
+		"training":
+			var training_level: int = event_data.get("value", 5)
+			return "你发现了一块古老的训练石碑，可以进行一次 LV%d 级别的高级训练。" % training_level
+		"damage":
+			var damage_ratio: float = event_data.get("damage_ratio", 0.15)
+			return "你触发了陷阱！将受到相当于最大生命 %d%% 的伤害。" % int(damage_ratio * 100)
+		"debuff":
+			return "你感到一阵不适：%s" % event_data.get("desc", "遭受减益效果")
+		"steal_gold":
+			var steal_ratio: float = event_data.get("value", 0.2)
+			return "一个黑影掠过，你被偷走了 %d%% 的金币。" % int(steal_ratio * 100)
+		_:
+			return event_data.get("desc", "外出遭遇")
+
+
+func _build_event_effect(event_data: Dictionary, _hero) -> Dictionary:
+	var effect_type: String = event_data.get("effect", "")
+	match effect_type:
+		"gold":
+			var value_range: Array = event_data.get("value_range", [30, 80])
+			var amount: int = _rng_rand_int() % (value_range[1] - value_range[0] + 1) + value_range[0]
+			return {"gold": amount}
+		"level":
+			return {"level": event_data.get("value", 1)}
+		"heal_and_buff":
+			return {
+				"heal_ratio": event_data.get("heal_ratio", 0.4),
+				"buff": event_data.get("buff", {}),
+			}
+		"training":
+			return {"training_level": event_data.get("value", 5)}
+		"damage":
+			return {"damage_ratio": event_data.get("damage_ratio", 0.15)}
+		"debuff":
+			return {
+				"debuff_type": event_data.get("debuff_type", ""),
+				"duration": event_data.get("duration", 3),
+				"value": event_data.get("value", 0.0),
+			}
+		"steal_gold":
+			return {"steal_gold_ratio": event_data.get("value", 0.2)}
+		_:
+			return {}
 
 
 func _resolve_rescue(node_option: Dictionary, context: Dictionary) -> Dictionary:
@@ -233,8 +300,8 @@ func _resolve_rescue(node_option: Dictionary, context: Dictionary) -> Dictionary
 		## 后备：自己生成候选伙伴
 		var all_partner_ids = ConfigManager.get_all_partner_config_ids()
 		var available_ids = all_partner_ids.duplicate()
-		available_ids.shuffle()
-		for i in range(min(3, available_ids.size())):
+		_available_ids_shuffle(available_ids)
+		for i in range(mini(3, available_ids.size())):
 			var cfg = ConfigManager.get_partner_config(str(available_ids[i]))
 			candidates.append({
 				"partner_config_id": available_ids[i],
@@ -304,7 +371,7 @@ func _select_enemy_for_turn(turn: int) -> int:
 			candidates.append(cfg.get("id", 2001))
 	if candidates.is_empty():
 		return 2001  # 默认敌人
-	return candidates[randi() % candidates.size()]
+	return candidates[_rng_rand_int() % candidates.size()]
 
 
 ## 商店购买处理（由ShopSystem处理具体逻辑，这里只保留接口兼容）
@@ -316,3 +383,24 @@ func process_shop_purchase(_item_data: Dictionary, _run_data: RuntimeRun) -> Dic
 ## 救援选择处理（由RescueSystem处理具体逻辑，这里只保留接口兼容）
 func process_rescue_selection(_partner_config_id: int, _turn: int, _run_data: RuntimeRun) -> void:
 	push_warning("[NodeResolver] process_rescue_selection is deprecated, use RescueSystem directly")
+
+
+func _rng_rand_int() -> int:
+	if _rng != null:
+		return _rng.randi()
+	return randi()
+
+
+func _rng_randf() -> float:
+	if _rng != null:
+		return _rng.randf()
+	return randf()
+
+
+func _available_ids_shuffle(arr: Array) -> void:
+	## 使用注入的 RNG 进行 Fisher-Yates 洗牌，保证可复现
+	for i in range(arr.size() - 1, 0, -1):
+		var j: int = _rng_rand_int() % (i + 1)
+		var tmp = arr[i]
+		arr[i] = arr[j]
+		arr[j] = tmp

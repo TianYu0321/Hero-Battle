@@ -21,11 +21,22 @@ func setup(item: Dictionary) -> void:
 			var current_lv = item.get("current_level", 1)
 			var next_lv = mini(5, current_lv + 1)
 			level_label.text = "LV%d → LV%d" % [current_lv, next_lv]
+		"hero_attr":
+			name_label.text = item.get("name", "???")
+			level_label.text = item.get("effect_desc", "")
+		"hero_all_attr":
+			name_label.text = item.get("name", "???")
+			level_label.text = item.get("effect_desc", "")
+		_:
+			name_label.text = item.get("name", "???")
+			level_label.text = item.get("effect_desc", "")
 	
 	price_label.text = "%d金币" % item.get("price", 0)
 	
 	var can_afford = item.get("can_afford", true)
-	var max_level_reached = item.get("current_level", 1) >= 5
+	var max_level_reached = false
+	if item_type == "partner_upgrade":
+		max_level_reached = item.get("current_level", 1) >= 5
 	disabled = not can_afford or max_level_reached
 	if disabled:
 		modulate = Color(0.5, 0.5, 0.5)

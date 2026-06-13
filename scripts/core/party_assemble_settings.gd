@@ -8,7 +8,7 @@ class_name PartyAssembleSettings
 extends RefCounted
 
 ## ========== 队伍规模 ==========
-const MAX_TEAM_SIZE := 3
+const MAX_TEAM_SIZE := 7
 
 ## ========== 卡片尺寸（从 JSON 加载）==========
 static var CARD_WIDTH: int = 200

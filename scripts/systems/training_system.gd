@@ -41,7 +41,9 @@ func initialize(cm: CharacterManager) -> void:
 ## attr_type: 1=体魄, 2=力量, 3=敏捷, 4=技巧, 5=精神
 ## _floor: 当前层数
 ## partner_bonus: 伙伴支援加成（固定值，不影响副属性）
-func execute_training(attr_type: int, _floor: int, partner_bonus: int = 0) -> Dictionary:
+## force_level: 强制训练等级（0=按当前等级，5=强制LV5）
+## extra_bonus: 额外主属性加成（如外出事件训练加成）
+func execute_training(attr_type: int, _floor: int, partner_bonus: int = 0, force_level: int = 0, extra_bonus: int = 0) -> Dictionary:
 	if _character_manager == null:
 		push_error("[TrainingSystem] CharacterManager not initialized")
 		return {}
@@ -49,13 +51,30 @@ func execute_training(attr_type: int, _floor: int, partner_bonus: int = 0) -> Di
 	var hero: RuntimeHero = _character_manager.get_hero()
 	
 	# 获取该属性的训练等级
-	var training_level: int = _get_training_level(hero, attr_type)
+	var training_level: int = force_level if force_level > 0 else _get_training_level(hero, attr_type)
+	
+	# 应用训练类 Buff（训练等级+1、训练熟练度+1）
+	var buff_extra_level: int = 0
+	var buff_extra_gain: int = 0
+	var training_buffs: Array = _get_training_buffs(hero)
+	for buff in training_buffs:
+		var be: int = buff.get("buff_effect", 0)
+		if be == 5:
+			buff_extra_level += int(buff.get("effect_value", 0))
+		elif be == 4:
+			buff_extra_gain += int(buff.get("effect_value", 0))
+	training_level = clampi(training_level + buff_extra_level, 1, _MAX_TRAINING_LEVEL)
 	
 	# 计算主属性加成
-	var main_gain: int = _BASE_MAIN_GAIN + (training_level - 1) * _MAIN_GAIN_INCREMENT + partner_bonus
+	var main_gain: int = _BASE_MAIN_GAIN + (training_level - 1) * _MAIN_GAIN_INCREMENT + partner_bonus + buff_extra_gain + extra_bonus
 	
 	# 计算副属性加成
 	var sub_gain: int = _BASE_SUB_GAIN + (training_level - 1) * _SUB_GAIN_INCREMENT
+	
+	# 训练效果减半减益
+	if _has_training_half_debuff(hero):
+		main_gain = maxi(1, int(main_gain * 0.5))
+		sub_gain = maxi(1, int(sub_gain * 0.5))
 	
 	# 获取副属性列表
 	var secondary_attrs: Array = _ATTR_SECONDARY.get(attr_type, [])
@@ -74,14 +93,25 @@ func execute_training(attr_type: int, _floor: int, partner_bonus: int = 0) -> Di
 		var new_sub: int = _get_attr_value(hero, sub_attr)
 		sub_gains[sub_attr] = new_sub - old_sub
 	
-	# 更新该属性的训练计数
-	var attr_key: String = _get_attr_key(attr_type)
-	var current_count: int = hero.training_counts.get(attr_key, 0)
-	hero.training_counts[attr_key] = current_count + 1
+	# 检查是否升级（强制训练不提升该属性的训练等级）
+	var new_level: int = training_level
+	var level_up: bool = false
 	
-	# 检查是否升级
-	var new_level: int = _get_training_level(hero, attr_type)
-	var level_up: bool = new_level > training_level
+	# 强制训练：只获得收益，不增加该属性的训练计数（避免破坏后续等级成长曲线）
+	if force_level <= 0:
+		# 更新该属性的训练计数
+		var attr_key: String = _get_attr_key(attr_type)
+		var current_count: int = hero.training_counts.get(attr_key, 0)
+		hero.training_counts[attr_key] = current_count + 1
+		# 检查是否升级
+		new_level = _get_training_level(hero, attr_type)
+		level_up = new_level > training_level
+	
+	# 训练类 Buff 持续次数 -1
+	_consume_training_buffs(hero)
+	
+	# 训练效果减半减益持续次数 -1
+	_consume_training_half_debuff(hero)
 	
 	# 更新总训练次数
 	hero.total_training_count += 1
@@ -142,6 +172,14 @@ func _get_attr_value(hero: RuntimeHero, attr_type: int) -> int:
 		_: return 0
 
 
+## 检查是否存在训练效果减半的减益
+func _has_training_half_debuff(hero: RuntimeHero) -> bool:
+	for buff in hero.buff_list:
+		if buff.get("buff_effect", 0) == 2 and buff.get("debuff_type", "") == "training_half":
+			return true
+	return false
+
+
 ## 获取属性名称
 func _attr_name(attr_type: int) -> String:
 	match attr_type:
@@ -151,6 +189,38 @@ func _attr_name(attr_type: int) -> String:
 		4: return "技巧"
 		5: return "精神"
 		_: return "未知"
+
+
+## 获取主角身上的训练类 Buff（buff_effect 4=熟练度+1, 5=训练等级+1）
+func _get_training_buffs(hero: RuntimeHero) -> Array:
+	var result: Array = []
+	for buff in hero.buff_list:
+		var be: int = buff.get("buff_effect", 0)
+		if be == 4 or be == 5:
+			result.append(buff)
+	return result
+
+
+## 消耗一次训练效果减半减益的剩余层数
+func _consume_training_half_debuff(hero: RuntimeHero) -> void:
+	for i in range(hero.buff_list.size() - 1, -1, -1):
+		var buff = hero.buff_list[i]
+		if buff.get("buff_effect", 0) == 2 and buff.get("debuff_type", "") == "training_half":
+			buff.duration -= 1
+			if buff.duration <= 0:
+				hero.buff_list.remove_at(i)
+			return
+
+
+## 消耗一次训练类 Buff 的剩余层数
+func _consume_training_buffs(hero: RuntimeHero) -> void:
+	for i in range(hero.buff_list.size() - 1, -1, -1):
+		var buff = hero.buff_list[i]
+		var be: int = buff.get("buff_effect", 0)
+		if be == 4 or be == 5:
+			buff.duration -= 1
+			if buff.duration <= 0:
+				hero.buff_list.remove_at(i)
 
 
 ## 计算训练面板显示的加成值（预览用）

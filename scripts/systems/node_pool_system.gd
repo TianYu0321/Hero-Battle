@@ -34,6 +34,12 @@ const _NORMAL_OPTION_DESC: Dictionary = {
 	NodeType.OUTING: "外出触发随机事件",
 }
 
+var _rng: RandomNumberGenerator = null
+
+
+func set_rng(rng: RandomNumberGenerator) -> void:
+	_rng = rng
+
 
 func reset() -> void:
 	pass
@@ -76,7 +82,7 @@ func _generate_normal_options(_floor: int) -> Array[Dictionary]:
 		}
 		# 为外出节点预生成事件类型（用于事件透视）
 		if ntype == NodeType.OUTING:
-			var roll: int = randi() % 10
+			var roll: int = _rng_rand_int() % 10
 			if roll < 4:
 				option["pool_type"] = "reward"
 			elif roll < 7:
@@ -121,3 +127,9 @@ func _node_id_prefix(node_type: int) -> String:
 		7: return "pvp"
 		8: return "final"
 		_: return "unknown"
+
+
+func _rng_rand_int() -> int:
+	if _rng != null:
+		return _rng.randi()
+	return randi()

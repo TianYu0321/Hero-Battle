@@ -59,6 +59,9 @@ func initialize_hero(hero_config_id: int) -> RuntimeHero:
 func initialize_partners(partner_config_ids: Array[int]) -> Array[RuntimePartner]:
 	_partners.clear()
 	for pid in partner_config_ids:
+		if _partners.size() >= PartyAssembleSettings.MAX_TEAM_SIZE:
+			push_warning("[CharacterManager] 初始伙伴数量超过上限 %d，已截断" % PartyAssembleSettings.MAX_TEAM_SIZE)
+			break
 		var config: Dictionary = ConfigManager.get_partner_config(str(pid))
 		if config.is_empty():
 			push_warning("[CharacterManager] Partner config not found: %d" % pid)
@@ -77,6 +80,9 @@ func initialize_partners(partner_config_ids: Array[int]) -> Array[RuntimePartner
 
 
 func add_partner(partner_config_id: int, position: int, level: int = 1) -> RuntimePartner:
+	if _partners.size() >= PartyAssembleSettings.MAX_TEAM_SIZE:
+		push_warning("[CharacterManager] 伙伴数量已达上限 %d" % PartyAssembleSettings.MAX_TEAM_SIZE)
+		return null
 	var config: Dictionary = ConfigManager.get_partner_config(str(partner_config_id))
 	if config.is_empty():
 		push_error("[CharacterManager] Partner config not found: %d" % partner_config_id)
@@ -188,6 +194,18 @@ func upgrade_partner_by_instance_id(instance_id: int) -> bool:
 func apply_buff(buff: RuntimeBuff) -> void:
 	_buffs.append(buff)
 	EventBus.emit_signal("buff_applied", buff.target_id, buff.id, buff.buff_name, buff.duration_total, "", "BUFF")
+
+
+## 给主角添加运行时 Buff（用于事件/精英战奖励的临时效果）
+## buff_data: Dictionary 包含 buff_name, buff_effect, effect_value, duration, exclude_pvp 等字段
+func apply_hero_buff(buff_data: Dictionary) -> void:
+	if _hero == null:
+		return
+	var buff: Dictionary = buff_data.duplicate(true)
+	if not buff.has("duration_remaining"):
+		buff["duration_remaining"] = buff.get("duration", 1)
+	_hero.buff_list.append(buff)
+	EventBus.emit_signal("buff_applied", _hero.id, "", buff.get("buff_name", "Buff"), buff.get("duration", 1), "", "BUFF")
 
 
 func remove_buff(buff_id: String) -> void:

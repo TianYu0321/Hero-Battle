@@ -10,10 +10,15 @@ extends Node
 const _RESCUE_TURNS: Array[int] = [5, 15, 25]
 
 var _character_manager: CharacterManager = null
+var _rng: RandomNumberGenerator = null
 
 
 func initialize(cm: CharacterManager) -> void:
 	_character_manager = cm
+
+
+func set_rng(rng: RandomNumberGenerator) -> void:
+	_rng = rng
 
 
 func is_rescue_turn(turn: int) -> bool:
@@ -63,7 +68,7 @@ func generate_candidates() -> Array[Dictionary]:
 
 	# 补全位：优先从缺失定位中选
 	if not missing_roles.is_empty() and not available.is_empty():
-		var fill_role: int = missing_roles.pick_random()
+		var fill_role: int = _array_pick_random(missing_roles)
 		for pid in available:
 			if all_roles.get(pid, 0) == fill_role:
 				candidates.append(pid)
@@ -72,7 +77,7 @@ func generate_candidates() -> Array[Dictionary]:
 
 	# 填充剩余位（随机，去重）
 	while candidates.size() < 3 and not available.is_empty():
-		var pid: int = available.pick_random()
+		var pid: int = _array_pick_random(available)
 		candidates.append(pid)
 		available.erase(pid)
 
@@ -109,6 +114,14 @@ func rescue_partner(partner_config_id: int, turn: int, floor: int = 1) -> Runtim
 
 
 # --- 私有方法 ---
+
+func _array_pick_random(arr: Array):
+	if arr.is_empty():
+		return null
+	if _rng != null:
+		return arr[_rng.randi() % arr.size()]
+	return arr.pick_random()
+
 
 func _attr_name(attr_type: int) -> String:
 	match attr_type:

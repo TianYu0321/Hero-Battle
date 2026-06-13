@@ -108,6 +108,7 @@ var _partner_assist_configs: Dictionary = {}
 var _partner_support_configs: Dictionary = {}
 var _pvp_opponent_configs: Dictionary = {}
 var _final_boss_configs: Dictionary = {}
+var _event_configs: Dictionary = {}
 
 # --- 数字ID → 字符串Key 映射（向后兼容） ---
 const _HERO_ID_MAP: Dictionary = {
@@ -286,6 +287,8 @@ func _load_all_configs() -> void:
 	var support_raw: Dictionary = _load_json_safe("res://resources/configs/partner_support_configs.json", {})
 	_partner_support_configs = support_raw.get("entries", {})
 	_final_boss_configs = _load_json_safe("res://resources/configs/final_boss_configs.json", {})
+	var event_raw: Dictionary = _load_json_safe("res://resources/configs/event_config.json", {})
+	_event_configs = event_raw.get("categories", {})
 	
 	## 为所有敌人配置自动注入精灵图路径
 	for enemy_id in _enemy_configs.keys():
@@ -416,6 +419,10 @@ func get_enemy_template(enemy_id: String) -> Dictionary:
 
 func get_shop_price_config() -> Dictionary:
 	return _shop_configs.duplicate()
+
+
+func get_event_config() -> Dictionary:
+	return _event_configs.duplicate()
 
 func get_node_weights(phase: String) -> Dictionary:
 	if not _node_configs.has(phase):

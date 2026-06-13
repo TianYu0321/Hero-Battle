@@ -6,6 +6,8 @@
 class_name ArchiveDetail
 extends PanelContainer
 
+const PolishedOutgameUI := preload("res://scenes/ui/polished_outgame_ui.gd")
+
 signal back_requested
 signal pvp_archive_set(archive_data: Dictionary)
 
@@ -83,6 +85,7 @@ func _populate_attrs(data: Dictionary) -> void:
 		var name_label: Label = Label.new()
 		name_label.text = "%s: %d (初始%d)" % [_ATTR_NAMES[i], current, initial]
 		name_label.custom_minimum_size = Vector2(180, 0)
+		PolishedOutgameUI.apply_label(name_label, "dark")
 		hbox.add_child(name_label)
 
 		var bar: ProgressBar = ProgressBar.new()
@@ -114,11 +117,13 @@ func _populate_partners(data: Dictionary) -> void:
 		label.text = "[%s Lv%d]" % [pname, level]
 		if not role.is_empty():
 			label.tooltip_text = role
+		PolishedOutgameUI.apply_label(label, "dark")
 		_partner_container.add_child(label)
 
 	if partners.is_empty():
 		var empty_label: Label = Label.new()
 		empty_label.text = "无伙伴"
+		PolishedOutgameUI.apply_label(empty_label, "muted")
 		_partner_container.add_child(empty_label)
 
 func _populate_score(data: Dictionary, total_score: float) -> void:
@@ -130,6 +135,7 @@ func _populate_score(data: Dictionary, total_score: float) -> void:
 		var weighted: float = data.get(item.weighted_key, 0.0)
 		var label: Label = Label.new()
 		label.text = "%s(%.0f%%): %.1f/100 → %.1f" % [item.label, item.weight * 100.0, raw, weighted]
+		PolishedOutgameUI.apply_label(label, "dark")
 		_score_container.add_child(label)
 
 	var sep: HSeparator = HSeparator.new()
@@ -138,6 +144,7 @@ func _populate_score(data: Dictionary, total_score: float) -> void:
 	var total_label: Label = Label.new()
 	total_label.text = "总分: %.1f" % total_score
 	total_label.add_theme_font_size_override("font_size", 18)
+	PolishedOutgameUI.apply_label(total_label, "section")
 	_score_container.add_child(total_label)
 
 func _populate_stats(data: Dictionary) -> void:
@@ -157,10 +164,12 @@ func _populate_stats(data: Dictionary) -> void:
 
 	var line1: Label = Label.new()
 	line1.text = "总伤害: %d  击杀: %d  最高连锁: %d" % [total_damage, kills, max_chain]
+	PolishedOutgameUI.apply_label(line1, "dark")
 	_stat_container.add_child(line1)
 
 	var line2: Label = Label.new()
 	line2.text = "必杀触发: %s  PVP: %s" % ["是" if ultimate else "否", pvp_text]
+	PolishedOutgameUI.apply_label(line2, "dark")
 	_stat_container.add_child(line2)
 
 func _get_rating_color(rating: String) -> Color:
@@ -174,10 +183,11 @@ func _get_rating_color(rating: String) -> Color:
 
 
 func _apply_outgame_style() -> void:
-	OutgameUIStyle.apply_panel(self, true)
-	OutgameUIStyle.apply_label(_title_label, "title")
-	OutgameUIStyle.apply_label(_hero_name_label, "section")
-	OutgameUIStyle.apply_label(_total_score_label, "section")
-	OutgameUIStyle.apply_button(_close_button)
-	OutgameUIStyle.apply_button(_set_pvp_button, true)
-	OutgameUIStyle.apply_button(_back_button)
+	PolishedOutgameUI.apply_panel(self, "panel_parchment.png", 34, 20)
+	PolishedOutgameUI.apply_label(_title_label, "title")
+	PolishedOutgameUI.apply_label(_hero_name_label, "section")
+	PolishedOutgameUI.apply_label(_total_score_label, "section")
+	PolishedOutgameUI.apply_button(_close_button)
+	PolishedOutgameUI.apply_button(_set_pvp_button, true)
+	PolishedOutgameUI.apply_button(_back_button)
+	PolishedOutgameUI.apply_recursive(self)

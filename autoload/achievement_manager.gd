@@ -317,8 +317,8 @@ func _process_notification_queue() -> void:
 	var canvas := CanvasLayer.new()
 	canvas.layer = 90
 	canvas.name = "AchievementNotification"
-	get_tree().root.add_child(canvas)
-	canvas.add_child(notification)
+	get_tree().root.call_deferred("add_child", canvas)
+	canvas.call_deferred("add_child", notification)
 	
 	notification.tree_exited.connect(func():
 		# 移除空的 CanvasLayer

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c3q4x8y7v2w1q"]
+
+[ext_resource type="Script" path="res://tools/validate_runmain_ready.gd" id="1_def456"]
+
+[node name="ValidateRunMainReady" type="Node"]
+script = ExtResource("1_def456")

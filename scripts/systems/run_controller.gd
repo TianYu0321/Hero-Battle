@@ -58,9 +58,14 @@ var _special_floor_phase: SpecialFloorPhase = SpecialFloorPhase.NONE
 var _battle_result_phase: BattleResultPhase = BattleResultPhase.NONE
 var _last_rest_heal_amount: int = 0
 
+var _run_rng: RandomNumberGenerator = null
+var _pending_elite_rewards: Array[Dictionary] = []
+var _pending_elite_reward_battle_result: Dictionary = {}
+
 
 func _ready() -> void:
 	# 初始化Boss池（配置驱动，零硬编码）
+	# 初始使用随机 RNG；start_new_run 时会注入基于 run_seed 的确定性 RNG
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	_boss_pool = FinalBossPool.new(rng)
@@ -175,6 +180,11 @@ func continue_from_save(save_data: Dictionary) -> bool:
 	
 	# 恢复当前层的选项（如果有）—— 关键：SL后选项不变
 	_current_node_options = node_options.duplicate(true)
+	
+	# 恢复确定性 RNG
+	_init_run_rng(_run.run_seed)
+	_reset_shop_purchase_counts()
+	
 	if not _current_node_options.is_empty():
 		EventBus.emit_signal("floor_changed", _run.current_turn, _MAX_TURNS, _get_phase_name())
 		EventBus.emit_signal("node_options_presented", _current_node_options)
@@ -201,12 +211,47 @@ func continue_from_save(save_data: Dictionary) -> bool:
 	print("[RunController] 存档恢复完成，当前层=%d" % _run.current_turn)
 	return true
 
+
+func _init_run_rng(seed_value: int) -> void:
+	_run_rng = RandomNumberGenerator.new()
+	_run_rng.seed = seed_value
+	_inject_run_rng(_run_rng)
+
+
+func _inject_run_rng(rng: RandomNumberGenerator) -> void:
+	if rng == null:
+		push_warning("[RunController] 尝试注入空 RNG")
+		return
+	if _node_pool_system != null:
+		_node_pool_system.set_rng(rng)
+	if _node_resolver != null:
+		_node_resolver.set_rng(rng)
+	if _rescue_system != null:
+		_rescue_system.set_rng(rng)
+	var shop_system: ShopSystem = get_node_or_null("ShopSystem")
+	if shop_system != null:
+		shop_system.set_rng(rng)
+	var elite_system: EliteBattleSystem = get_node_or_null("EliteBattleSystem")
+	if elite_system != null:
+		elite_system.set_rng(rng)
+	if _boss_pool != null:
+		## FinalBossPool 构造时注入 RNG，需重新实例化
+		_boss_pool = FinalBossPool.new(rng)
+	print("[RunController] RNG 已注入各子系统，seed=%d" % rng.seed)
+
+
 func start_new_run(hero_config_id: int, starter_partner_ids: Array[int]) -> void:
 	_run = RuntimeRun.new()
 	_run.hero_config_id = hero_config_id
 	_run.run_status = 1  # ONGOING
 	_run.current_turn = 1
 	_run.started_at = int(Time.get_unix_time_from_system())
+	# 生成 run_seed：使用一次全局随机，后续所有 Run 级随机都基于此种子
+	_run.run_seed = randi()
+	print("[RunController] 新局 run_seed=%d" % _run.run_seed)
+
+	# 初始化确定性 RNG 并注入子系统
+	_init_run_rng(_run.run_seed)
 
 	_hero = _character_manager.initialize_hero(hero_config_id)
 	_character_manager.initialize_partners(starter_partner_ids)
@@ -215,6 +260,7 @@ func start_new_run(hero_config_id: int, starter_partner_ids: Array[int]) -> void
 	_run.initial_attr_sum = _hero.current_vit + _hero.current_str + _hero.current_agi + _hero.current_tec + _hero.current_mnd
 
 	_node_pool_system.reset()
+	_reset_shop_purchase_counts()
 
 	EventBus.emit_signal("run_started", {
 		"hero_id": hero_config_id,
@@ -415,11 +461,15 @@ func _generate_node_options() -> void:
 	# 普通回合：从节点池生成3个选项
 	_current_node_options = _node_pool_system.generate_options(turn)
 	
-	# 为战斗节点预生成敌人配置，供UI层预览使用
+	# 为战斗节点预生成敌人配置，供UI层预览并保证实战一致
 	for opt in _current_node_options:
 		if opt.get("node_type", 0) == NodePoolSystem.NodeType.BATTLE:
 			var enemy_cfg: Dictionary = _node_resolver.generate_enemy_for_floor(turn)
 			opt["enemy_config"] = enemy_cfg
+		elif opt.get("node_type", 0) == NodePoolSystem.NodeType.OUTING:
+			## 为所有外出节点预生成敌人配置；若最终随到精英战斗，可直接复用，避免 preview/实战不一致
+			var enemy_cfg2: Dictionary = _node_resolver.generate_enemy_for_floor(turn)
+			opt["enemy_config"] = enemy_cfg2
 	
 	# 缓存外出事件到事件透视系统
 	var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
@@ -474,8 +524,28 @@ func _process_node_result(result: Dictionary) -> void:
 			if enemy_cfg2.has("reward_gold_max"):
 				var gold_max: int = enemy_cfg2.get("reward_gold_max", gold_reward)
 				if gold_max > gold_reward:
-					gold_reward = randi() % (gold_max - gold_reward + 1) + gold_reward
+					gold_reward = _run_rng_rand_int() % (gold_max - gold_reward + 1) + gold_reward
 			_process_reward({"type": "gold", "amount": gold_reward})
+			# 下注返还
+			if _run.bet_win_amount > 0:
+				_process_reward({"type": "gold", "amount": _run.bet_win_amount})
+				_run.bet_win_amount = 0
+				print("[RunController] 赌局获胜，返还金币")
+		
+		# 战斗结束后消耗战斗类 Buff 层数（伤害减免/攻防提升/生命回流等）
+		_consume_combat_buffs_after_battle()
+		
+		# 精英战胜利：生成 3 选 1 奖励，待玩家返回后选择
+		var is_elite: bool = result.get("is_elite", false)
+		if is_elite and _hero.is_alive:
+			var enemy_cfg3: Dictionary = ConfigManager.get_enemy_config(str(enemy_config_id))
+			var difficulty_tier: int = enemy_cfg3.get("difficulty_tier", 1)
+			var elite_system: EliteBattleSystem = get_node_or_null("EliteBattleSystem")
+			if elite_system != null:
+				_pending_elite_rewards = elite_system.generate_elite_rewards(difficulty_tier, _run.current_turn, _run_rng)
+				print("[RunController] 精英战胜利，生成 %d 个奖励选项" % _pending_elite_rewards.size())
+			else:
+				_pending_elite_rewards = []
 		
 		# 构造 battle summary 供 UI 回放
 		var hero_name: String = "英雄"
@@ -521,6 +591,10 @@ func _process_node_result(result: Dictionary) -> void:
 		
 		_battle_result_phase = BattleResultPhase.BATTLE_ENDED
 		_pending_battle_result = battle_result
+		# 将精英奖励挂到 battle_result 上，供 RunMain 返回后展示
+		if is_elite and _hero.is_alive and not _pending_elite_rewards.is_empty():
+			battle_result["pending_elite_rewards"] = _pending_elite_rewards.duplicate(true)
+			battle_result["is_elite"] = true
 		EventBus.emit_signal("battle_ended", battle_result)
 		return
 
@@ -570,7 +644,7 @@ func _process_reward(reward: Dictionary) -> void:
 		"attr_up":
 			pass  # 属性提升已在TrainingSystem中通过CharacterManager应用
 		"elite_reward_choice":
-			pass  # 3选1奖励由UI层处理
+			pass  # 3选1奖励已在 select_elite_reward 中处理
 		"pvp_result":
 			var pvp_data: Dictionary = reward.get("data", {})
 			if pvp_data != null and not pvp_data.is_empty():
@@ -626,7 +700,7 @@ func _process_reward(reward: Dictionary) -> void:
 		"level_up":
 			var partners: Array = _character_manager.get_partners()
 			if partners.size() > 0:
-				var random_partner = partners[randi() % partners.size()]
+				var random_partner = partners[_run_rng_rand_int() % partners.size()]
 				_character_manager.upgrade_partner(random_partner.partner_config_id)
 		"train_lv5":
 			var attr_type: int = reward.get("attr", -1)
@@ -637,11 +711,17 @@ func _process_reward(reward: Dictionary) -> void:
 func _execute_final_battle() -> void:
 	var fb := RuntimeFinalBattle.new()
 	fb.run_id = _run.run_id
-	fb.enemy_config_id = 2005  # 混沌领主
+	
+	# 从 FinalBossPool 随机选择终局 Boss（若池子未初始化则回退到混沌领主）
+	var boss_config: Dictionary = {}
+	if _boss_pool != null:
+		boss_config = _boss_pool.select_random_boss()
+	var final_enemy_config_id: int = boss_config.get("enemy_config_id", 2005)
+	fb.enemy_config_id = final_enemy_config_id
 	fb.hero_max_hp = _hero.max_hp
 
 	# 接入真实 BattleEngine
-	var battle_result: Dictionary = _run_battle_engine(2005)
+	var battle_result: Dictionary = _run_battle_engine(final_enemy_config_id)
 	fb.result = 1 if battle_result.winner == "player" else 2
 	fb.hero_remaining_hp = battle_result.hero_remaining_hp if battle_result.has("hero_remaining_hp") else _hero.current_hp
 	fb.damage_dealt_to_enemy = battle_result.total_damage_dealt
@@ -667,6 +747,20 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 	var battle_hero: Dictionary = DamageCalculator.spawn_hero(hero_id, hero_stats)
 	battle_hero.hp = _hero.current_hp
 	battle_hero.max_hp = _hero.max_hp
+
+	# 应用外出事件/精英战奖励的临时 Buff 到战斗实例
+	for buff in _hero.buff_list:
+		battle_hero.buff_list.append(buff.duplicate(true))
+	# 应用下一场战斗伤害减免（一次性）
+	if _run.damage_reduction_next_battle > 0:
+		battle_hero.buff_list.append({
+			"buff_name": "伤害减免",
+			"buff_effect": 1,
+			"effect_value": _run.damage_reduction_next_battle,
+			"duration": 99,
+			"duration_remaining": 99,
+		})
+		_run.damage_reduction_next_battle = 0.0
 
 	var enemy_cfg: Dictionary = ConfigManager.get_enemy_config(str(enemy_config_id))
 	var enemy: Dictionary = DamageCalculator.spawn_enemy(enemy_cfg, hero_stats)
@@ -696,11 +790,13 @@ func _run_battle_engine(enemy_config_id: int) -> Dictionary:
 	
 	var battle_engine: BattleEngine = BattleEngine.new()
 	add_child(battle_engine)
+	# 确定性战斗种子：由 run_seed + 回合 + 敌人 ID 派生
+	var battle_seed: int = hash(str(_run.run_seed) + "_battle_" + str(_run.current_turn) + "_" + str(enemy_config_id))
 	var config: Dictionary = {
 		"hero": battle_hero,
 		"enemies": [enemy],
 		"partners": battle_partners,
-		"battle_seed": randi(),
+		"battle_seed": battle_seed,
 		"playback_mode": "fast_forward",
 		"playback_recorder": recorder,
 	}
@@ -998,6 +1094,11 @@ func _save_at_floor_entrance() -> void:
 			])
 
 
+func save_run_state() -> void:
+	## 公共接口：立即保存当前运行状态（商店购买等关键操作后调用）
+	_save_at_floor_entrance()
+
+
 func _auto_save() -> void:
 	## 保留旧接口兼容，统一调用层入口存档
 	_save_at_floor_entrance()
@@ -1019,6 +1120,24 @@ func _get_phase_name() -> String:
 
 func _is_fixed_node_turn(turn: int) -> bool:
 	return turn in _RESCUE_TURNS or turn in _PVP_TURNS or turn == _FINAL_TURN
+
+
+func _run_rng_rand_int() -> int:
+	if _run_rng != null:
+		return _run_rng.randi()
+	return randi()
+
+
+func _run_rng_randf() -> float:
+	if _run_rng != null:
+		return _run_rng.randf()
+	return randf()
+
+
+func _run_rng_rand_range(min_val: int, max_val: int) -> int:
+	if _run_rng != null:
+		return _run_rng.randi_range(min_val, max_val)
+	return randi() % (max_val - min_val + 1) + min_val
 
 
 func _get_ending_type() -> String:
@@ -1051,8 +1170,6 @@ func _finish_node_execution(result: Dictionary) -> void:
 
 	# 更新计数器
 	match _pending_node_type:
-		NodePoolSystem.NodeType.BATTLE:
-			_run.battle_win_count += 1
 		NodePoolSystem.NodeType.SHOP:
 			_run.shop_visit_count += 1
 		NodePoolSystem.NodeType.PVP_CHECK:
@@ -1165,6 +1282,37 @@ func _save_shadow_to_pool() -> void:
 	pool.save_shadows_to_disk()
 	print("[RunController] 影子已保存: user=%s, floor=%d" % [shadow.user_id, shadow.floor])
 
+func _reset_shop_purchase_counts() -> void:
+	## 重置商店购买次数（新局/读档时调用，防止跨局继承涨价）
+	var shop_system: ShopSystem = get_node_or_null("ShopSystem")
+	if shop_system != null:
+		shop_system.reset()
+		print("[RunController] 商店购买计数已重置")
+
+
+func _consume_combat_buffs_after_battle() -> void:
+	## 战斗结束后消耗战斗类 Buff（伤害减免/攻防提升/生命回流/伤害加深等）的持续层数
+	if _hero == null:
+		return
+	var remaining: Array = []
+	for buff in _hero.buff_list:
+		var effect: int = buff.get("buff_effect", 0)
+		var is_combat_buff: bool = effect == 1 or effect == 3 or effect == 6
+		# 战斗类减益：只有 damage_taken_up 需要在战斗后消耗层数
+		if effect == 2 and buff.get("debuff_type", "") == "damage_taken_up":
+			is_combat_buff = true
+		if is_combat_buff:
+			var duration: int = buff.get("duration", 1)
+			duration -= 1
+			if duration > 0:
+				buff["duration"] = duration
+				remaining.append(buff)
+			## 如果 duration <= 0 则不保留（Buff 已过期）
+		else:
+			remaining.append(buff)
+	_hero.buff_list = remaining
+
+
 func _derive_combat_style() -> Array[String]:
 	var tags: Array[String] = []
 	if _hero == null:
@@ -1194,9 +1342,76 @@ func confirm_battle_result() -> void:
 			_finish_node_execution(_pending_battle_result)
 		_battle_result_phase = BattleResultPhase.NONE
 		_pending_battle_result = {}
+		_pending_elite_rewards.clear()
+		_pending_elite_reward_battle_result.clear()
 		print("[RunController] confirm_battle_result 完成, 状态已重置")
 	else:
 		print("[RunController] confirm_battle_result 跳过, phase 不是 BATTLE_ENDED")
+
+
+func select_elite_reward(reward_index: int) -> void:
+	## 玩家选择了精英战 3 选 1 奖励（无指定目标）
+	select_elite_reward_with_target(reward_index, 0)
+
+
+func select_elite_reward_with_target(reward_index: int, target_instance_id: int) -> void:
+	## 玩家选择了精英战奖励，并指定了伙伴（target_instance_id > 0 时生效）
+	if reward_index < 0 or reward_index >= _pending_elite_rewards.size():
+		push_error("[RunController] 无效精英奖励索引: %d" % reward_index)
+		return
+	var reward: Dictionary = _pending_elite_rewards[reward_index]
+	_apply_elite_reward(reward, target_instance_id)
+	_pending_elite_rewards.clear()
+	# 奖励选择后，确认战斗结果并推进回合
+	confirm_battle_result()
+
+
+func _apply_elite_reward(reward: Dictionary, target_instance_id: int = 0) -> void:
+	var rtype: String = reward.get("type", "")
+	var effect: Dictionary = reward.get("effect", {})
+	match rtype:
+		"target_partner_level_up":
+			## 玩家自选伙伴升级：优先使用 UI 传入的 target_instance_id；若无则随机
+			var target_id: int = target_instance_id if target_instance_id > 0 else effect.get("target_id", 0)
+			if target_id > 0:
+				_character_manager.upgrade_partner_by_instance_id(target_id)
+			else:
+				var partners: Array = _character_manager.get_partners()
+				if partners.size() > 0:
+					var p = partners[_run_rng_rand_int() % partners.size()]
+					_character_manager.upgrade_partner_by_instance_id(p.instance_id)
+		"random_partner_level_up_2":
+			var partners: Array = _character_manager.get_partners()
+			if partners.size() > 0:
+				var p = partners[_run_rng_rand_int() % partners.size()]
+				for _i in range(2):
+					_character_manager.upgrade_partner_by_instance_id(p.instance_id)
+		"gold":
+			var amount: int = effect.get("gold_amount", 0)
+			if amount > 0:
+				_process_reward({"type": "gold", "amount": amount})
+		"attr_or_mastery":
+			if effect.has("attr_code"):
+				var attr_code: int = effect.get("attr_code", 0)
+				var attr_bonus: int = effect.get("attr_bonus", 0)
+				if attr_code > 0 and attr_bonus > 0:
+					_character_manager.modify_hero_stats({attr_code: attr_bonus})
+			elif effect.has("mastery_attr"):
+				var mastery_attr: int = effect.get("mastery_attr", 0)
+				var mastery_bonus: int = effect.get("mastery_bonus", 0)
+				if mastery_attr > 0 and mastery_bonus > 0:
+					## 训练熟练度+5：以训练等级+0、主属性加成+5的方式模拟
+					_training_system.execute_training(mastery_attr, _run.current_turn, 0, 0, mastery_bonus)
+		"buff":
+			var buff_data: Dictionary = effect.duplicate(true)
+			buff_data["buff_name"] = reward.get("name", "精英增益")
+			if not buff_data.has("duration"):
+				buff_data["duration"] = 5
+			if not buff_data.has("duration_remaining"):
+				buff_data["duration_remaining"] = buff_data["duration"]
+			_character_manager.apply_hero_buff(buff_data)
+			print("[RunController] 精英奖励 Buff 已应用: %s" % buff_data.get("buff_name", ""))
+
 
 func close_shop_panel() -> void:
 	## 商店面板关闭后推进回合
@@ -1243,6 +1458,11 @@ func select_outing_choice(choice_index: int) -> Dictionary:
 		push_error("[RunController] 无效外出选择: %d" % choice_index)
 		return {}
 	
+	## 选择“放弃”则直接结束事件
+	if choice_index == 1:
+		_finish_node_execution({"success": true, "message": "你选择放弃这次机会。", "hp_change": 0, "gold_change": 0, "logs": ["外出事件：放弃了机会"]})
+		return {"success": true}
+	
 	var choice: Dictionary = choices[choice_index]
 	var result := {
 		"success": true,
@@ -1251,7 +1471,7 @@ func select_outing_choice(choice_index: int) -> Dictionary:
 		"gold_change": 0,
 	}
 	
-	## 应用 HP 消耗
+	## 应用 HP 消耗（兼容旧模板）
 	var cost_hp: int = choice.get("cost_hp", 0)
 	if cost_hp > 0 and _hero != null:
 		var old_hp: int = _hero.current_hp
@@ -1261,7 +1481,7 @@ func select_outing_choice(choice_index: int) -> Dictionary:
 			0: {"old": old_hp, "new": _hero.current_hp, "delta": result["hp_change"], "attr_code": 0}
 		})
 	
-	## 应用金币消耗
+	## 应用金币消耗（兼容旧模板）
 	var cost_gold: int = choice.get("cost_gold", 0)
 	if cost_gold > 0 and _run != null:
 		var old_gold: int = _run.gold_owned
@@ -1269,37 +1489,10 @@ func select_outing_choice(choice_index: int) -> Dictionary:
 		result["gold_change"] = old_gold - _run.gold_owned
 		EventBus.emit_signal("gold_changed", _run.gold_owned, result["gold_change"], "outing")
 	
-	## 应用效果（如伤害减免、透视次数等）
+	## 应用事件效果
 	var effect: Dictionary = choice.get("effect", {})
-	if effect.has("random_attr") and _hero != null:
-		var attr_names: Array[String] = ["vit", "str", "agi", "tec", "mnd"]
-		var attr_codes: Dictionary = {"vit": 1, "str": 2, "agi": 3, "tec": 4, "mnd": 5}
-		var rand_attr: String = attr_names[randi() % attr_names.size()]
-		var old_val: int = 0
-		var delta: int = effect.get("random_attr", 0)
-		match rand_attr:
-			"vit":
-				old_val = _hero.current_vit
-				_hero.current_vit += delta
-				_hero.max_hp += delta
-			"str":
-				old_val = _hero.current_str
-				_hero.current_str += delta
-			"agi":
-				old_val = _hero.current_agi
-				_hero.current_agi += delta
-			"tec":
-				old_val = _hero.current_tec
-				_hero.current_tec += delta
-			"mnd":
-				old_val = _hero.current_mnd
-				_hero.current_mnd += delta
-		result["message"] += " %s+%d" % [rand_attr, delta]
-		EventBus.emit_signal("stats_changed", _hero.id, {
-			attr_codes[rand_attr]: {"old": old_val, "new": old_val + delta, "delta": delta, "attr_code": attr_codes[rand_attr]}
-		})
-	## TODO: 其他效果（damage_reduction, forecast_charge, bet_win, training_bonus）
-	## 这些需要运行时 buff/debuff 系统支持，先记录到日志中
+	_apply_outing_effect(effect, result)
+	
 	if not effect.is_empty():
 		result["effect"] = effect
 	
@@ -1309,6 +1502,8 @@ func select_outing_choice(choice_index: int) -> Dictionary:
 		log_msg += " | HP %+d" % (-result["hp_change"])
 	if result["gold_change"] != 0:
 		log_msg += " | 金币 %+d" % (-result["gold_change"])
+	if not result["message"].is_empty():
+		log_msg += " | " + result["message"]
 	result["logs"] = [log_msg]
 	
 	## 完成节点执行
@@ -1316,9 +1511,118 @@ func select_outing_choice(choice_index: int) -> Dictionary:
 	return result
 
 
+func _apply_outing_effect(effect: Dictionary, result: Dictionary) -> void:
+	if effect.is_empty() or _hero == null or _run == null:
+		return
+	
+	## 金币奖励
+	if effect.has("gold"):
+		var amount: int = effect.get("gold", 0)
+		if amount > 0:
+			_process_reward({"type": "gold", "amount": amount})
+			result["message"] += " 金币+%d" % amount
+	
+	## 随机伙伴升级
+	if effect.has("level"):
+		var level_delta: int = effect.get("level", 1)
+		var partners: Array = _character_manager.get_partners()
+		if partners.size() > 0:
+			var p = partners[_run_rng_rand_int() % partners.size()]
+			for _i in range(level_delta):
+				_character_manager.upgrade_partner_by_instance_id(p.instance_id)
+			result["message"] += " %s等级+%d" % [ConfigManager.get_partner_config(str(p.partner_config_id)).get("name", "伙伴"), level_delta]
+	
+	## 生命恢复 + 战斗鼓舞 Buff
+	if effect.has("heal_ratio"):
+		var heal_ratio: float = effect.get("heal_ratio", 0.4)
+		var heal_amount: int = max(1, int(_hero.max_hp * heal_ratio))
+		_process_reward({"type": "hp_heal", "amount": heal_amount})
+		result["message"] += " HP+%d" % heal_amount
+		var buff: Dictionary = effect.get("buff", {})
+		if not buff.is_empty():
+			_character_manager.apply_hero_buff(buff)
+			result["message"] += " 获得%s" % buff.get("buff_name", "鼓舞")
+	
+	## LV5 训练
+	if effect.has("training_level"):
+		var attr_type: int = 1 + _run_rng_rand_int() % 5
+		_training_system.execute_training(attr_type, _run.current_turn, 0, effect.get("training_level", 5), 0)
+		result["message"] += " 进行了一次LV%d训练(%s)" % [effect.get("training_level", 5), _attr_name(attr_type)]
+	
+	## 陷阱伤害
+	if effect.has("damage_ratio"):
+		var damage: int = max(1, int(_hero.max_hp * effect.get("damage_ratio", 0.15)))
+		_process_reward({"type": "hp_damage", "amount": damage})
+		result["message"] += " HP-%d" % damage
+	
+	## 金币被偷
+	if effect.has("steal_gold_ratio"):
+		var ratio: float = effect.get("steal_gold_ratio", 0.2)
+		var steal: int = max(0, int(_run.gold_owned * ratio))
+		if steal > 0:
+			var old_gold: int = _run.gold_owned
+			_run.gold_owned = maxi(0, _run.gold_owned - steal)
+			EventBus.emit_signal("gold_changed", _run.gold_owned, old_gold - _run.gold_owned, "outing_thief")
+			result["message"] += " 金币-%d" % steal
+	
+	## Debuff
+	if effect.has("debuff_type"):
+		var debuff_data: Dictionary = {
+			"buff_name": effect.get("debuff_type", "减益"),
+			"buff_effect": 2,
+			"effect_value": effect.get("value", 0.0),
+			"duration": effect.get("duration", 3),
+		}
+		_character_manager.apply_hero_buff(debuff_data)
+		result["message"] += " 获得减益[%s]" % debuff_data["buff_name"]
+	
+	## 旧模板效果：伤害减免
+	if effect.has("damage_reduction"):
+		_run.damage_reduction_next_battle = maxf(_run.damage_reduction_next_battle, effect.get("damage_reduction", 0.0))
+		result["message"] += " 下战伤害减免%.0f%%" % (_run.damage_reduction_next_battle * 100)
+	
+	## 旧模板效果：透视次数
+	if effect.has("forecast_charge"):
+		var forecast_system: EventForecastSystem = get_node_or_null("EventForecastSystem")
+		if forecast_system != null:
+			forecast_system.add_charges(effect.get("forecast_charge", 1))
+		result["message"] += " 透视+%d" % effect.get("forecast_charge", 1)
+	
+	## 旧模板效果：赌局下注
+	if effect.has("bet_win"):
+		_run.bet_win_amount = effect.get("bet_win", 0)
+		result["message"] += " 下注%d金币" % _run.bet_win_amount
+	
+	## 旧模板效果：训练加成
+	if effect.has("training_bonus"):
+		_run.training_bonus_charges += effect.get("training_bonus", 1)
+		result["message"] += " 训练加成+%d层" % effect.get("training_bonus", 1)
+	
+	## 旧模板效果：随机属性（保留兼容）
+	if effect.has("random_attr"):
+		var attr_names: Array[String] = ["vit", "str", "agi", "tec", "mnd"]
+		var attr_codes: Dictionary = {"vit": 1, "str": 2, "agi": 3, "tec": 4, "mnd": 5}
+		var rand_attr: String = attr_names[_run_rng_rand_int() % attr_names.size()]
+		var delta: int = effect.get("random_attr", 0)
+		_character_manager.modify_hero_stats({attr_codes[rand_attr]: delta})
+		result["message"] += " %s+%d" % [rand_attr, delta]
+
+
+func _attr_name(attr_type: int) -> String:
+	match attr_type:
+		1: return "体魄"
+		2: return "力量"
+		3: return "敏捷"
+		4: return "技巧"
+		5: return "精神"
+		_: return "未知"
+
+
 func select_training_attr(attr_type: int) -> void:
 	## 玩家从训练面板选择了具体属性
 	if _state == RunState.RUNNING_NODE_EXECUTE:
 		var partner_bonus: int = _calculate_partner_bonus_for_attr(attr_type)
-		_training_system.execute_training(attr_type, _run.current_turn, partner_bonus)
+		var extra_bonus: int = _run.training_bonus_charges
+		_run.training_bonus_charges = 0
+		_training_system.execute_training(attr_type, _run.current_turn, partner_bonus, 0, extra_bonus)
 		_finish_node_execution(_pending_result)
